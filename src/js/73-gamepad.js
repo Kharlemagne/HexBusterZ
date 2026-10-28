@@ -12,7 +12,7 @@ function rumble(strong, weak, ms) {
 const PAD_NAMES = ['fire', 'alt', 'jump', 'dash', 'xcross', 'next', 'prev', 'interact', 'start'];
 const PAD_STD = { fire: { b: 7 }, alt: { b: 6 }, jump: { b: 0 }, dash: { b: 2 }, xcross: { b: 1 }, next: { b: 5 }, prev: { b: 4 }, interact: { b: 3 }, start: { b: 9 }, lx: { a: 0, s: 1 }, ly: { a: 1, s: 1 }, rx: { a: 2, s: 1 }, ry: { a: 3, s: 1 } };
 let padMap = PAD_STD, padCustom = false;
-try { const j = JSON.parse(localStorage.getItem('cubicide_padmap_v1') || 'null'); if (j && j.fire && j.lx) { padMap = j; padCustom = true; } } catch (e) { }
+try { const j = SaveStore.doc.settings.padMap; if (j && j.fire && j.lx) { padMap = j; padCustom = true; } } catch (e) { }
 function dval(pad, d) {
   if (!d) return 0;
   if (d.b !== undefined) { const bb = pad.buttons[d.b]; return bb ? (bb.pressed ? Math.max(1, bb.value) : bb.value) : 0; }
@@ -59,7 +59,7 @@ function closePadSetup(saved) {
   if (!padSetup) return; state = padSetup.prev === 'play' ? 'paused' : padSetup.prev; padSetup = null; el.padsetup.classList.remove('on');
   if (saved) feed('CONTROLLER MAPPED', '#6dff9c');
 }
-function resetPadMap() { padMap = PAD_STD; padCustom = false; try { localStorage.removeItem('cubicide_padmap_v1'); } catch (e) { } closePadSetup(); feed('CONTROLLER RESET TO DEFAULT', '#6ec8ff'); }
+function resetPadMap() { padMap = PAD_STD; padCustom = false; setSetting('padMap', null); closePadSetup(); feed('CONTROLLER RESET TO DEFAULT', '#6ec8ff'); }
 function renderPadSetup() {
   const S_ = padSetup; if (!S_) return; const st = PAD_STEPS[Math.min(S_.i, PAD_STEPS.length - 1)];
   el.padsetup.innerHTML = '<div class="sh-t">CONTROLLER SETUP</div><div class="sh-g">STEP ' + (S_.i + 1) + ' / ' + PAD_STEPS.length + '</div><div class="ps-q">' + st[1] + '</div><div class="ps-raw">' + (S_.raw || '…') + '</div>'
@@ -79,7 +79,7 @@ function padSetupPoll(pad) {
   } else { let best = -1, bd = .55; pad.axes.forEach((v, i) => { const d = Math.abs(v - S_.base[i]); if (d > bd) { bd = d; best = i; } }); if (best >= 0) rec = { a: best, s: (pad.axes[best] - S_.base[best]) > 0 ? 1 : -1 }; }
   if (rec) {
     S_.map[step[0]] = rec; S_.i++; S_.wait = true; SFX.rank();
-    if (S_.i >= PAD_STEPS.length) { padMap = S_.map; padCustom = true; try { localStorage.setItem('cubicide_padmap_v1', JSON.stringify(padMap)); } catch (e) { } closePadSetup(true); return; }
+    if (S_.i >= PAD_STEPS.length) { padMap = S_.map; padCustom = true; setSetting('padMap', padMap); closePadSetup(true); return; }
   }
   renderPadSetup();
 }

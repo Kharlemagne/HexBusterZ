@@ -1,11 +1,12 @@
 // ---------------- boss creation ----------------
 function spawnBoss(x, y, z) {
+  setWorldSeed((Run.seed || newSeed()) ^ 0xB055);       // the boss is fully decided by the run seed (design + its 3 attacks)
   const H_ = pick5(BHEADS), T_ = pick5(BTORSOS), L_ = pick5(BLEGS);
-  const ids = []; while (ids.length < 3) { const a = (Math.random() * ATK.length) | 0; if (!ids.includes(a)) ids.push(a); }
+  const ids = []; while (ids.length < 3) { const a = (R() * ATK.length) | 0; if (!ids.includes(a)) ids.push(a); }
   const total = 1560 * (1 + (Wv.n / 5 - 1) * .5), fr = [.28, .44, .28];
   const mk = (slot, d, hpf, atk, cd) => ({ slot, name: d.n, parts: d.parts, hp: total * hpf, max: total * hpf, broken: false, flash: 0, atk, cd });
   const name = (H_.n + T_.n + L_.n).toUpperCase();
-  const e = { type: 'boss', def: Object.assign({}, ED.boss, { name }), bossName: name, x, y, z, vx: 0, vy: 0, vz: 0, hp: total, maxhp: total, hw: ED.boss.hw, h: ED.boss.h, cd: 0, t: 0, flash: 0, dead: false, yaw: 0, walk: 0, burst: 0, bcd: 0, sdir: 1, onGround: false,
+  const e = { id: nextId(), type: 'boss', def: Object.assign({}, ED.boss, { name }), bossName: name, x, y, z, vx: 0, vy: 0, vz: 0, hp: total, maxhp: total, hw: ED.boss.hw, h: ED.boss.h, cd: 0, t: 0, flash: 0, dead: false, yaw: 0, walk: 0, burst: 0, bcd: 0, sdir: 1, onGround: false,
     pieces: [mk(0, L_, fr[0], ids[2], 5.5), mk(1, T_, fr[1], ids[1], 3.6), mk(2, H_, fr[2], ids[0], 2.0)], legSpd: L_.spd, fx: [], lock: 2.2, ovr: null, bodyCd: 0, strafe: 1 };
   enemies.push(e); sparkBurst(x, y + e.h / 2, z, 40, [1, .3, .1], 10); SFX.spawn(); SFX.boom();
   return e;

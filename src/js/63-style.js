@@ -1,7 +1,7 @@
 // ---------------- style / score ----------------
 function addStyle(v) { S.style = clamp(S.style + v, 0, 1100); }
 function onKill(e, o) {
-  S.kills++;
+  S.kills++; Save.stats.kills++; saveSoon();
   let pts = e.def.pts; const tags = [[e.def.name + ' +' + e.def.pts, '#fff']];
   if (o.head) { pts += 40; tags.push(['HEADSHOT +40', '#ffd23a']); }
   if (!P.onGround && P.airT > .3) { pts += 60; tags.push(['AIRBORNE +60', '#6ec8ff']); }

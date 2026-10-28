@@ -1,5 +1,6 @@
 // ---------------- input ----------------
 addEventListener('keydown', e => {
+  if (e.target && /^(TEXTAREA|INPUT)$/.test(e.target.tagName)) return;      // typing in the save box / forms must not drive the game
   if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.code)) e.preventDefault();
   const first = !keys[e.code]; keys[e.code] = true;
   if (!first) return;
@@ -20,7 +21,7 @@ addEventListener('keydown', e => {
   else if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') tryDash();
   else if (e.code === 'KeyC' || e.code === 'ControlLeft') P.cEdge = true;
   else if (e.code === 'KeyQ') switchWeapon(P.lastWeapon);
-  else if (e.code === 'KeyM') { muted = !muted; feed(muted ? 'SOUND OFF' : 'SOUND ON'); }
+  else if (e.code === 'KeyM') { muted = !muted; setSetting('muted', muted); feed(muted ? 'SOUND OFF' : 'SOUND ON'); }
 });
 addEventListener('keyup', e => { keys[e.code] = false; });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; mouse.l = mouse.r = false; });
@@ -46,6 +47,7 @@ document.addEventListener('pointerlockchange', () => {
 });
 document.addEventListener('pointerlockerror', () => { fallback = true; });
 el.menu.addEventListener('click', ev => {
-  if (ev.target && ev.target.id === 'padbtn') { openPadSetup(); return; } if (state === 'paused') { state = 'play'; el.menu.classList.add('hide'); try { const p = canvas.requestPointerLock(); if (p && p.catch) p.catch(() => { fallback = true; }); } catch (e) { } } else startGame(); });
+  if (ev.target && ev.target.id === 'padbtn') { openPadSetup(); return; }
+  if (ev.target && ev.target.id === 'savebtn') { openSaveBox(); return; } if (state === 'paused') { state = 'play'; el.menu.classList.add('hide'); try { const p = canvas.requestPointerLock(); if (p && p.catch) p.catch(() => { fallback = true; }); } catch (e) { } } else startGame(); });
 el.dead.addEventListener('click', () => startGame());
 

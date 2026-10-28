@@ -14,11 +14,12 @@ function house(x0, z0, w, d, hgt, door) {
   for (const [px, pz] of [[x0, z0], [x0 + w - 1, z0], [x0, z0 + d - 1], [x0 + w - 1, z0 + d - 1]]) fillBox(px, 9, pz, px, 8 + hgt, pz, 3);
   if (door === 'W') setRaw(x0 - 1, 11, cz, 6); if (door === 'E') setRaw(x0 + w, 11, cz, 6);
 }
-function genHub() {
-  clearWorld(64); seed = (Math.random() * 1e9) | 0;
+function genHub(hubSeed) {
+  hubSeed = (hubSeed === undefined ? SaveStore.doc.hub.seed : hubSeed) >>> 0;
+  clearWorld(64); seed = hubSeed | 0; setWorldSeed(hubSeed ^ 0x9E3779B9);
   const HB = 8;
   for (let z = 0; z < 64; z++) for (let x = 0; x < 64; x++) {
-    const dx = x - 32, dz = z - 32, d = Math.max(Math.abs(dx), Math.abs(dz)), r = Math.hypot(dx, dz);
+    const dx = x - 32, dz = z - 32, d = Math.max(Math.abs(dx), Math.abs(dz)), r = hyp(dx, dz);
     let h = HB, lava = false;
     if (d > 24) { h = HB + Math.floor((d - 24) * .7 + fbm(x, z) * 7); if (d > 29) h += Math.floor((d - 29) * 2.4); if (d <= 28 && fbm(x + 100, z + 50) > .55) { h = 4; lava = true; } }
     h = clamp(h, 2, H - 3);
@@ -56,14 +57,15 @@ function genHub() {
   for (const z of [16, 22, 28]) for (const x of [29, 35]) { fillBox(x, 9, z, x, 11, z, 3); setRaw(x, 12, z, 6); }
   // bone spires
   for (let i = 0; i < 14; i++) {
-    const a = rnd(TAU), r = rnd(16, 22), x = Math.floor(32 + Math.cos(a) * r), z = Math.floor(32 + Math.sin(a) * r);
+    const a = rw(TAU), r = rw(16, 22), x = Math.floor(32 + Math.cos(a) * r), z = Math.floor(32 + Math.sin(a) * r);
     if (world[idx(x, 9, z)] || world[idx(x, 8, z)] !== 2 || z < 16 || (x > 14 && x < 28 && z > 35 && z < 46)) continue;
     fillBox(x, 9, z, x, 8 + 2 + (i % 4), z, 5);
   }
+  HubSave.apply();                  // the player's own builds, on top of the generated village
 }
 function nearNPC() { return mode === 'hub' && Math.hypot(P.x - NPC.x, P.z - NPC.z) < 4.6 && Math.abs(P.y - NPC.y) < 3; }
 function enterHub(first, fromRun) {
-  genHub(); buildAll(); mode = 'hub';
+  genHub(); buildAll(); mode = 'hub'; flushSave();
   enemies.length = 0; eprojs.length = 0; bombs.length = 0; beams.length = 0; PL.fill(0);
   Run.chests = []; Run.turrets = []; Run.smoke = []; Run.hasKey = false; Run.glyph = null; Run.cur = null; resetBossSystems(); sky = null;
   const sx = 32.5, sz = fromRun ? 15.5 : 44.5;

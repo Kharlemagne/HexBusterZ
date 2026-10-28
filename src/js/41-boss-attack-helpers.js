@@ -1,5 +1,5 @@
 // ---------------- attack helpers ----------------
-const pick5 = a => a[(Math.random() * a.length) | 0];
+const pick5 = a => a[(R() * a.length) | 0];
 const rotYaw = (d, a) => { const c = Math.cos(a), s = Math.sin(a); return [d[0] * c - d[2] * s, d[1], d[0] * s + d[2] * c]; };
 const norm3 = d => { const l = Math.hypot(d[0], d[1], d[2]) || 1; return [d[0] / l, d[1] / l, d[2] / l]; };
 function pieceSrc(e, i) { return [e.x + Math.sin(e.yaw) * e.hw * .8, e.y + e.h * PSRC[i], e.z + Math.cos(e.yaw) * e.hw * .8]; }
@@ -11,7 +11,7 @@ function aimFrom(s, lead, err) {
 }
 let curBossE = null;
 function bShot(s, d, speed, dmg, size, o) {
-  o = o || {}; eprojs.push({ x: s[0] + d[0] * .6, y: s[1] + d[1] * .6, z: s[2] + d[2] * .6, vx: d[0] * speed, vy: d[1] * speed, vz: d[2] * speed, dmg, size, life: o.life || 7, g: o.g || 0, home: o.home || 0, exp: o.exp || null, col: o.col || null, owner: curBossE });
+  o = o || {}; eprojs.push({ id: nextId(), x: s[0] + d[0] * .6, y: s[1] + d[1] * .6, z: s[2] + d[2] * .6, vx: d[0] * speed, vy: d[1] * speed, vz: d[2] * speed, dmg, size, life: o.life || 7, g: o.g || 0, home: o.home || 0, exp: o.exp || null, col: o.col || null, owner: curBossE });
 }
 function arena() { const r = bossRoom(); return r || { ox: 0, oz: 0, sz: 64 }; }
 function arenaClamp(x, z) { const r = arena(); return [clamp(x, r.ox + 4, r.ox + r.sz - 4), clamp(z, r.oz + 4, r.oz + r.sz - 4)]; }

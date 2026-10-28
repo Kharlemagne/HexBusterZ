@@ -2,7 +2,7 @@
 const enemies = [], eprojs = [], bombs = [];
 function spawnEnemy(type, x, y, z) {
   const def = ED[type], hpScale = 1 + (Wv.n - 1) * .08;
-  const e = { type, def, x, y, z, vx: 0, vy: 0, vz: 0, hp: def.hp * (def.boss ? 1 + (Wv.n / 5 - 1) * .5 : hpScale), maxhp: 0, hw: def.hw * def.scale / def.scale, h: def.h, cd: rnd(.5, 1.8),
+  const e = { id: nextId(), type, def, x, y, z, vx: 0, vy: 0, vz: 0, hp: def.hp * (def.boss ? 1 + (Wv.n / 5 - 1) * .5 : hpScale), maxhp: 0, hw: def.hw * def.scale / def.scale, h: def.h, cd: rnd(.5, 1.8),
     t: rnd(10), flash: 0, dead: false, yaw: 0, walk: 0, burst: 0, bcd: 0, sdir: Math.random() < .5 ? 1 : -1, onGround: false };
   e.maxhp = e.hp; enemies.push(e);
   sparkBurst(x, y + e.h / 2, z, 16, [1, .3, .1], 6); SFX.spawn();
@@ -20,7 +20,7 @@ function fireEProj(e, speed, dmg, size, yawOff, spread, pitchOff) {
   if (yawOff) { const c = Math.cos(yawOff), s = Math.sin(yawOff); const nx = dx * c - dz * s, nz = dx * s + dz * c; dx = nx; dz = nz; }
   if (pitchOff) dy += pitchOff;
   if (spread) { dx += rnd(-spread, spread); dy += rnd(-spread, spread); dz += rnd(-spread, spread); const l = Math.hypot(dx, dy, dz); dx /= l; dy /= l; dz /= l; }
-  eprojs.push({ x: sx + dx * (e.hw + .3), y: sy + dy * .5, z: sz + dz * (e.hw + .3), vx: dx * speed, vy: dy * speed, vz: dz * speed, dmg, size, life: 7, owner: e });
+  eprojs.push({ id: nextId(), x: sx + dx * (e.hw + .3), y: sy + dy * .5, z: sz + dz * (e.hw + .3), vx: dx * speed, vy: dy * speed, vz: dz * speed, dmg, size, life: 7, owner: e });
   tone(rnd(300, 380), .12, 'square', .1, 150);
 }
 function updateEnemy(e, dt) {

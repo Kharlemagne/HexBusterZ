@@ -8,6 +8,7 @@ function get(x, y, z) {
   return world[idx(x, y, z)];
 }
 const solid = (x, y, z) => { const i = get(x, y, z); return i !== 0 && i !== 4; };
+const blockListeners = [];     // fn(x, y, z, newId, oldId): save system now, netcode later
 let seed = 1337;
 function hash(x, z) { let h = (Math.imul(x, 374761393) + Math.imul(z, 668265263) + seed) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
 function vnoise(x, z) {

@@ -16,7 +16,7 @@ function layoutDungeon() {
     map.set(key(cx, cx), start); list.push(start);
     let tries = 0;
     while (list.length < 10 && tries++ < 800) {
-      const r = list[(Math.random() * list.length) | 0], d = DIRS[(Math.random() * 4) | 0];
+      const r = list[(R() * list.length) | 0], d = DIRS[(R() * 4) | 0];
       const nx = r.gx + d.dx, nz = r.gz + d.dz;
       if (!inb(nx, nz) || map.has(key(nx, nz))) continue;
       let nb = 0; for (const e of DIRS) if (map.has(key(nx + e.dx, nz + e.dz))) nb++;
@@ -32,7 +32,8 @@ function layoutDungeon() {
     let boss = null, cells = null;
     for (const L of leaves) {
       const lk = Object.keys(L.doors)[0], d = DIRS.find(x => x.o === lk);
-      const sides = DIRS.filter(s => s.dx * d.dx + s.dz * d.dz === 0).sort(() => Math.random() - .5);
+      const sides = DIRS.filter(s => s.dx * d.dx + s.dz * d.dz === 0);
+      if (R() < .5) sides.reverse();
       for (const s of sides) {
         const cs = [[L.gx + d.dx, L.gz + d.dz], [L.gx + s.dx, L.gz + s.dz], [L.gx + d.dx + s.dx, L.gz + d.dz + s.dz]];
         if (cs.every(c => inb(c[0], c[1]) && !map.has(key(c[0], c[1])))) { boss = L; cells = cs; break; }
@@ -45,7 +46,7 @@ function layoutDungeon() {
     const xs = [boss.gx, ...cells.map(c => c[0])], zs = [boss.gz, ...cells.map(c => c[1])];
     boss.ox = Math.min(...xs) * CELL; boss.oz = Math.min(...zs) * CELL; boss.sz = CELL * 2;
     for (const c of cells) map.set(key(c[0], c[1]), boss);
-    const tr = rest[(Math.random() * rest.length) | 0]; tr.type = 'treasure'; tr.state = 'cleared';
+    const tr = rest[(R() * rest.length) | 0]; tr.type = 'treasure'; tr.state = 'cleared';
     return { list, map };
   }
   return null;
@@ -62,46 +63,48 @@ function buildRoom(r) {
   for (const k in r.doors) { const b = doorBox(r, k); fillBox(b[0], b[1], b[2], b[3], b[4], b[5], 0); }
   if (big) { buildBossFeatures(r); return; }
   const quads = [[-1, -1], [1, -1], [-1, 1], [1, 1]];
-  const chestQ = (r.type === 'treasure' || r.chest) ? (Math.random() * 4) | 0 : -1;
+  const chestQ = (r.type === 'treasure' || r.chest) ? (R() * 4) | 0 : -1;
   quads.forEach((q, qi) => {
     const X = ox + 16 + q[0] * 8, Z = oz + 16 + q[1] * 8;
     if (qi === chestQ) { r.chestPos = [X + .5, 5, Z + .5]; return; }
-    const roll = Math.random();
-    if (r.type === 'start') { if (roll < .5) fillBox(X - 1, 5, Z - 1, X, 9 + ((Math.random() * 3) | 0), Z, 3); return; }
-    if (roll < .28) { const h = 5 + ((Math.random() * 6) | 0); fillBox(X - 1, 5, Z - 1, X, h + 4, Z, 3); setRaw(X - 1, h + 4, Z - 1, 6); setRaw(X, h + 4, Z, 6); }
+    const roll = R();
+    if (r.type === 'start') { if (roll < .5) fillBox(X - 1, 5, Z - 1, X, 9 + ((R() * 3) | 0), Z, 3); return; }
+    if (roll < .28) { const h = 5 + ((R() * 6) | 0); fillBox(X - 1, 5, Z - 1, X, h + 4, Z, 3); setRaw(X - 1, h + 4, Z - 1, 6); setRaw(X, h + 4, Z, 6); }
     else if (roll < .5) { fillBox(X - 2, 5, Z - 2, X + 2, 5, Z + 2, 1); fillBox(X - 1, 6, Z - 1, X + 1, 6, Z + 1, 2); }
     else if (roll < .65) { fillBox(X - 2, 4, Z - 2, X + 2, 4, Z + 2, 4); }
-    else if (roll < .85) { if (Math.random() < .5) fillBox(X - 3, 5, Z, X + 3, 6, Z, 1); else fillBox(X, 5, Z - 3, X, 6, Z + 3, 1); }
+    else if (roll < .85) { if (R() < .5) fillBox(X - 3, 5, Z, X + 3, 6, Z, 1); else fillBox(X, 5, Z - 3, X, 6, Z + 3, 1); }
   });
 }
 function buildBossFeatures(r) {
   const ox = r.ox, oz = r.oz, C = r.sz / 2, dk = Object.keys(r.doors)[0], dc = doorCenter(r, dk);
-  r.turrets = []; const spots = [], n = 2 + ((Math.random() < .5) ? 1 : 0); let a0 = rnd(TAU);
+  r.turrets = []; const spots = [], n = 2 + ((R() < .5) ? 1 : 0); let a0 = rw(TAU);
   for (let i = 0, guard = 0; i < n && guard < 80; guard++) {
     const a = a0 + i * TAU / n; const tx = Math.floor(clamp(ox + C + Math.cos(a) * 21, ox + 6, ox + r.sz - 7)), tz = Math.floor(clamp(oz + C + Math.sin(a) * 21, oz + 6, oz + r.sz - 7));
-    if (Math.hypot(tx - dc[0], tz - dc[1]) < 10) { a0 += .5; continue; }
+    if (hyp(tx - dc[0], tz - dc[1]) < 10) { a0 += .5; continue; }
     fillBox(tx - 1, 5, tz - 1, tx + 1, 5, tz + 1, 1); setRaw(tx, 5, tz, 6);
     r.turrets.push({ x: tx + .5, y: 6, z: tz + .5 }); spots.push([tx, tz]); i++;
   }
-  const free = (x, z, m) => Math.hypot(x - (ox + C), z - (oz + C)) > 10 && Math.hypot(x - dc[0], z - dc[1]) > 10 && spots.every(s => Math.hypot(x - s[0], z - s[1]) > m);
+  const free = (x, z, m) => hyp(x - (ox + C), z - (oz + C)) > 10 && hyp(x - dc[0], z - dc[1]) > 10 && spots.every(s => hyp(x - s[0], z - s[1]) > m);
   let pil = 0, pools = 0, plat = 0;
   for (let t = 0; t < 300 && (pil < 9 || pools < 3 || plat < 3); t++) {
-    const x = Math.floor(ox + rnd(6, r.sz - 7)), z = Math.floor(oz + rnd(6, r.sz - 7));
+    const x = Math.floor(ox + rw(6, r.sz - 7)), z = Math.floor(oz + rw(6, r.sz - 7));
     if (!free(x, z, 7)) continue;
-    const roll = Math.random();
-    if (roll < .5 && pil < 9) { const h = 5 + ((Math.random() * 6) | 0); fillBox(x, 5, z, x + 1, h + 4, z + 1, 3); setRaw(x, h + 4, z, 6); setRaw(x + 1, h + 4, z + 1, 6); pil++; }
+    const roll = R();
+    if (roll < .5 && pil < 9) { const h = 5 + ((R() * 6) | 0); fillBox(x, 5, z, x + 1, h + 4, z + 1, 3); setRaw(x, h + 4, z, 6); setRaw(x + 1, h + 4, z + 1, 6); pil++; }
     else if (roll < .75 && pools < 3) { fillBox(x - 2, 4, z - 2, x + 2, 4, z + 2, 4); pools++; }
     else if (plat < 3) { fillBox(x - 2, 5, z - 2, x + 2, 5, z + 2, 1); fillBox(x - 1, 6, z - 1, x + 1, 6, z + 1, 2); plat++; }
   }
 }
 function genDungeon(L) {
-  clearWorld(GN * CELL);
-  for (const r of L.list) r.chest = r.type === 'treasure' || (r.type === 'normal' && Math.random() < .4);
+  clearWorld(GN * CELL); seed = Run.seed | 0;
+  for (const r of L.list) r.chest = r.type === 'treasure' || (r.type === 'normal' && R() < .4);
   for (const r of L.list) buildRoom(r);
   for (const r of L.list) if (r.type === 'boss') { const b = doorBox(r, Object.keys(r.doors)[0]); fillBox(b[0], b[1], b[2], b[3], b[4], b[5], 11); }
 }
 function roomAt(x, z) { return Run.map.get(Math.floor(x / CELL) + ',' + Math.floor(z / CELL)); }
-function enterDungeon() {
+function enterDungeon(forceSeed) {
+  // One number describes the whole run: layout, room features, chests and the boss. Multiplayer peers share it.
+  Run.seed = (forceSeed === undefined ? newSeed() : forceSeed) >>> 0; setWorldSeed(Run.seed);
   let L = layoutDungeon(); if (!L) return;
   Save.runs++; saveGame();
   genDungeon(L); buildAll(); mode = 'dungeon';
@@ -109,7 +112,7 @@ function enterDungeon() {
   Run.chests = []; Run.turrets = []; Run.smoke = []; resetBossSystems();
   { const br = L.list.find(r => r.type === 'boss'); Run.cx = br.ox + br.sz / 2; Run.cz = br.oz + br.sz / 2; sky = genSky(Run.cx, Run.cz); }
   for (const r of L.list) {
-    if (r.chestPos) Run.chests.push({ x: r.chestPos[0], y: r.chestPos[1], z: r.chestPos[2], open: false, depth: r.depth, treasure: r.type === 'treasure', t: rnd(10) });
+    if (r.chestPos) Run.chests.push({ id: nextId(), x: r.chestPos[0], y: r.chestPos[1], z: r.chestPos[2], open: false, depth: r.depth, treasure: r.type === 'treasure', t: rnd(10) });
     if (r.turrets) for (const t of r.turrets) Run.turrets.push({ x: t.x, y: t.y, z: t.z, on: false, cd: 0, yaw: rnd(TAU), pitch: 0, t: rnd(10), price: 30 });
   }
   const seen = new Set();
@@ -162,7 +165,7 @@ function clearRoom(r) {
   r.state = 'cleared'; setSeal(r, false); P.hp = Math.min(100, P.hp + 5);
   if (r.type === 'boss') {
     Run.glyph = { x: r.ox + r.sz / 2 + .5, y: 5, z: r.oz + r.sz / 2 + .5, t: 0 };
-    const g = 40 + r.depth * 4; Save.gems += g; Run.gems += g; Save.wins++; saveGame();
+    const g = 40 + r.depth * 4; Save.gems += g; Run.gems += g; Save.wins++; Save.stats.bosses++; saveGame();
     banner('BOSS SLAIN', '+' + g + ' DEMON GEMS · STEP INTO THE GLYPH'); feed('+' + g + ' DEMON GEMS', '#ff2bd6'); SFX.rank();
     gemBurst(Run.glyph.x, 6, Run.glyph.z, 50);
   } else { banner('ROOM CLEARED', '+5 HP'); }

@@ -90,7 +90,7 @@ function drawSlashes() {
   }
 }
 function die() {
-  P.alive = false; state = 'dead';
+  P.alive = false; state = 'dead'; Save.stats.deaths++; saveGame();
   bloodBurst(P.x, P.y + 1, P.z, 40, null, 1.5);
   try { document.exitPointerLock(); } catch (e) { }
   el.dstats.innerHTML = 'ROOMS CLEARED <b>' + Run.rooms.filter(r => r.state === 'cleared' && r.type === 'normal').length + '</b> &nbsp;•&nbsp; KILLS <b>' + S.kills + '</b> &nbsp;•&nbsp; SCORE <b>' + S.score + '</b> &nbsp;•&nbsp; BEST STYLE <b style="color:' + RANKS[S.bestRank].c + '">' + RANKS[S.bestRank].n + '</b>';

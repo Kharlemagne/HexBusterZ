@@ -60,7 +60,9 @@ function markDirty(x, z) {
 }
 function setBlock(x, y, z, id) {
   if (x < 0 || z < 0 || x >= N || z >= N || y < 1 || y >= H) return false;
-  world[idx(x, y, z)] = id; blood[idx(x, y, z)] = 0; markDirty(x, z); return true;
+  const i = idx(x, y, z), old = world[i]; world[i] = id; blood[i] = 0; markDirty(x, z);
+  if (old !== id) for (const fn of blockListeners) fn(x, y, z, id, old);
+  return true;
 }
 function bloodAt(x, y, z) {
   if (x < 0 || z < 0 || x >= N || z >= N || y < 0 || y >= H) return;

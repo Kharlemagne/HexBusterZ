@@ -1,15 +1,7 @@
 
 // ============================================================
-//  Hub village, Hellgate dungeon, shop, chests, minimap
+//  World state: mode, dungeon grid constants, run state, and world-building helpers
 // ============================================================
-const Save = { gems: 0, unlocked: [true, false, false, false, true], runs: 0, wins: 0 };
-try {
-  const j = JSON.parse(localStorage.getItem('cubicide_save_v1') || 'null');
-  if (j) { Save.gems = j.gems | 0; if (Array.isArray(j.unlocked)) Save.unlocked = j.unlocked.slice(0, 5); Save.runs = j.runs | 0; Save.wins = j.wins | 0; }
-  Save.unlocked[0] = true; Save.unlocked[4] = true;
-} catch (e) { }
-function saveGame() { try { localStorage.setItem('cubicide_save_v1', JSON.stringify(Save)); } catch (e) { } }
-
 let mode = 'hub';
 const GN = 7, CELL = 32;
 const DIRS = [{ k: 'E', dx: 1, dz: 0, o: 'W' }, { k: 'W', dx: -1, dz: 0, o: 'E' }, { k: 'S', dx: 0, dz: 1, o: 'N' }, { k: 'N', dx: 0, dz: -1, o: 'S' }];
