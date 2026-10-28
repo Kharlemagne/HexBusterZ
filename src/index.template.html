@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HEXBUSTER Z</title>
+<style>
+/*CSS*/
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute"><filter id="warp" x="-5%" y="-20%" width="110%" height="140%"><feTurbulence type="fractalNoise" baseFrequency="0.012 0.05" numOctaves="2" seed="7" result="n"><animate attributeName="baseFrequency" dur="11s" values="0.012 0.05;0.022 0.08;0.012 0.05" repeatCount="indefinite"/></feTurbulence><feDisplacementMap in="SourceGraphic" in2="n" scale="10" xChannelSelector="R" yChannelSelector="G"/></filter></svg>
+<canvas id="c"></canvas>
+<div id="menu">
+  <div class="hx-wrap">
+    <div class="hx-hex a"></div><div class="hx-hex b"></div>
+    <canvas id="titlecv" width="80" height="50"></canvas>
+    <h1 class="hx-sr">HEXBUSTER Z</h1>
+    <div class="hx-sub">// SIGNAL BREACH · DEEP-GATE PROTOCOL //</div>
+  </div>
+  <div id="msub">LOADING…</div>
+  <div id="pad">🎮 …</div>
+  <button id="padbtn">SET UP CONTROLLER</button>
+  <div style="height:14px"></div>
+  <div class="ctl">
+    <div><b>WASD</b> move</div><div><b>MOUSE</b> aim</div>
+    <div><b>SPACE</b> jump</div><div><b>LMB / RMB</b> fire / alt-fire</div>
+    <div><b>SHIFT</b> slide on the ground (hold, no limit) · dash in the air</div><div><b>1-5 / WHEEL</b> weapons</div>
+    <div><b>C / CTRL</b> HOMING ATTACK (in air, aim at an enemy) · X-GRAPPLE (look at a wall / ceiling)</div><div><b>HOMING ATTACK</b> recharges all dashes + gives a double jump · <b>SLIDE / DASH</b> = shield that reflects hits</div><div><b>HOLD SPACE</b> on a wall = climb</div><div><b>Q</b> last weapon · <b>M</b> mute</div>
+    <div><b>5 · DIG KIT</b> (hub only) LMB break, RMB place</div><div><b>E</b> talk to the smith</div><div><b>Mouse not locking?</b> click the game again</div>
+  </div>
+  <div class="ctl" style="margin-top:10px"><div><b>🎮 L-STICK</b> move · <b>R-STICK</b> aim</div><div><b>RT / LT</b> fire / alt-fire</div><div><b>A</b> jump · <b>B</b> homing attack / X-grapple</div><div><b>X / L3</b> slide (ground) / dash (air) · <b>Y</b> talk / last weapon</div><div><b>LB / RB / D-PAD ↕</b> weapons</div><div><b>D-PAD ↔</b> block type · <b>START</b> play</div></div>
+  <div class="tip">START IN THE VILLAGE. ENTER THE HELLGATE, CLEAR 10 SEALED ROOMS, KILL THE BOSS, LOOT DEMON GEMS AND FORGE NEW GUNS AT THE SMITH. KILLS HEAL YOU. CHAIN KILLS WITH VARIETY, HEADSHOTS, AIR KILLS AND POINT-BLANK TO CLIMB THE STYLE RANKS — AND BLOW THE WORLD APART WHILE YOU'RE AT IT.</div>
+</div>
+<div id="dead"><h2>YOU DIED</h2><div id="dstats"></div><p>CLICK OR PRESS R TO RESPAWN</p></div>
+<div id="hud">
+  <div id="wave"></div>
+  <div id="gems"></div><canvas id="mini" width="144" height="144"></canvas><div id="prompt"></div>
+  <div id="bossw"><div id="bossname"></div><div id="bossbars"></div></div>
+  <div id="style"><div id="rank">—</div><div id="rankname"></div><div id="sbar"><div id="sfill"></div></div><div id="score">0</div><div id="feed"></div></div>
+  <div id="hp"><div class="bar"><div id="hpf"></div><span id="hptxt">100</span></div><div id="dash"></div><div id="btbar"><i></i></div></div>
+  <div id="hotbar"></div>
+  <div id="wname"></div><div id="bsel"></div>
+  <div id="cross"></div>
+  <div id="vig"></div><div id="shield"></div><div id="btv"></div><div id="btring"></div>
+  <div id="banner"></div>
+</div>
+<div id="shop"></div><div id="padsetup"></div><div id="err"></div><div id="toast"></div>
+<script>
+/*GAME*/
+</script>
+</body>
+</html>

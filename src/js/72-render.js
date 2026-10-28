@@ -1,0 +1,57 @@
+// ---------------- render ----------------
+function resize() {
+  const r = Math.min(window.devicePixelRatio || 1, 1.5);
+  canvas.width = Math.max(2, Math.floor((innerWidth || 640) * r)); canvas.height = Math.max(2, Math.floor((innerHeight || 360) * r)); if (gl) gl.viewport(0, 0, canvas.width, canvas.height);
+}
+addEventListener('resize', resize);
+function pushOutline(x, y, z) {
+  const t = .035, c = [1, 1, .85];
+  for (let a = 0; a < 2; a++) for (let b = 0; b < 2; b++) {
+    const ox = a - .5, oy = b - .5;
+    pushBox(x + .5 + ox * 1.01, y + .5 + oy * 1.01, z + .5, t, t, 1.04, c[0], c[1], c[2], null, false);
+    pushBox(x + .5 + ox * 1.01, y + .5, z + .5 + oy * 1.01, t, 1.04, t, c[0], c[1], c[2], null, false);
+    pushBox(x + .5, y + .5 + ox * 1.01, z + .5 + oy * 1.01, 1.04, t, t, c[0], c[1], c[2], null, false);
+  }
+}
+function renderFrame(dt) {
+  if (glLost) return;
+  const asp = canvas.width / canvas.height;
+  let ex, ey, ez, f, roll = 0;
+  if (state === 'menu') {
+    const a = T * .12, rr = 52; ex = N / 2 + Math.cos(a) * rr; ez = N / 2 + Math.sin(a) * rr; ey = 30 + Math.sin(T * .3) * 3;
+    const dx = N / 2 - ex, dy = 10 - ey, dz = N / 2 - ez, l = Math.hypot(dx, dy, dz); f = [dx / l, dy / l, dz / l]; P.fov = 1.2;
+  } else {
+    const spd = Math.hypot(P.vx, P.vz), tf = (P.zoom ? 38 : 93 + Math.min(14, spd * .45) + (P.dashT > 0 ? 12 : 0) + (P.slamming ? 10 : 0) + P.btFade * 6 + P.fovPunch * 30) * Math.PI / 180;
+    P.fov = lerp(P.fov, tf, Math.min(1, 14 * dt));
+    const sh = P.shake * .09;
+    ex = P.x + rnd(-sh, sh); ey = P.y + P.eye - P.landDip + rnd(-sh, sh); ez = P.z + rnd(-sh, sh);
+    f = fwdV(); roll = P.sliding ? .06 : (keys.KeyD ? .012 : keys.KeyA ? -.012 : 0) + rnd(-sh, sh) * .05;
+  }
+  P.btFade = lerp(P.btFade, P.bt > 0 ? 1 : 0, Math.min(1, 5 * dt)); P.fovPunch = Math.max(0, P.fovPunch - dt * 1.6);
+  { const k = P.btFade, fc = [lerp(FOG[0], .03, k), lerp(FOG[1], .12, k), lerp(FOG[2], .34, k)]; gl.clearColor(fc[0], fc[1], fc[2], 1); gl.uniform3fv(loc.fogc, fc); }
+  gl.viewport(0, 0, canvas.width, canvas.height);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  const inBoss = mode === 'dungeon' && Run.cur && Run.cur.type === 'boss';
+  if (inBoss) { gl.uniform2f(loc.fogr, 45, 170); cullR = 135; } else if (mode === 'dungeon') { gl.uniform2f(loc.fogr, 14, 70); cullR = 78; } else { gl.uniform2f(loc.fogr, 26, 100); cullR = 140; }
+  camX = ex; camZ = ez;
+  const fovy = Math.min(2.0, 2 * Math.atan(Math.tan(P.fov / 2) / asp));
+  const vp = mul4(perspective(fovy, asp, .05, 300), lookView(ex, ey, ez, f[0], f[1], f[2], roll));
+  gl.uniformMatrix4fv(loc.vp, false, vp); gl.uniform3f(loc.cam, ex, ey, ez);
+  drawWorld();
+  dn = 0;
+  if (mode === 'hub') { pushBox(N / 2, 52, -70, 60, 60, 2, 1, .2, .06, null, false, 0); pushBox(N / 2, 52, -69, 44, 44, 2, 1, .45, .1, null, false, 0); pushBox(N / 2, 52, -68, 26, 26, 2, 1, .8, .3, null, false, 0);
+    pushBox(N + 80, 36, N / 2, 2, 30, 30, .8, .1, .2, null, false, 0); drawEmbers(dt, T); drawHubEntities(T); }
+  else { drawSmoke(T); drawTurrets(T); drawChests(T); drawGlyph(T); if (inBoss) { drawSky(T); drawAsh(state === 'play' ? dt : 0, T); } }
+  drawHaz(T);
+  drawLockOn(); drawSlashes(); drawLatchFx();
+  drawEnemies(); drawParticles(); drawEProjs(); drawBeams(state === 'play' ? dt : 0); drawBombs();
+  if (state === 'play' && P.weapon === 4) { const h = targetBlock(); if (h) pushOutline(h.x, h.y, h.z); }
+  flushDyn();
+  if (state === 'play' || state === 'paused') {
+    gl.clear(gl.DEPTH_BUFFER_BIT);
+    gl.uniformMatrix4fv(loc.vp, false, perspective(1.05, asp, .01, 10)); gl.uniform3f(loc.cam, 0, 0, 0);
+    drawViewmodel(); flushDyn();
+  }
+}
+
+

@@ -1,0 +1,17 @@
+{
+  "name": "hexbusterz",
+  "version": "0.1.0",
+  "description": "HEXBUSTER Z — a voxel action-FPS roguelite with a buildable hub, procedural bosses and 8-bit death metal.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "node build.mjs --watch & node tools/serve.mjs",
+    "serve": "node tools/serve.mjs",
+    "test": "node build.mjs && node tests/run-all.mjs",
+    "test:quick": "node build.mjs && node tests/run-all.mjs --quick"
+  },
+  "devDependencies": {
+    "playwright": "^1.48.0"
+  }
+}
