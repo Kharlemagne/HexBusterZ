@@ -1,0 +1,25 @@
+{
+ "note": "Boss attack tuning. ORDER MATTERS: run seeds pick attacks by index. Add new attacks at the END. Behaviour lives in src/js/43-boss-attacks.js under the same id.",
+ "list": [
+  {"id": "fireball_ring", "name": "FIREBALL RING", "cd": [5, 7.5], "lock": 0.8},
+  {"id": "triple_volley", "name": "TRIPLE VOLLEY", "cd": [3.5, 5.5], "lock": 0.6},
+  {"id": "spiral_barrage", "name": "SPIRAL BARRAGE", "cd": [7, 9.5], "lock": 1.6},
+  {"id": "homing_orbs", "name": "HOMING ORBS", "cd": [7, 10], "lock": 0.8},
+  {"id": "hell_shotgun", "name": "HELL SHOTGUN", "cd": [3.5, 5], "lock": 0.6},
+  {"id": "lob_bombs", "name": "LOB BOMBS", "cd": [7, 9], "lock": 0.9},
+  {"id": "shockwave", "name": "SHOCKWAVE", "cd": [5.5, 7.5], "lock": 0.8},
+  {"id": "eruptions", "name": "ERUPTIONS", "cd": [6, 8.5], "lock": 1},
+  {"id": "laser_sweep", "name": "LASER SWEEP", "cd": [9, 12], "lock": 2.6},
+  {"id": "rail_shot", "name": "RAIL SHOT", "cd": [6, 8.5], "lock": 1.3},
+  {"id": "summon_imps", "name": "SUMMON IMPS", "cd": [11, 14], "lock": 1.2},
+  {"id": "rocket_salvo", "name": "ROCKET SALVO", "cd": [6.5, 9], "lock": 1.1},
+  {"id": "mine_field", "name": "MINE FIELD", "cd": [9, 12], "lock": 1},
+  {"id": "vortex", "name": "VORTEX", "cd": [9, 12], "lock": 2.5},
+  {"id": "charge", "name": "CHARGE", "cd": [8, 11], "lock": 2.2, "legs": true},
+  {"id": "leap_slam", "name": "LEAP SLAM", "cd": [8, 11], "lock": 3, "legs": true},
+  {"id": "bullet_wall", "name": "BULLET WALL", "cd": [7, 9.5], "lock": 1},
+  {"id": "meteor_rain", "name": "METEOR RAIN", "cd": [9, 12], "lock": 1.6},
+  {"id": "tracking_strikes", "name": "TRACKING STRIKES", "cd": [8, 11], "lock": 1.8},
+  {"id": "toxic_clouds", "name": "TOXIC CLOUDS", "cd": [10, 13], "lock": 1}
+ ]
+}

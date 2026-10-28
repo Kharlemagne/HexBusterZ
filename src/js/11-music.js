@@ -22,20 +22,15 @@ function startMusic() {
   setInterval(() => {
     if (!AC || muted || state !== 'play') { nextT = 0; return; }
     if (nextT < AC.currentTime) nextT = AC.currentTime + .05;
-    const bpm = [118, 176, 204][musicMode] || 176;
+    const bpm = [DATA.music.bpm.hub, DATA.music.bpm.dungeon, DATA.music.bpm.boss][musicMode] || DATA.music.bpm.dungeon;
     while (nextT < AC.currentTime + .25) { musicStep(nextT - AC.currentTime); nextT += 60 / bpm / 4 / musicSlow; }
   }, 50);
 }
-const E2 = 82.41, nf = (base, semi) => base * Math.pow(2, semi / 12);
+const E2 = DATA.music.baseHz, nf = (base, semi) => base * Math.pow(2, semi / 12);
 // four-bar riffs (semitones above E; -1 = rest) — chromatic, phrygian, lots of 16th-note palm-mute chugs
-const RIFF = [
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 1, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 5, 3, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 1, 0],
-  [0, 0, -1, 0, 5, 5, 0, 0, 6, 6, 0, 0, 7, 6, 5, 3]
-];
-const SCALE = [0, 1, 4, 5, 7, 8, 10, 12];     // E phrygian dominant
-const DEG = [0, 0, 1, 3], ARP = [0, 2, 4, 2];
+const RIFF = DATA.music.riff;                                  // data/music.json
+const SCALE = DATA.music.scale;                                // E phrygian dominant
+const DEG = DATA.music.leadDegrees, ARP = DATA.music.leadArp;
 function musicStep(d) {
   const s = step % 16, bar = ((step / 16) | 0) % 4; step++;
   const I = Math.min(8, musicIntensity + (musicMode === 2 ? 3 : 0)), hub = musicMode === 0;

@@ -1,0 +1,20 @@
+{
+ "note": "Gameplay numbers. Change freely - nothing here affects saves.",
+ "player": {
+  "maxHp": 100,
+  "dashCharges": 3,
+  "killHeal": 8,
+  "bossKillHeal": 40,
+  "pointBlankBonusHeal": 6,
+  "roomClearHeal": 5
+ },
+ "bulletTime": {"seconds": 10, "cooldown": 30, "worldScale": 0.1, "playerScale": 0.5},
+ "homing": {"damage": 10, "splashDamage": 5, "splashRadius": 4, "heal": 10, "range": 34, "coneDot": 0.8},
+ "grapple": {"range": 30, "hangSeconds": 3},
+ "boss": {
+  "hpFractions": {"legs": 0.28, "torso": 0.44, "head": 0.28},
+  "turretPrice": 30,
+  "turretDamage": 7
+ },
+ "shield": {"dashSeconds": 0.38}
+}

@@ -1,9 +1,5 @@
 // ---------------- shop ----------------
-const SHOP = [
-  { w: 1, name: 'SCATTERGUT', cost: 30, desc: '11-pellet shotgun. ALT: point-blank overpressure blast (also a launch pad).' },
-  { w: 2, name: 'SPITFIRE', cost: 50, desc: 'Rapid rivet gun. ALT: sticky spike that detonates after a second.' },
-  { w: 3, name: 'LONGSHOT', cost: 90, desc: 'Piercing railgun that tunnels through rock. ALT: zoom.' }
-];
+const SHOP = DATA.shop;                                       // data/shop.json
 let shopSel = 0, shopMsg = '';
 function openShop() {
   if (state !== 'play') return;

@@ -6,6 +6,7 @@ const $ = id => document.getElementById(id);
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const lerp = (a, b, t) => a + (b - a) * t;
 const rnd = (a = 1, b) => b === undefined ? Math.random() * a : a + Math.random() * (b - a);
+const TUNE = DATA.tuning;            // gameplay numbers live in data/tuning.json
 const TAU = Math.PI * 2;
 // Deterministic RNG for anything that shapes the WORLD (hub terrain, dungeon layout, boss designs, sky).
 // Same seed => identical result on every machine, which is what lets multiplayer clients build the same level from one number.

@@ -45,18 +45,6 @@ function updateEnemy(e, dt) {
     e.vy += clamp(gy - e.y, -3, 3) * 4 * dt; e.vy *= 1 - 1.5 * dt;
     if (e.burst > 0) { e.bcd -= dt; if (e.bcd <= 0) { fireEProj(e, 19, 8, .3, 0, .03); e.burst--; e.bcd = .13; } }
     else if (e.cd <= 0 && dist < 28 && hasLOS(e.x, e.y + .6, e.z, P.x, P.y + 1.2, P.z)) { e.burst = 3; e.bcd = 0; e.cd = rnd(2.2, 3.4); }
-  } else if (e.type === 'colossus') {
-    tx = nx; tz = nz;
-    if (dist < 5.5 && e.cd <= 0) { // stomp shockwave
-      e.cd = 1.6; if (P.onGround || P.y < e.y + 1.5) hurtPlayer(26, nx, nz, 12);
-      for (let i = 0; i < 28; i++) { const a = rnd(TAU); emit(e.x + Math.cos(a) * 2, e.y + .2, e.z + Math.sin(a) * 2, Math.cos(a) * 6, rnd(2, 6), Math.sin(a) * 6, rnd(.1, .25), MEAT[0], 1.2, 0); }
-      P.shake = Math.max(P.shake, .6); SFX.slam();
-    } else if (e.bcd <= 0 && dist > 5) {
-      e.bcd = 3.2;
-      for (let i = 0; i < 14; i++) fireEProj(e, 13, 11, .42, (i / 14) * TAU, 0, 0);
-      for (let i = -1; i <= 1; i++) fireEProj(e, 22, 12, .45, i * .12, .01);
-    }
-    e.bcd -= dt;
   }
   // locomotion
   if (d.fly) {

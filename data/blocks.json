@@ -1,0 +1,26 @@
+{
+ "note": "Block colours by id. emissive blocks ignore shading/AO. build = the dig-kit palette [id, name].",
+ "colors": {
+  "1": "#3a3545",
+  "2": "#8c2418",
+  "3": "#1a1028",
+  "4": "#ff7a10",
+  "5": "#d8cdb4",
+  "6": "#ff4a1c",
+  "7": "#b02838",
+  "8": "#7f8a9c",
+  "9": "#ff2a38",
+  "10": "#2a2236",
+  "11": "#d9a441"
+ },
+ "emissive": [4, 6, 9, 11],
+ "build": [
+  [2, "NETHERRACK"],
+  [1, "BASALT"],
+  [3, "OBSIDIAN"],
+  [5, "BONE"],
+  [7, "FLESH"],
+  [8, "STEEL"],
+  [6, "HELLSTONE"]
+ ]
+}

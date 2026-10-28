@@ -1,6 +1,6 @@
 // ---------------- chunk meshing (vertex colour + baked AO) ----------------
-const COL = { 11: hx(0xd9a441), 9: hx(0xff2a38), 10: hx(0x2a2236), 1: hx(0x3a3545), 2: hx(0x8c2418), 3: hx(0x1a1028), 4: hx(0xff7a10), 5: hx(0xd8cdb4), 6: hx(0xff4a1c), 7: hx(0xb02838), 8: hx(0x7f8a9c) };
-const EMIT = new Set([4, 6, 9, 11]);
+const COL = Object.fromEntries(Object.entries(DATA.blocks.colors).map(([k, v]) => [k, hx(parseInt(v.slice(1), 16))]));   // data/blocks.json
+const EMIT = new Set(DATA.blocks.emissive);
 const SHADE = [[.74, .74], [.46, 1], [.86, .86]];
 const AOV = [.42, .64, .84, 1];
 const chunkBuf = [], chunkCount = [], dirty = new Set();
