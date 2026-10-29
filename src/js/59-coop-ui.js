@@ -62,11 +62,12 @@ function coopLeave() { if (Net.role === 'host') { Net.broadcast('bye', 0); } Net
 
 // ---- the easy way: a 5-letter room code, brokered by the free public PeerJS cloud (only used to introduce the two browsers) ----
 // STUN finds your public address; TURN relays when two home networks can't reach each other directly (strict NAT, phone data, school/work Wi-Fi).
-const PEER_OPTS = { config: { iceServers: [
+const BASE_ICE = [
   { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302', 'stun:global.stun.twilio.com:3478'] },
-  { urls: ['turn:eu-0.turn.peerjs.com:3478', 'turn:us-0.turn.peerjs.com:3478'], username: 'peerjs', credential: 'peerjsp' },
-  { urls: ['turn:openrelay.metered.ca:80', 'turn:openrelay.metered.ca:443', 'turn:openrelay.metered.ca:443?transport=tcp'], username: 'openrelayproject', credential: 'openrelayproject' }
-] } };
+  { urls: ['turn:eu-0.turn.peerjs.com:3478', 'turn:us-0.turn.peerjs.com:3478'], username: 'peerjs', credential: 'peerjsp' }
+];
+// Optional personal relay (TURN) from a free account, entered in the CO-OP box and stored with your settings
+const PEER_OPTS = { get config() { const t = SaveStore.doc.settings.turn; return { iceServers: t && t.urls ? [{ urls: t.urls.split(/[\s,]+/).filter(Boolean), username: t.user, credential: t.pass }, ...BASE_ICE] : BASE_ICE }; } };
 const PEERJS_URLS = ['https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js', 'https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js'];
 const ROOM_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 Object.assign(Coop, {
@@ -138,6 +139,7 @@ function openCoopBox() {
     + (live ? '<div class="sh-m">' + (Net.role === 'host' ? 'HOSTING · ' + (players.length - 1) + ' friend(s) connected' : 'CONNECTED TO A HOST') + '</div><div><button onclick="coopLeave()">DISCONNECT</button><button onclick="closeSaveBox()">CLOSE</button></div>'
     : '<div class="sb-l">HOST — you get a room code to tell your friend</div><div><button onclick="coopHostRoom()">HOST A GAME</button></div><div id="cp-room" style="font-size:44px;letter-spacing:12px;color:#37f0ff;margin:6px"></div>'
     + '<div class="sb-l">JOIN — type the room code your friend gave you</div><input id="cp-code" maxlength="5" placeholder="ABCDE" style="font-size:28px;letter-spacing:8px;text-align:center;width:9em;background:#06020f;color:#cfe;border:2px solid #4a2a8a;padding:6px;text-transform:uppercase"><div><button onclick="coopJoinRoom()">JOIN</button></div>'
+    + '<div class="sb-l" style="margin-top:14px">ADVANCED — your own relay server (free account), only if direct + public relay both fail</div><input id="cp-turl" placeholder="turn:host:80 (one or more, comma separated)" style="width:min(520px,90vw)" value="' + escAttr((SaveStore.doc.settings.turn || {}).urls) + '"><br><input id="cp-tuser" placeholder="username" value="' + escAttr((SaveStore.doc.settings.turn || {}).user) + '"> <input id="cp-tpass" placeholder="password" value="' + escAttr((SaveStore.doc.settings.turn || {}).pass) + '"><div><button onclick="coopSaveTurn()">SAVE RELAY</button></div>'
     + '<div><button onclick="coopTest()" style="font-size:9px;opacity:.7">test my connection</button><button onclick="openCoopManual()" style="font-size:9px;opacity:.7">manual codes</button><button onclick="closeSaveBox()">CLOSE</button></div>')
     + '<div class="sh-m" id="cp-msg"></div><div class="sh-m" style="opacity:.6;font-size:10px">version ' + BUILD_ID + ' — you and your friend should see the same one (if not, hard-refresh)</div>';
   el.savebox.classList.add('on');
@@ -164,4 +166,10 @@ async function coopTest() {
   pc.close();
   const verdict = seen.relay ? 'RELAY OK — your network can use a relay.' : seen.srflx ? 'NO RELAY — direct links only; strict NATs on both sides will fail.' : 'NO PUBLIC ADDRESS FOUND — something is blocking WebRTC (VPN, firewall, browser setting).';
   cpMsg('TEST: ' + verdict + '  [local ' + seen.host + ' · public ' + seen.srflx + ' · relay ' + seen.relay + ']' + (errs.length ? '  errors: ' + [...new Set(errs)].slice(0, 4).join(' | ') : ''));
+}
+
+function escAttr(v) { return String(v || '').replace(/[&"<>]/g, c => ({ '&': '&amp;', '"': '&quot;', '<': '&lt;', '>': '&gt;' }[c])); }
+function coopSaveTurn() {
+  const urls = $('cp-turl').value.trim(), user = $('cp-tuser').value.trim(), pass = $('cp-tpass').value.trim();
+  setSetting('turn', urls ? { urls, user, pass } : null); cpMsg(urls ? 'Relay saved. Both players should try again (click "test my connection" to see if a relay address appears).' : 'Relay cleared.');
 }
