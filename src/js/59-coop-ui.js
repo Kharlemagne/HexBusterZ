@@ -20,7 +20,7 @@ const Coop = {
     });
   },
   async makeInvite() {                                    // host step 1
-    this.close(); const pc = this.pc = new RTCPeerConnection(RTC_CFG), ch = this.ch = pc.createDataChannel('hbz', { ordered: true });
+    this.close(); const pc = this.pc = new RTCPeerConnection(PEER_OPTS.config), ch = this.ch = pc.createDataChannel('hbz', { ordered: true });
     const opened = new Promise(r => { ch.onopen = r; });
     await pc.setLocalDescription(await pc.createOffer()); await this._gathered(pc);
     this.pendingHost = opened.then(() => { Net.accept(this._transport(ch)); return true; });
@@ -28,7 +28,7 @@ const Coop = {
   },
   async acceptReply(code) { await this.pc.setRemoteDescription(this._dec(code)); return this.pendingHost; },   // host step 2
   async joinInvite(code) {                                // guest: returns the reply code
-    this.close(); const pc = this.pc = new RTCPeerConnection(RTC_CFG);
+    this.close(); const pc = this.pc = new RTCPeerConnection(PEER_OPTS.config);
     pc.ondatachannel = ev => { const ch = this.ch = ev.channel; const go = () => Net.join(this._transport(ch)); if (ch.readyState === 'open') go(); else ch.onopen = go; };
     await pc.setRemoteDescription(this._dec(code)); await pc.setLocalDescription(await pc.createAnswer()); await this._gathered(pc);
     return this._enc(pc.localDescription.toJSON());
@@ -61,6 +61,12 @@ function coopCopy(id) { const o = $(id || 'cp-out'); o.select(); try { navigator
 function coopLeave() { if (Net.role === 'host') { Net.broadcast('bye', 0); } Net.leave(); Coop.close(); Coop.closeRoom(); closeSaveBox(); }
 
 // ---- the easy way: a 5-letter room code, brokered by the free public PeerJS cloud (only used to introduce the two browsers) ----
+// STUN finds your public address; TURN relays when two home networks can't reach each other directly (strict NAT, phone data, school/work Wi-Fi).
+const PEER_OPTS = { config: { iceServers: [
+  { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302', 'stun:global.stun.twilio.com:3478'] },
+  { urls: ['turn:eu-0.turn.peerjs.com:3478', 'turn:us-0.turn.peerjs.com:3478'], username: 'peerjs', credential: 'peerjsp' },
+  { urls: ['turn:openrelay.metered.ca:80', 'turn:openrelay.metered.ca:443', 'turn:openrelay.metered.ca:443?transport=tcp'], username: 'openrelayproject', credential: 'openrelayproject' }
+] } };
 const PEERJS_URLS = ['https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js', 'https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js'];
 const ROOM_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 Object.assign(Coop, {
@@ -78,7 +84,7 @@ Object.assign(Coop, {
       const code = Array.from({ length: 5 }, () => ROOM_CHARS[(Math.random() * ROOM_CHARS.length) | 0]).join('');
       try {
         await new Promise((ok, no) => {
-          const peer = new Peer('hbzcoop-' + code); this.peer = peer;
+          const peer = new Peer('hbzcoop-' + code, PEER_OPTS); this.peer = peer;
           peer.on('open', () => ok()); peer.on('error', e => no(e));
           peer.on('connection', conn => { const go = () => Net.accept(this._peerTransport(conn)); if (conn.open) go(); else conn.on('open', go); });
           setTimeout(() => no({ type: 'timeout' }), 10000);
@@ -91,13 +97,16 @@ Object.assign(Coop, {
   async joinRoom(code) {
     code = (code || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); if (code.length !== 5) throw new Error('Room codes are 5 letters/numbers.');
     await this.loadPeerJS(); this.closeRoom();
-    const peer = this.peer = new Peer();
+    const peer = this.peer = new Peer(undefined, PEER_OPTS);
     await new Promise((ok, no) => { peer.on('open', ok); peer.on('error', no); setTimeout(() => no({ type: 'timeout' }), 10000); }).catch(e => { throw new Error('Matchmaking failed (' + ((e && e.type) || e) + ').'); });
     await new Promise((ok, no) => {
-      const conn = peer.connect('hbzcoop-' + code, { reliable: true }), tr = this._peerTransport(conn);
-      peer.on('error', e => no(e.type === 'peer-unavailable' ? new Error('No game with that code. Check it, and make sure the host is still on the CO-OP screen.') : e));
-      const go = () => { Net.join(tr); ok(); };
-      conn.on('open', go); setTimeout(() => no(new Error('Could not connect. Some networks block direct connections; try the other player hosting, or a different network.')), 15000);
+      const conn = peer.connect('hbzcoop-' + code, { reliable: true }), tr = this._peerTransport(conn); let ice = 'waiting for the host', done = false;
+      const fail = e => { if (!done) { done = true; no(e); } };
+      peer.on('error', e => fail(e.type === 'peer-unavailable' ? new Error('No game with that code. Check it, and make sure the host is still on the CO-OP screen.') : e));
+      const watch = setInterval(() => { const pc = conn.peerConnection; if (pc) { ice = pc.iceConnectionState + '/' + pc.connectionState; if (pc.iceConnectionState === 'failed') fail(new Error('The two networks could not reach each other (' + ice + '). One of you is behind a strict firewall / phone data; try other Wi-Fi.')); } }, 500);
+      conn.on('open', () => { if (done) return; done = true; clearInterval(watch); Net.join(tr); ok(); });
+      conn.on('error', e => fail(e));
+      setTimeout(() => { clearInterval(watch); fail(new Error('Could not connect in time (' + ice + '). The room code was found but the direct link never opened. Try other Wi-Fi, or manual codes.')); }, 30000);
     });
   },
   _peerTransport(conn) {                                  // messages that arrive before the game attaches its handler are queued, never lost
