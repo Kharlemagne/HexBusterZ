@@ -6,13 +6,13 @@
 - Each guest owns their own movement and health. When the host decides a guest was hit it sends `hurt`; the guest applies it to itself (so shields / dashes / invincibility frames still work locally).
 - Guest hits go to the host as `dmg` messages, so enemy and boss health only ever lives on the host.
 - Block edits go through `setBlock` -> `blockListeners` and are relayed both ways; the host's village save records everyone's builds.
-- Connecting: **CO-OP** button on the title screen. Easy way: host gets a 5-character room code, guest types it (the free public PeerJS cloud only introduces the two browsers; game traffic is direct WebRTC). Fallback: manual copy/paste offer/answer codes (no third party).
+- Connecting: **CO-OP** button on the title screen. Easy way: host gets a 5-character room code, guest types it (the free public PeerJS cloud only introduces the two browsers; game traffic is direct WebRTC). Automatic fallback: if the direct link can't open (strict NATs), the guest connects through a free public MQTT broker (`src/js/59-relay.js`, own tiny MQTT client, ~10 updates/s). Last resort: manual copy/paste offer/answer codes (no third party).
 
 ## Code map
 - `src/js/58-net.js` — `Net` (roles, messages, snapshots, proxies, remote player drawing). Transport = `{ send(str), onmessage, onclose, close() }`.
 - `src/js/59-coop-ui.js` — WebRTC (`Coop`) + the lobby panel.
 - `players[]` / `TGT` / `nearestPlayer()` in `60-game-state.js`: `P` is always the local player; others are `remote` bodies. Enemies and bosses chase the nearest living player; `hurtPlayer(..., who)` routes damage to remote players through `Net`.
-- Tests: `tests/coop-dungeon.mjs` (rooms/doors/chests/fx with two players), `tests/boss-attacks.mjs` (all 20 attacks with 2 players), `tests/coop.mjs` (two browsers over a relay), `tests/coop-webrtc.mjs` (real WebRTC handshake).
+- Tests: `tests/coop-relay.mjs` (MQTT packets + fallback), `tests/coop-dungeon.mjs` (rooms/doors/chests/fx with two players), `tests/boss-attacks.mjs` (all 20 attacks with 2 players), `tests/coop.mjs` (two browsers over a relay), `tests/coop-webrtc.mjs` (real WebRTC handshake).
 
 ## Dungeon rules in co-op
 - The host runs the rooms for everyone: any living player can wake a room, open a chest (the opener gets the gems), use the key, or step into the glyph (everyone returns to the village).
@@ -26,7 +26,7 @@
 1. **Kill credit** (score, style points) goes to the host only; gems from kills are not a thing, so only the score differs.
 2. Other players' *projectile* weapons (rockets / grenades) are not drawn in flight, only their explosions (sparks/sounds); hitscan tracers, slashes and sounds are shared. No muzzle flashes on the placeholder robot yet.
 3. Bullet time is local to whoever triggered it. Needs a co-op rule.
-4. No reconnect, no host migration, no relay for networks that block direct connections (would need a TURN server).
+4. No reconnect, no host migration. The MQTT relay uses shared public brokers (no accounts, but slower, unencrypted and not guaranteed to be up); a TURN server or own relay would be the robust fix.
 5. Death / revive rules for co-op.
 6. Math.sin/cos may differ between browsers; world generation uses seeded RNG and tests assert identical worlds within one engine.
 

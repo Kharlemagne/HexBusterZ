@@ -1,5 +1,6 @@
 # Changelog
 ## Unreleased
+- Co-op relay fallback through public MQTT brokers when two networks can't connect directly; connection test button; version shown in the CO-OP box.
 - Co-op fixes: door seals sync (no walking through), rooms/chests/key/glyph respond to every player, shared "enemies left" counter, shots/slashes/sparks/sounds visible to all players.
 - Co-op multiplayer (host + guests): CO-OP button, WebRTC join codes, shared hub & dungeon, shared enemies/bosses, damage both ways. See docs/MULTIPLAYER.md for what is still host-only.
 - Enemies, bosses and hazards now target and hurt any player (`players[]`).

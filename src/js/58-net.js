@@ -47,7 +47,7 @@ const Net = {
   leave() {
     const was = this.role;
     for (const p of this.peers.values()) { try { p.tr.close && p.tr.close(); } catch (e) { } }
-    this.peers.clear(); for (let i = players.length - 1; i > 0; i--) players.splice(i, 1);
+    this.peers.clear(); this.hz = 0; for (let i = players.length - 1; i > 0; i--) players.splice(i, 1);
     this.role = 'offline'; this.hubOverride = null; this.status = ''; P.id = 0; this.myId = 0; this.nextPeer = 1;
     if (was === 'client') { this._rejoinOwnWorld(); }
   },
@@ -82,7 +82,8 @@ const Net = {
     if (this.role === 'offline') return;
     if (this.role === 'client') this._clientStep(dt);
     for (const q of players) if (q.remote && q.inv > 0) q.inv -= dt;
-    this.acc += dt; if (this.acc < 1 / NET_HZ) return; this.acc = 0;
+    this.acc += dt; if (this.acc < 1 / (this.hz || NET_HZ)) return; this.acc = 0;
+    if (this.role === 'host') { const now = performance.now(); for (const [id, p] of [...this.peers]) if (p.tr.relay && now - p.last > 15000) this._drop(id); }
     if (this.fxq.length) { this.send('fx', this.fxq); this.fxq = []; }
     if (this.role === 'host') this._sendSnap(); else this._sendInput();
   },

@@ -78,35 +78,48 @@ Object.assign(Coop, {
     }
     throw new Error('Could not reach the matchmaking service. Check your connection, or use "manual codes" below.');
   },
+  directTimeout: 9000,
   async hostRoom(onCode) {
-    await this.loadPeerJS(); this.closeRoom();
-    for (let tries = 0; tries < 6; tries++) {
-      const code = Array.from({ length: 5 }, () => ROOM_CHARS[(Math.random() * ROOM_CHARS.length) | 0]).join('');
-      try {
-        await new Promise((ok, no) => {
-          const peer = new Peer('hbzcoop-' + code, PEER_OPTS); this.peer = peer;
-          peer.on('open', () => ok()); peer.on('error', e => no(e));
-          peer.on('connection', conn => { const go = () => Net.accept(this._peerTransport(conn)); if (conn.open) go(); else conn.on('open', go); });
-          setTimeout(() => no({ type: 'timeout' }), 10000);
-        });
-        onCode(code); return code;
-      } catch (e) { try { this.peer && this.peer.destroy(); } catch (_) { } this.peer = null; if (e && e.type !== 'unavailable-id') throw new Error('Matchmaking failed (' + ((e && e.type) || e) + ').'); }
-    }
-    throw new Error('Could not get a room code, try again.');
+    this.closeRoom(); let code = null, direct = false;
+    try {                                                   // 1. direct (fast): register the room with the PeerJS matchmaker
+      await this.loadPeerJS();
+      for (let tries = 0; tries < 6 && !direct; tries++) {
+        const c = Array.from({ length: 5 }, () => ROOM_CHARS[(Math.random() * ROOM_CHARS.length) | 0]).join('');
+        try {
+          await new Promise((ok, no) => {
+            const peer = new Peer('hbzcoop-' + c, PEER_OPTS); this.peer = peer;
+            peer.on('open', () => ok()); peer.on('error', e => no(e));
+            peer.on('connection', conn => { const go = () => Net.accept(this._peerTransport(conn)); if (conn.open) go(); else conn.on('open', go); });
+            setTimeout(() => no({ type: 'timeout' }), 10000);
+          });
+          code = c; direct = true;
+        } catch (e) { try { this.peer && this.peer.destroy(); } catch (_) { } this.peer = null; if (e && e.type !== 'unavailable-id') break; }
+      }
+    } catch (e) { }
+    if (!code) code = Array.from({ length: 5 }, () => ROOM_CHARS[(Math.random() * ROOM_CHARS.length) | 0]).join('');
+    const relays = await Relay.listen(code).catch(() => 0);   // 2. relay (always on, used when a direct link can't open)
+    if (!direct && !relays) throw new Error('Could not reach any matchmaking or relay service. Check your connection, or use manual codes.');
+    this.hostInfo = { direct, relays }; onCode(code); return code;
   },
-  async joinRoom(code) {
+  async joinRoom(code, onStatus) {
     code = (code || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); if (code.length !== 5) throw new Error('Room codes are 5 letters/numbers.');
-    await this.loadPeerJS(); this.closeRoom();
+    this.closeRoom(); let why = '';
+    try { await this._joinDirect(code); return 'direct'; } catch (e) { why = e && e.message || String(e); }
+    if (onStatus) onStatus('Direct link failed — trying the relay…');
+    try { await Relay.join(code); return 'relay'; } catch (e) { throw new Error(why + '  ·  ' + (e && e.message || e)); }
+  },
+  async _joinDirect(code) {
+    await this.loadPeerJS();
     const peer = this.peer = new Peer(undefined, PEER_OPTS);
     await new Promise((ok, no) => { peer.on('open', ok); peer.on('error', no); setTimeout(() => no({ type: 'timeout' }), 10000); }).catch(e => { throw new Error('Matchmaking failed (' + ((e && e.type) || e) + ').'); });
     await new Promise((ok, no) => {
       const conn = peer.connect('hbzcoop-' + code, { reliable: true }), tr = this._peerTransport(conn); let ice = 'waiting for the host', done = false;
-      const fail = e => { if (!done) { done = true; no(e); } };
-      peer.on('error', e => fail(e.type === 'peer-unavailable' ? new Error('No game with that code. Check it, and make sure the host is still on the CO-OP screen.') : e));
-      const watch = setInterval(() => { const pc = conn.peerConnection; if (pc) { ice = pc.iceConnectionState + '/' + pc.connectionState; if (pc.iceConnectionState === 'failed') fail(new Error('The two networks could not reach each other (' + ice + '). One of you is behind a strict firewall / phone data; try other Wi-Fi.')); } }, 500);
+      const fail = e => { if (!done) { done = true; clearInterval(watch); no(e); } };
+      peer.on('error', e => fail(e.type === 'peer-unavailable' ? new Error('No direct room found') : e));
+      const watch = setInterval(() => { const pc = conn.peerConnection; if (pc) { ice = pc.iceConnectionState + '/' + pc.connectionState; if (pc.iceConnectionState === 'failed') fail(new Error('Direct link blocked (' + ice + ')')); } }, 500);
       conn.on('open', () => { if (done) return; done = true; clearInterval(watch); Net.join(tr); ok(); });
       conn.on('error', e => fail(e));
-      setTimeout(() => { clearInterval(watch); fail(new Error('Could not connect in time (' + ice + '). The room code was found but the direct link never opened. Try other Wi-Fi, or manual codes.')); }, 30000);
+      setTimeout(() => fail(new Error('Direct link timed out (' + ice + ')')), this.directTimeout);
     });
   },
   _peerTransport(conn) {                                  // messages that arrive before the game attaches its handler are queued, never lost
@@ -117,7 +130,7 @@ Object.assign(Coop, {
     conn.on('close', () => tr.onclose && tr.onclose());
     return tr;
   },
-  closeRoom() { try { this.peer && this.peer.destroy(); } catch (e) { } this.peer = null; }
+  closeRoom() { try { this.peer && this.peer.destroy(); } catch (e) { } this.peer = null; Relay.stop(); }
 });
 function openCoopBox() {
   const live = Net.role !== 'offline';
@@ -137,7 +150,7 @@ async function coopHostRoom() {
   } catch (e) { cpMsg(e.message); }
 }
 async function coopJoinRoom() {
-  try { cpMsg('Joining…'); await Coop.joinRoom($('cp-code').value); cpMsg('Connected!'); setTimeout(() => { closeSaveBox(); startGame(); }, 700); } catch (e) { cpMsg(e.message); }
+  try { cpMsg('Joining…'); const via = await Coop.joinRoom($('cp-code').value, cpMsg); cpMsg(via === 'relay' ? 'Connected through the relay (a bit slower).' : 'Connected!'); setTimeout(() => { closeSaveBox(); startGame(); }, 700); } catch (e) { cpMsg(e.message); }
 }
 
 // ---- connection test: tells us (and you) why a direct link can't open ----
