@@ -36,7 +36,7 @@ const Coop = {
   close() { try { this.ch && this.ch.close(); this.pc && this.pc.close(); } catch (e) { } this.pc = this.ch = null; }
 };
 function cpMsg(t) { const m = $('cp-msg'); if (m) m.textContent = t; }
-function openCoopBox() {
+function openCoopManual() {
   if (typeof RTCPeerConnection === 'undefined') { el.savebox.innerHTML = '<div class="sh-t">CO-OP</div><div class="sh-m">This browser / view does not support peer-to-peer connections (WebRTC).</div><div><button onclick="closeSaveBox()">CLOSE</button></div>'; el.savebox.classList.add('on'); return; }
   const live = Net.role !== 'offline';
   el.savebox.innerHTML = '<div class="sh-t">CO-OP</div><div class="sh-g">Up to you and a friend, no accounts, no servers. The host runs the game and keeps the village.</div>'
@@ -45,7 +45,7 @@ function openCoopBox() {
     + '<div><button onclick="coopCopy()">COPY INVITE</button></div>'
     + '<div class="sb-l">HOST — step 2: paste the reply code your friend sends back</div><textarea id="cp-reply" rows="3" placeholder="HBZJ1.…"></textarea><div><button onclick="coopAccept()">CONNECT</button></div>'
     + '<div class="sb-l">JOIN — paste the invite you were sent, then send the reply code back</div><textarea id="cp-in" rows="3" placeholder="HBZJ1.…"></textarea><div><button onclick="coopJoin()">JOIN A GAME</button></div>'
-    + '<textarea id="cp-ans" readonly rows="3" placeholder="your reply code appears here"></textarea><div><button onclick="coopCopy(\'cp-ans\')">COPY REPLY</button><button onclick="closeSaveBox()">CLOSE</button></div>')
+    + '<textarea id="cp-ans" readonly rows="3" placeholder="your reply code appears here"></textarea><div><button onclick="coopCopy(\'cp-ans\')">COPY REPLY</button><button onclick="openCoopBox()">BACK</button></div>')
     + '<div class="sh-m" id="cp-msg"></div>';
   el.savebox.classList.add('on');
 }
@@ -58,4 +58,75 @@ async function coopJoin() {
   } catch (e) { cpMsg('Failed: ' + e.message); }
 }
 function coopCopy(id) { const o = $(id || 'cp-out'); o.select(); try { navigator.clipboard.writeText(o.value); cpMsg('Copied.'); } catch (e) { try { document.execCommand('copy'); cpMsg('Copied.'); } catch (_) { cpMsg('Select the text and copy it by hand.'); } } }
-function coopLeave() { if (Net.role === 'host') { Net.broadcast('bye', 0); } Net.leave(); Coop.close(); closeSaveBox(); }
+function coopLeave() { if (Net.role === 'host') { Net.broadcast('bye', 0); } Net.leave(); Coop.close(); Coop.closeRoom(); closeSaveBox(); }
+
+// ---- the easy way: a 5-letter room code, brokered by the free public PeerJS cloud (only used to introduce the two browsers) ----
+const PEERJS_URLS = ['https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js', 'https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js'];
+const ROOM_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+Object.assign(Coop, {
+  peer: null,
+  async loadPeerJS() {
+    if (window.Peer) return;
+    for (const u of PEERJS_URLS) {
+      try { await new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = u; sc.onload = ok; sc.onerror = no; document.head.appendChild(sc); setTimeout(no, 8000); }); if (window.Peer) return; } catch (e) { }
+    }
+    throw new Error('Could not reach the matchmaking service. Check your connection, or use "manual codes" below.');
+  },
+  async hostRoom(onCode) {
+    await this.loadPeerJS(); this.closeRoom();
+    for (let tries = 0; tries < 6; tries++) {
+      const code = Array.from({ length: 5 }, () => ROOM_CHARS[(Math.random() * ROOM_CHARS.length) | 0]).join('');
+      try {
+        await new Promise((ok, no) => {
+          const peer = new Peer('hbzcoop-' + code); this.peer = peer;
+          peer.on('open', () => ok()); peer.on('error', e => no(e));
+          peer.on('connection', conn => { const go = () => Net.accept(this._peerTransport(conn)); if (conn.open) go(); else conn.on('open', go); });
+          setTimeout(() => no({ type: 'timeout' }), 10000);
+        });
+        onCode(code); return code;
+      } catch (e) { try { this.peer && this.peer.destroy(); } catch (_) { } this.peer = null; if (e && e.type !== 'unavailable-id') throw new Error('Matchmaking failed (' + ((e && e.type) || e) + ').'); }
+    }
+    throw new Error('Could not get a room code, try again.');
+  },
+  async joinRoom(code) {
+    code = (code || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); if (code.length !== 5) throw new Error('Room codes are 5 letters/numbers.');
+    await this.loadPeerJS(); this.closeRoom();
+    const peer = this.peer = new Peer();
+    await new Promise((ok, no) => { peer.on('open', ok); peer.on('error', no); setTimeout(() => no({ type: 'timeout' }), 10000); }).catch(e => { throw new Error('Matchmaking failed (' + ((e && e.type) || e) + ').'); });
+    await new Promise((ok, no) => {
+      const conn = peer.connect('hbzcoop-' + code, { reliable: true }), tr = this._peerTransport(conn);
+      peer.on('error', e => no(e.type === 'peer-unavailable' ? new Error('No game with that code. Check it, and make sure the host is still on the CO-OP screen.') : e));
+      const go = () => { Net.join(tr); ok(); };
+      conn.on('open', go); setTimeout(() => no(new Error('Could not connect. Some networks block direct connections; try the other player hosting, or a different network.')), 15000);
+    });
+  },
+  _peerTransport(conn) {                                  // messages that arrive before the game attaches its handler are queued, never lost
+    let handler = null; const queue = [];
+    const tr = { send: s => { if (conn.open) conn.send(s); }, onclose: null, close() { try { conn.close(); } catch (e) { } },
+      get onmessage() { return handler; }, set onmessage(f) { handler = f; if (f) while (queue.length) f(queue.shift()); } };
+    conn.on('data', d => { const m = typeof d === 'string' ? d : JSON.stringify(d); if (handler) handler(m); else queue.push(m); });
+    conn.on('close', () => tr.onclose && tr.onclose());
+    return tr;
+  },
+  closeRoom() { try { this.peer && this.peer.destroy(); } catch (e) { } this.peer = null; }
+});
+function openCoopBox() {
+  const live = Net.role !== 'offline';
+  el.savebox.innerHTML = '<div class="sh-t">CO-OP</div><div class="sh-g">Play with a friend. The host runs the game and keeps the village.</div>'
+    + (live ? '<div class="sh-m">' + (Net.role === 'host' ? 'HOSTING · ' + (players.length - 1) + ' friend(s) connected' : 'CONNECTED TO A HOST') + '</div><div><button onclick="coopLeave()">DISCONNECT</button><button onclick="closeSaveBox()">CLOSE</button></div>'
+    : '<div class="sb-l">HOST — you get a room code to tell your friend</div><div><button onclick="coopHostRoom()">HOST A GAME</button></div><div id="cp-room" style="font-size:44px;letter-spacing:12px;color:#37f0ff;margin:6px"></div>'
+    + '<div class="sb-l">JOIN — type the room code your friend gave you</div><input id="cp-code" maxlength="5" placeholder="ABCDE" style="font-size:28px;letter-spacing:8px;text-align:center;width:9em;background:#06020f;color:#cfe;border:2px solid #4a2a8a;padding:6px;text-transform:uppercase"><div><button onclick="coopJoinRoom()">JOIN</button></div>'
+    + '<div><button onclick="openCoopManual()" style="font-size:9px;opacity:.7">trouble connecting? use manual codes</button><button onclick="closeSaveBox()">CLOSE</button></div>')
+    + '<div class="sh-m" id="cp-msg"></div>';
+  el.savebox.classList.add('on');
+}
+async function coopHostRoom() {
+  try {
+    cpMsg('Opening a room…');
+    await Coop.hostRoom(code => { $('cp-room').textContent = code; cpMsg('Tell your friend this code. Keep this screen open until they join, then close it and play.'); });
+    const t = setInterval(() => { if (Net.role === 'host' && Net.peers.size) { clearInterval(t); cpMsg('A friend joined! Close this box and play.'); setTimeout(closeSaveBox, 1200); } }, 400); setTimeout(() => clearInterval(t), 600000);
+  } catch (e) { cpMsg(e.message); }
+}
+async function coopJoinRoom() {
+  try { cpMsg('Joining…'); await Coop.joinRoom($('cp-code').value); cpMsg('Connected!'); setTimeout(() => { closeSaveBox(); startGame(); }, 700); } catch (e) { cpMsg(e.message); }
+}

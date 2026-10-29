@@ -6,7 +6,7 @@
 - Each guest owns their own movement and health. When the host decides a guest was hit it sends `hurt`; the guest applies it to itself (so shields / dashes / invincibility frames still work locally).
 - Guest hits go to the host as `dmg` messages, so enemy and boss health only ever lives on the host.
 - Block edits go through `setBlock` -> `blockListeners` and are relayed both ways; the host's village save records everyone's builds.
-- Connecting: **CO-OP** button on the title screen. Host makes an invite code, guest pastes it and sends back a reply code (WebRTC offer/answer, Google STUN). No server.
+- Connecting: **CO-OP** button on the title screen. Easy way: host gets a 5-character room code, guest types it (the free public PeerJS cloud only introduces the two browsers; game traffic is direct WebRTC). Fallback: manual copy/paste offer/answer codes (no third party).
 
 ## Code map
 - `src/js/58-net.js` — `Net` (roles, messages, snapshots, proxies, remote player drawing). Transport = `{ send(str), onmessage, onclose, close() }`.
