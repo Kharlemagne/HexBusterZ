@@ -65,6 +65,8 @@ function updateEnemy(e, dt) {
   // separation
   for (const o of enemies) { if (o === e || o.dead) continue; const ax = e.x - o.x, az = e.z - o.z, dd = Math.hypot(ax, az); const mind = e.hw + o.hw + .1; if (dd < mind && dd > .001) { e.vx += ax / dd * 6 * dt * 10 * .2; e.vz += az / dd * 6 * dt * 10 * .2; } }
 }
+// which entity texture a part gets: reddish = flesh, pale = bone, otherwise plated metal / grain
+function partTile(p) { if (p._t !== undefined) return p._t; const [r, g, b] = p.rgb || [.5, .5, .5]; return p._t = (r > g * 1.5 && r > b * 1.4) ? TILE.FLESHY : (r > .6 && g > .55 && b > .45) ? TILE.BONEY : (Math.max(r, g, b) - Math.min(r, g, b) < .18) ? TILE.PLATE : TILE.GRAIN; }
 function drawParts(parts, px, py, pz, R, scale, t, flash, walk) {
   for (let i = 0; i < parts.length; i++) {
     const p = parts[i]; let ox = p.o[0], oy = p.o[1], oz = p.o[2], PRm = R;
@@ -73,7 +75,7 @@ function drawParts(parts, px, py, pz, R, scale, t, flash, walk) {
     ox *= scale; oy *= scale; oz *= scale;
     const wx = px + R[0] * ox + R[1] * oy + R[2] * oz, wy = py + R[3] * ox + R[4] * oy + R[5] * oz, wz = pz + R[6] * ox + R[7] * oy + R[8] * oz;
     const c = flash ? [1, 1, 1] : p.rgb;
-    pushBox(wx, wy, wz, p.s[0] * scale, p.s[1] * scale, p.s[2] * scale, c[0], c[1], c[2], PRm, !p.e);
+    pushBox(wx, wy, wz, p.s[0] * scale, p.s[1] * scale, p.s[2] * scale, c[0], c[1], c[2], PRm, !p.e, undefined, p.e ? TILE.GLOW : partTile(p));
   }
 }
 function drawEnemies() {

@@ -1,5 +1,6 @@
 # Changelog
 ## Unreleased
+- **Textures** on every block, entity and weapon (procedural 16x16 atlas). **Day/night cycle** with a real sky (sun, eye-moon, stars), a clear horizon, night lighting and a clock in the HUD.
 - **Open world**: endless streamed chunks, four eldritch-cyberpunk biomes, caves, ore, wild Hellgates into dungeon runs, fixed Ember Village at spawn. Save schema 2 (migrates old village builds). See docs/WORLD.md.
 - **Inventory**: 36 slots, pick up what you dig, place from the hotbar, shards from demon ore sell to Vex, creative toggle.
 - Co-op relay fallback through public MQTT brokers when two networks can't connect directly; connection test button; version shown in the CO-OP box.

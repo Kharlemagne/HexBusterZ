@@ -24,6 +24,7 @@ const streamCenters = () => (Net.role === 'host' ? players.filter(q => q === P |
 function frameInner(now) {
   const rdt = Math.min(.1, (now - last) / 1000); last = now; T += (state === "paused" && window.__freezeT) ? 0 : rdt;
   pollGamepad();
+  if (useChunks && state !== 'dead') DayNight.tick(Math.min(rdt, .1));
   const simulate = state === 'play' || ((state === 'inv' || state === 'shop') && Net.role !== 'offline');   // in co-op the world doesn't freeze while you shop / sort your bag
   if (simulate) {
     if (state !== 'play') for (const k in keys) keys[k] = false;

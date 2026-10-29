@@ -28,19 +28,21 @@ function renderFrame(dt) {
     f = fwdV(); roll = P.sliding ? .06 : (keys.KeyD ? .012 : keys.KeyA ? -.012 : 0) + rnd(-sh, sh) * .05;
   }
   P.btFade = lerp(P.btFade, P.bt > 0 ? 1 : 0, Math.min(1, 5 * dt)); P.fovPunch = Math.max(0, P.fovPunch - dt * 1.6);
-  if (useChunks) updateFog(dt, P.x, P.z);
+  let sk = null; if (useChunks) { sk = DayNight.state(P.x, P.z); fogCur = sk.fog; }
   { const k = P.btFade, fb = useChunks ? fogCur : FOG, fc = [lerp(fb[0], .03, k), lerp(fb[1], .12, k), lerp(fb[2], .34, k)]; gl.clearColor(fc[0], fc[1], fc[2], 1); gl.uniform3fv(loc.fogc, fc); }
   gl.viewport(0, 0, canvas.width, canvas.height);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  gl.uniform1f(loc.amb, sk ? sk.amb : 1);
   const inBoss = mode === 'dungeon' && Run.cur && Run.cur.type === 'boss';
   if (inBoss) { gl.uniform2f(loc.fogr, 45, 170); cullR = 135; } else if (mode === 'dungeon') { gl.uniform2f(loc.fogr, 14, 70); cullR = 78; } else { gl.uniform2f(loc.fogr, 48, 118); cullR = 128; }
   camX = ex; camY = ey; camZ = ez; camFX = f[0]; camFZ = f[2];
   const fovy = Math.min(2.0, 2 * Math.atan(Math.tan(P.fov / 2) / asp));
   const vp = mul4(perspective(fovy, asp, .05, 300), lookView(ex, ey, ez, f[0], f[1], f[2], roll));
   gl.uniformMatrix4fv(loc.vp, false, vp); gl.uniform3f(loc.cam, ex, ey, ez);
+  if (sk) drawSkyDome(f, roll, fovy, asp, sk);
   drawWorld();
   dn = 0;
-  if (mode === 'hub') { drawOwSky(T); drawEmbers(dt, T); drawHubEntities(T); drawGatePortals(T); }
+  if (mode === 'hub') { drawEmbers(dt, T); drawHubEntities(T); drawGatePortals(T); }
   else { drawSmoke(T); drawTurrets(T); drawChests(T); drawGlyph(T); if (inBoss) { drawSky(T); drawAsh(state === 'play' ? dt : 0, T); } }
   drawHaz(T);
   drawLockOn(); drawSlashes(); drawLatchFx();
@@ -48,7 +50,7 @@ function renderFrame(dt) {
   if (state === 'play' && P.weapon === 4) { const h = targetBlock(); if (h) pushOutline(h.x, h.y, h.z); }
   flushDyn();
   if (state === 'play' || state === 'paused') {
-    gl.clear(gl.DEPTH_BUFFER_BIT);
+    gl.clear(gl.DEPTH_BUFFER_BIT); gl.uniform1f(loc.amb, 1);
     gl.uniformMatrix4fv(loc.vp, false, perspective(1.05, asp, .01, 10)); gl.uniform3f(loc.cam, 0, 0, 0);
     drawViewmodel(); flushDyn();
   }

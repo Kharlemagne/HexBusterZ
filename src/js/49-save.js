@@ -19,7 +19,7 @@ function saveDefaults() {
     profile: { gems: 0, unlocked: [true, false, false, false, true], runs: 0, wins: 0, stats: { kills: 0, deaths: 0, bosses: 0, bestRank: 0 } },
     settings: { padMap: null, muted: false },
     hub: { seed: 0, genVersion: 1, edits: [] },          // (schema 1) the old village save; kept untouched for safety, no longer used after migrating to `world`
-    world: { seed: 0, villageSeed: 0, genVersion: 1, edits: [] },    // the open world: seed + village seed + only the blocks players changed
+    world: { seed: 0, villageSeed: 0, genVersion: 1, edits: [], time: .3 },    // the open world (time = time of day): seed + village seed + only the blocks players changed
     inv: null,                                           // inventory (see 57-inventory.js), created on first use
     extras: {}                                           // room for future systems (base machines, quests, ...)
   };
@@ -107,7 +107,7 @@ function loadSave() {
 }
 function flushSave() {
   if (!SaveStore.doc) return false;
-  WorldSave.collect(); try { Inv.collect(); } catch (e) { } SaveStore.doc.updated = Date.now();
+  WorldSave.collect(); try { Inv.collect(); } catch (e) { } try { DayNight.collect(); } catch (e) { } SaveStore.doc.updated = Date.now();
   if (!SaveStore.persistent) { SaveStore.dirty = false; return false; }
   const ok = lsSet(SAVE_KEY, JSON.stringify(SaveStore.doc));
   if (ok) { SaveStore.lastSaved = Date.now(); SaveStore.dirty = false; } else SaveStore.notes.push('Could not write the save (storage full or blocked).');

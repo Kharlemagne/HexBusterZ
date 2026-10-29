@@ -102,7 +102,7 @@ const Net = {
     }
     const pr = eprojs.map(p => [p.id, r2(p.x), r2(p.y), r2(p.z), r2(p.size), p.rf ? 1 : 0, p.col || null]);
     const hz = JSON.parse(JSON.stringify(haz));
-    const snap = { t: r2(S.time), pl, en, pr, hz, mode };
+    const snap = { t: r2(S.time), pl, en, pr, hz, mode, td: DayNight.t };
     if (mode === 'dungeon') snap.rm = { cur: Run.rooms.indexOf(Run.cur), st: Run.rooms.map(r => r.state), left: enemies.length + Run.queue.length, key: Run.hasKey ? 1 : 0, lk: (bossRoom() || {}).locked ? 1 : 0,
       gl: Run.glyph ? [r2(Run.glyph.x), r2(Run.glyph.y), r2(Run.glyph.z)] : null, ch: Run.chests.map(c => c.open ? 1 : 0), tu: Run.turrets.map(t => [t.on ? 1 : 0, r2(t.yaw), r2(t.pitch)]) };
     this.broadcast('snap', snap);
@@ -157,6 +157,7 @@ const Net = {
     if (this.role === 'host') this.broadcast('fx', list, peer.id);
   },
   _on_snap(peer, s) {
+    if (s.td !== undefined) DayNight.target = s.td;
     if (s.mode !== mode) return;                         // world switch still in flight
     // players
     const seen = new Set();

@@ -29,17 +29,19 @@ function buildChunk(cx, cz) {
         ao[k] = (s1 && s2) ? 0 : 3 - (s1 + s2 + c);
       }
       const sh = SHADE[d][s > 0 ? 1 : 0];
-      const verts = [];
+      const verts = [], hv = (x * 73856093 ^ y * 19349663 ^ z * 83492791 ^ (d * 3 + (s > 0 ? 1 : 0)) * 2654435761) >>> 0;
+      const flipU = (hv & 1) === 1, flipV = d === 1 ? ((hv >> 1) & 1) === 1 : false, tileV = (em ? -1 : 1) * (blockTile(id, d === 1 && s > 0) + 1);
       for (let k = 0; k < 4; k++) {
         const P = [x, y, z]; P[d] += s > 0 ? 1 : 0; P[u] += cu[k]; P[v] += cv[k];
         let m = em ? 1 : sh * AOV[ao[k]] * vr, r = b[0] * m, g = b[1] * m, bb = b[2] * m;
         if (em) { const f = .85 + hash(x + k, z + y) * .3; r *= f; g *= f; bb *= f; }
         if (bl && !em) { const t = Math.min(.85, bl * .3); r = lerp(r, .42, t); g = lerp(g, .02, t); bb = lerp(bb, .03, t); }
-        verts.push(P[0], P[1], P[2], r, g, bb, 1);
+        const su = d === 0 ? cv[k] : cu[k], sv = d === 0 ? cu[k] : cv[k];                         // texture runs horizontally along the face, up = +y
+        verts.push(P[0], P[1], P[2], r, g, bb, 1, flipU ? 1 - su : su, flipV ? 1 - sv : sv, tileV);
       }
       const flip = ao[0] + ao[2] < ao[1] + ao[3];
       const tri = flip ? [1, 2, 3, 1, 3, 0] : [0, 1, 2, 0, 2, 3];
-      for (const k of tri) for (let j = 0; j < 7; j++) out.push(verts[k * 7 + j]);
+      for (const k of tri) for (let j = 0; j < VF; j++) out.push(verts[k * VF + j]);
     }
   }
   let m = meshes.get(key);
@@ -48,7 +50,7 @@ function buildChunk(cx, cz) {
   if (!m) { m = { buf: gl.createBuffer(), count: 0 }; meshes.set(key, m); }
   gl.bindBuffer(gl.ARRAY_BUFFER, m.buf);
   gl.bufferData(gl.ARRAY_BUFFER, arr, gl.STATIC_DRAW);
-  m.count = arr.length / 7;
+  m.count = arr.length / VF;
 }
 function freeMesh(key) { const m = meshes.get(key); if (m) { try { gl.deleteBuffer(m.buf); } catch (e) { } meshes.delete(key); } }
 function buildAll() {

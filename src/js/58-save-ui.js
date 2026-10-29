@@ -26,7 +26,7 @@ function sbCopy() {
 function sbDownload() {
   try { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([$('sb-out').value], { type: 'text/plain' })); a.download = 'hexbusterz-save.txt'; document.body.appendChild(a); a.click(); a.remove(); sbMsg('If nothing downloaded, use COPY CODE instead.'); } catch (e) { sbMsg('Downloads are blocked here — use COPY CODE.'); }
 }
-function sbImport() { const r = importSaveCode($('sb-in').value); sbMsg(r.msg); if (r.ok) { Inv.load(); updateSaveStatus(); if (mode === 'hub') { genHub(undefined, P.x, P.z); } $('sb-out').value = exportSaveCode(); } }
+function sbImport() { const r = importSaveCode($('sb-in').value); sbMsg(r.msg); if (r.ok) { Inv.load(); DayNight.load(); updateSaveStatus(); if (mode === 'hub') { genHub(undefined, P.x, P.z); } $('sb-out').value = exportSaveCode(); } }
 let sbResetArmed = 0;
 function sbResetHub() {
   const b = $('sb-reset'); if (!sbResetArmed) { sbResetArmed = 1; b.textContent = 'CLICK AGAIN TO CONFIRM'; setTimeout(() => { sbResetArmed = 0; if (b) b.textContent = 'RESET WORLD BUILDS'; }, 3500); return; }

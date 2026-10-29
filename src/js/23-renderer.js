@@ -1,23 +1,87 @@
 // ---------------- tiny WebGL renderer ----------------
 const canvas = $('c');
-const VS = `attribute vec3 p;attribute vec4 c;uniform mat4 vp;uniform vec3 cam;varying vec4 vc;varying float vd;
-void main(){gl_Position=vp*vec4(p,1.0);vc=c;vd=length(p-cam);}`;
-const FS = `precision mediump float;varying vec4 vc;varying float vd;uniform vec3 fogc;uniform vec2 fogr;
-void main(){float f=smoothstep(fogr.x,fogr.y,vd)*vc.a;gl_FragColor=vec4(mix(vc.rgb,fogc,f),1.0);}`;
+const VS = `attribute vec3 p;attribute vec4 c;attribute vec2 uv;attribute float t;uniform mat4 vp;uniform vec3 cam;varying vec4 vc;varying float vd;varying vec2 vuv;varying float vt;
+void main(){gl_Position=vp*vec4(p,1.0);vc=c;vd=length(p-cam);vuv=uv;vt=t;}`;
+// colour = vertex colour (base colour x light/AO) x texture (a multiplier map, x1.6 for headroom); emissive tiles (negative index) ignore night; fog blends to the horizon colour
+const FS = `#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
+varying vec4 vc;varying float vd;varying vec2 vuv;varying float vt;uniform sampler2D tex;uniform sampler2D avg;uniform vec3 fogc;uniform vec2 fogr;uniform float amb;
+void main(){
+  float em=step(vt,-0.5);float ti=floor(abs(vt)+0.5)-1.0;
+  vec2 tc=vec2(mod(ti,16.0),floor(ti/16.0));vec2 f=fract(vuv);
+  vec3 tx=texture2D(tex,(tc*16.0+0.5+f*15.0)/256.0).rgb;
+  vec3 av=texture2D(avg,vec2((ti+0.5)/256.0,0.5)).rgb;
+  tx=mix(tx,av,smoothstep(36.0,90.0,vd));
+  vec3 col=vc.rgb*tx*1.6;
+  float lamp=0.62*(1.0-smoothstep(1.5,22.0,vd));
+  col*=mix(max(amb,lamp),1.0,em);
+  float fg=smoothstep(fogr.x,fogr.y,vd)*vc.a;
+  gl_FragColor=vec4(mix(col,fogc,fg),1.0);
+}`;
+// the sky: one full-screen triangle; every pixel works out its view direction and paints gradient, sun, moon (an eye), stars and the horizon band
+const SKY_VS = `attribute vec2 q;varying vec2 ndc;void main(){ndc=q;gl_Position=vec4(q,1.0,1.0);}`;
+const SKY_FS = `#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
+varying vec2 ndc;uniform vec3 fwd,rgt,upv,zen,hor,gnd,sunD,moonD,moonR,moonU;uniform vec2 tanf;uniform float stars,sunA,tm;
+float h3(vec3 p){return fract(sin(dot(p,vec3(12.9898,78.233,37.719)))*43758.5453);}
+void main(){
+  vec3 d=normalize(fwd+rgt*(ndc.x*tanf.x)+upv*(ndc.y*tanf.y));
+  float h=d.y;
+  vec3 col=mix(hor,zen,pow(clamp(h*1.7,0.0,1.0),0.55));
+  col=mix(col,gnd,smoothstep(0.0,-0.08,h));
+  col+=hor*0.22*exp(-abs(h)*26.0)*(0.5+0.5*sunA);
+  float sd=dot(d,sunD);
+  col+=vec3(1.0,0.78,0.5)*(smoothstep(0.9993,0.9998,sd)*1.6+pow(max(sd,0.0),180.0)*0.55+pow(max(sd,0.0),12.0)*0.18*sunA);
+  float md=dot(d,moonD);
+  if(md>0.9985){
+    vec3 o=d-moonD*md;vec2 lc=vec2(dot(o,moonR),dot(o,moonU))*21.0;float r=length(lc);
+    vec3 mc=vec3(0.78,0.9,1.0)*(0.75+0.25*h3(vec3(floor(lc*6.0),3.0)));
+    float iris=smoothstep(0.55,0.5,r)*smoothstep(0.2,0.25,r);float slit=smoothstep(0.1,0.04,abs(lc.x))*smoothstep(0.5,0.35,abs(lc.y));
+    mc=mix(mc,vec3(0.15,0.8,1.0)*1.2,iris*0.5);mc=mix(mc,vec3(0.7,0.02,0.1),slit);
+    col=mix(col,mc,smoothstep(1.0,0.92,r)*(1.0-smoothstep(0.0,-0.05,h)));
+  }
+  col+=vec3(0.35,0.5,1.0)*0.12*pow(max(md,0.0),30.0)*stars;
+  vec3 sp=floor(d*330.0);float sh=h3(sp);
+  if(sh>0.9975&&h>0.02){float tw=0.6+0.4*sin(tm*3.0+sh*400.0);col+=mix(vec3(0.8,0.9,1.0),vec3(1.0,0.5,0.9),step(0.9992,sh))*tw*stars*smoothstep(0.02,0.25,h);}
+  col+=vec3(0.18,0.05,0.3)*stars*smoothstep(0.1,0.5,h)*(0.5+0.5*sin(d.x*5.0+tm*0.2))*0.35;
+  gl_FragColor=vec4(col,1.0);
+}`;
+let skyProg = null, skyBuf = null, texAtlas = null, texAvg = null;
 function mkShader(t, s) { const o = gl.createShader(t); gl.shaderSource(o, s); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o)); return o; }
 const FOG = [0.10, 0.02, 0.04];
-const DYN_MAX = 150000, dyn = new Float32Array(DYN_MAX * 7); let dn = 0;
+const VF = 10;                                                                 // floats per vertex: pos3 colour4 uv2 tile1
+const DYN_MAX = 150000, dyn = new Float32Array(DYN_MAX * VF); let dn = 0;
 let dynBuf = null;
 function initGL() {
   gl = canvas.getContext('webgl', { antialias: false, powerPreference: 'high-performance' }) || canvas.getContext('webgl', { antialias: false }) || canvas.getContext('experimental-webgl');
   if (!gl) { showFatal('Your browser could not start WebGL.', 'Try reloading, turn on hardware acceleration in your browser settings, or open the downloaded HTML file directly in Chrome / Edge / Firefox.'); throw new Error('WebGL unavailable'); }
-  prog = gl.createProgram(); gl.attachShader(prog, mkShader(gl.VERTEX_SHADER, VS)); gl.attachShader(prog, mkShader(gl.FRAGMENT_SHADER, FS)); gl.linkProgram(prog);
+  prog = gl.createProgram(); gl.attachShader(prog, mkShader(gl.VERTEX_SHADER, VS)); gl.attachShader(prog, mkShader(gl.FRAGMENT_SHADER, FS));
+  gl.bindAttribLocation(prog, 0, 'p'); gl.bindAttribLocation(prog, 1, 'c'); gl.bindAttribLocation(prog, 2, 'uv'); gl.bindAttribLocation(prog, 3, 't'); gl.linkProgram(prog);
   if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
   gl.useProgram(prog);
-  loc.p = gl.getAttribLocation(prog, 'p'); loc.c = gl.getAttribLocation(prog, 'c');
+  loc.p = 0; loc.c = 1; loc.uv = 2; loc.t = 3;
   loc.vp = gl.getUniformLocation(prog, 'vp'); loc.cam = gl.getUniformLocation(prog, 'cam');
-  loc.fogc = gl.getUniformLocation(prog, 'fogc'); loc.fogr = gl.getUniformLocation(prog, 'fogr');
-  gl.enableVertexAttribArray(loc.p); gl.enableVertexAttribArray(loc.c);
+  loc.fogc = gl.getUniformLocation(prog, 'fogc'); loc.fogr = gl.getUniformLocation(prog, 'fogr'); loc.amb = gl.getUniformLocation(prog, 'amb');
+  gl.uniform1i(gl.getUniformLocation(prog, 'tex'), 0); gl.uniform1i(gl.getUniformLocation(prog, 'avg'), 1); gl.uniform1f(loc.amb, 1);
+  for (const k of [loc.p, loc.c, loc.uv, loc.t]) gl.enableVertexAttribArray(k);
+  { const A = makeAtlas(); texAtlas = gl.createTexture(); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, texAtlas);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, A.canvas);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    texAvg = gl.createTexture(); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, texAvg);
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, 256, 1, 0, gl.RGB, gl.UNSIGNED_BYTE, A.avg);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.activeTexture(gl.TEXTURE0); }
+  skyProg = gl.createProgram(); gl.attachShader(skyProg, mkShader(gl.VERTEX_SHADER, SKY_VS)); gl.attachShader(skyProg, mkShader(gl.FRAGMENT_SHADER, SKY_FS)); gl.bindAttribLocation(skyProg, 0, 'q'); gl.linkProgram(skyProg);
+  if (!gl.getProgramParameter(skyProg, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(skyProg));
+  skyBuf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, skyBuf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
   gl.enable(gl.DEPTH_TEST);
   gl.clearColor(FOG[0], FOG[1], FOG[2], 1);
   gl.uniform3fv(loc.fogc, FOG); gl.uniform2f(loc.fogr, 26, 100);
@@ -26,12 +90,12 @@ function initGL() {
 initGL();
 canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); glLost = true; showToast('graphics context lost, restoring'); });
 canvas.addEventListener('webglcontextrestored', () => { try { initGL(); meshes.clear(); buildAll(); glLost = false; } catch (e) { showFatal(e.message, 'The graphics context could not be restored. Reload to continue.'); } });
-function bindAttribs() { gl.vertexAttribPointer(loc.p, 3, gl.FLOAT, false, 28, 0); gl.vertexAttribPointer(loc.c, 4, gl.FLOAT, false, 28, 12); }
+function bindAttribs() { gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 40, 0); gl.vertexAttribPointer(1, 4, gl.FLOAT, false, 40, 12); gl.vertexAttribPointer(2, 2, gl.FLOAT, false, 40, 28); gl.vertexAttribPointer(3, 1, gl.FLOAT, false, 40, 36); }
 function flushDyn() {
   if (!dn) return;
   gl.bindBuffer(gl.ARRAY_BUFFER, dynBuf);
   gl.bufferData(gl.ARRAY_BUFFER, dyn.subarray(0, dn), gl.DYNAMIC_DRAW);
-  bindAttribs(); gl.drawArrays(gl.TRIANGLES, 0, dn / 7); dn = 0;
+  bindAttribs(); gl.drawArrays(gl.TRIANGLES, 0, dn / VF); dn = 0;
 }
 let camX = 0, camY = 20, camZ = 0, camFX = 0, camFZ = 1, cullR = 140;
 function drawWorld() {
@@ -82,19 +146,21 @@ const FACES = [
   { n: [0, 0, -1], v: [[-.5, -.5, -.5], [-.5, .5, -.5], [.5, .5, -.5], [.5, -.5, -.5]] }];
 const QI = [0, 1, 2, 0, 2, 3];
 // push a lit box into the dynamic batch. R: optional 3x3 rotation. fog: 1 normal / 0 none. lit=false => emissive
-function pushBox(cx, cy, cz, sx, sy, sz, r, g, b, R, lit, fog) {
-  if (dn + 252 > dyn.length) return;
+function pushBox(cx, cy, cz, sx, sy, sz, r, g, b, R, lit, fog, tex) {
+  if (dn + 6 * 6 * VF > dyn.length) return;
   const a = fog === undefined ? 1 : fog;
+  const tile = (tex === undefined ? (lit === false ? TILE.WHITE : TILE.GRAIN) : tex) + 1, vtile = lit === false ? -tile : tile;     // sign = emissive (ignores night)
   for (let f = 0; f < 6; f++) {
     const F = FACES[f]; let nx = F.n[0], ny = F.n[1], nz = F.n[2];
     if (R) { const rx = R[0] * nx + R[1] * ny + R[2] * nz, ry = R[3] * nx + R[4] * ny + R[5] * nz, rz = R[6] * nx + R[7] * ny + R[8] * nz; nx = rx; ny = ry; nz = rz; }
     const sh = lit === false ? 1 : .4 + .6 * Math.max(0, nx * LD[0] + ny * LD[1] + nz * LD[2]);
-    const cr = r * sh, cg = g * sh, cb = b * sh;
+    const cr = r * sh, cg = g * sh, cb = b * sh, ax = f < 2 ? 0 : f < 4 ? 1 : 2;
     for (let k = 0; k < 6; k++) {
       const v = F.v[QI[k]]; let lx = v[0] * sx, ly = v[1] * sy, lz = v[2] * sz, wx, wy, wz;
       if (R) { wx = R[0] * lx + R[1] * ly + R[2] * lz + cx; wy = R[3] * lx + R[4] * ly + R[5] * lz + cy; wz = R[6] * lx + R[7] * ly + R[8] * lz + cz; }
       else { wx = lx + cx; wy = ly + cy; wz = lz + cz; }
       dyn[dn++] = wx; dyn[dn++] = wy; dyn[dn++] = wz; dyn[dn++] = cr; dyn[dn++] = cg; dyn[dn++] = cb; dyn[dn++] = a;
+      dyn[dn++] = ax === 0 ? lz : lx; dyn[dn++] = ax === 1 ? lz : ly; dyn[dn++] = vtile;      // one tile repeat per world unit
     }
   }
 }
