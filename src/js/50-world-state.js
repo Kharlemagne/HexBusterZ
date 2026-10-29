@@ -9,16 +9,17 @@ const Run = { rooms: [], map: new Map(), cur: null, glyph: null, chests: [], tur
 const NPC = { x: 22.5, y: 9.01, z: 40.5, yaw: 0, t: 0 };
 const GATE = { x0: 29, x1: 36, z0: 9, z1: 12, y0: 9, y1: 19 };
 
-function clearWorld(w) {
-  N = w; NC = w / CS; world.fill(0); blood.fill(0);
-  for (let i = 0; i < 16; i++) chunkCount[i] = [];
+function resetFixed(w) { N = w; NC = w / CS; world.fill(0); blood.fill(0); }
+function clearWorld(w) {                                      // switch to a fixed-size world (dungeons)
+  useChunks = false; H = FIXED_H; OW.drop(); resetFixed(w);
+  for (const k of [...meshes.keys()]) freeMesh(k);
   dirty.clear();
 }
 function fillBox(x0, y0, z0, x1, y1, z1, id) {
   for (let y = y0; y <= y1; y++) for (let z = z0; z <= z1; z++) for (let x = x0; x <= x1; x++) {
-    if (x < 0 || z < 0 || x >= N || z >= N || y < 0 || y >= H) continue;
+    if (x < 0 || z < 0 || x >= N || z >= N || y < 0 || y >= FIXED_H) continue;
     world[idx(x, y, z)] = id;
   }
 }
-const setRaw = (x, y, z, id) => { if (x >= 0 && z >= 0 && x < N && z < N && y >= 0 && y < H) world[idx(x, y, z)] = id; };
+const setRaw = (x, y, z, id) => { if (x >= 0 && z >= 0 && x < N && z < N && y >= 0 && y < FIXED_H) world[idx(x, y, z)] = id; };
 

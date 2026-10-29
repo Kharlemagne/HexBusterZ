@@ -18,7 +18,9 @@ function saveDefaults() {
     game: SAVE_ID, v: SAVE_SCHEMA, created: Date.now(), updated: Date.now(),
     profile: { gems: 0, unlocked: [true, false, false, false, true], runs: 0, wins: 0, stats: { kills: 0, deaths: 0, bosses: 0, bestRank: 0 } },
     settings: { padMap: null, muted: false },
-    hub: { seed: 0, genVersion: 1, edits: [] },          // the buildable village: generator seed + the blocks the player changed
+    hub: { seed: 0, genVersion: 1, edits: [] },          // (schema 1) the old village save; kept untouched for safety, no longer used after migrating to `world`
+    world: { seed: 0, villageSeed: 0, genVersion: 1, edits: [] },    // the open world: seed + village seed + only the blocks players changed
+    inv: null,                                           // inventory (see 57-inventory.js), created on first use
     extras: {}                                           // room for future systems (base machines, quests, ...)
   };
 }
@@ -29,8 +31,13 @@ const MIGRATIONS = {
     d.profile.gems = s.gems | 0; if (Array.isArray(s.unlocked)) d.profile.unlocked = s.unlocked.slice(0, 5); d.profile.runs = s.runs | 0; d.profile.wins = s.wins | 0;
     if (s.created) d.created = s.created;
     d.v = 1; return d;
+  },
+  1: s => {                                              // v1 -> v2: the village became part of an open world
+    s.world = { seed: 0, villageSeed: 0, genVersion: 1, edits: [] };
+    const h = s.hub || {};
+    if (Array.isArray(h.edits) && h.edits.length) { s.world.edits = h.edits.map(e => e.slice()); s.world.villageSeed = h.seed | 0; }   // keep an existing village build exactly where it was
+    s.v = 2; return s;
   }
-  // 1: s => { ...transform a v1 save into v2..., s.v = 2; return s; },
 };
 
 function deepFill(dst, def) {                            // add any keys that are missing; never touch what exists
@@ -55,6 +62,10 @@ function normalize(doc) {
   p.unlocked = p.unlocked.map(Boolean); p.unlocked[0] = true; p.unlocked[4] = true;
   if (!Array.isArray(doc.hub.edits)) doc.hub.edits = [];
   doc.hub.edits = doc.hub.edits.filter(e => Array.isArray(e) && e.length === 4 && e.every(Number.isFinite));
+  if (!Array.isArray(doc.world.edits)) doc.world.edits = [];
+  doc.world.edits = doc.world.edits.filter(e => Array.isArray(e) && e.length === 4 && e.every(Number.isFinite));
+  if (!doc.world.seed) doc.world.seed = ((Math.random() * 4294967295) >>> 0) || 1;
+  if (!doc.world.villageSeed) doc.world.villageSeed = VILLAGE_SEED_DEFAULT;
   return doc;
 }
 
@@ -96,31 +107,42 @@ function loadSave() {
 }
 function flushSave() {
   if (!SaveStore.doc) return false;
-  HubSave.collect(); SaveStore.doc.updated = Date.now();
+  WorldSave.collect(); SaveStore.doc.updated = Date.now();
   if (!SaveStore.persistent) { SaveStore.dirty = false; return false; }
   const ok = lsSet(SAVE_KEY, JSON.stringify(SaveStore.doc));
   if (ok) { SaveStore.lastSaved = Date.now(); SaveStore.dirty = false; } else SaveStore.notes.push('Could not write the save (storage full or blocked).');
   return ok;
 }
-// ---- the buildable hub: only the player's changes are stored (a few numbers per block) ----
-const HubSave = {
-  edits: new Map(), orig: new Map(), dirty: false, cap: 60000, capped: false,
-  record(i, old, id) {
-    if (!this.orig.has(i)) { if (this.orig.size >= this.cap) { this.capped = true; return; } this.orig.set(i, old); }
-    if (id === this.orig.get(i)) { this.edits.delete(i); this.orig.delete(i); } else this.edits.set(i, id);
-    this.dirty = true; SaveStore.dirty = true;
+// ---- the open world: only the player's changes are stored (a few numbers per block); OW.edits holds them, grouped by chunk ----
+const VILLAGE_SEED_DEFAULT = 0x00E3B3F1;                 // every new profile gets the same Ember Village, whatever its world seed
+const WorldSave = {
+  dirty: false, cap: 100000, count: 0, capped: false,
+  record(x, y, z, old, id) {                              // called for every block change in the open world
+    const key = ckey(x >> 4, z >> 4), li = (x & 15) | ((z & 15) << 4) | (y << 8);
+    let m = OW.edits.get(key); if (!m) OW.edits.set(key, m = new Map());
+    let e = m.get(li);
+    if (!e) { if (this.count >= this.cap) { this.capped = true; return; } e = { id, orig: old }; m.set(li, e); this.count++; } else e.id = id;
+    if (e.orig === id) { m.delete(li); this.count--; if (!m.size) OW.edits.delete(key); }           // put back to what the generator made
+    if (Net.role !== 'client') { this.dirty = true; SaveStore.dirty = true; }                        // a guest's edits to the host's world are never written to their own save
   },
-  apply() {                                              // called right after the hub terrain is generated
-    this.edits.clear(); this.orig.clear();
-    for (const [x, y, z, id] of (Net.hubOverride ? Net.hubOverride.edits : SaveStore.doc.hub.edits)) {
-      if (x < 0 || z < 0 || x >= 64 || z >= 64 || y < 1 || y >= H) continue;
-      const i = x + 64 * (z + 64 * y); this.orig.set(i, world[i]); this.edits.set(i, id); world[i] = id;
+  load(list) {
+    OW.edits.clear(); this.count = 0;
+    for (const [x, y, z, id] of list) {
+      if (y < 1 || y >= WORLD_H || this.count >= this.cap) continue;
+      const key = ckey(x >> 4, z >> 4); let m = OW.edits.get(key); if (!m) OW.edits.set(key, m = new Map());
+      const li = (x & 15) | ((z & 15) << 4) | (y << 8); if (!m.has(li)) this.count++; m.set(li, { id, orig: -1 });
     }
+    this.dirty = false;
   },
-  collect() { if (!this.dirty) return; SaveStore.doc.hub.edits = [...this.edits].map(([i, id]) => [i % 64, (i / 4096) | 0, ((i / 64) | 0) % 64, id]); this.dirty = false; },
-  reset() { this.edits.clear(); this.orig.clear(); SaveStore.doc.hub.edits = []; this.dirty = false; SaveStore.dirty = true; }
+  list() {
+    const out = [];
+    for (const [key, m] of OW.edits) { const cx = ckx(key), cz = ckz(key); for (const [li, e] of m) out.push([cx * 16 + (li & 15), li >> 8, cz * 16 + ((li >> 4) & 15), e.id]); }
+    return out;
+  },
+  collect() { if (!this.dirty) return; SaveStore.doc.world.edits = this.list(); this.dirty = false; },
+  reset() { OW.edits.clear(); this.count = 0; SaveStore.doc.world.edits = []; this.dirty = false; SaveStore.dirty = true; }
 };
-blockListeners.push((x, y, z, id, old) => { if (mode === 'hub' && Net.role !== 'client') HubSave.record(x + 64 * (z + 64 * y), old, id); });
+blockListeners.push((x, y, z, id, old) => { if (useChunks) WorldSave.record(x, y, z, old, id); });
 
 loadSave();
 const Save = SaveStore.doc.profile;                      // the rest of the game uses this object directly (gems, unlocked, runs, wins, stats)
@@ -129,8 +151,8 @@ const saveSoon = () => { SaveStore.dirty = true; };      // cheap: the autosave 
 function setSetting(k, v) { SaveStore.doc.settings[k] = v; saveGame(); }
 if (SaveStore.doc.settings.muted) muted = true;
 setInterval(() => { if (SaveStore.dirty) flushSave(); }, 15000);
-addEventListener('pagehide', () => { if (SaveStore.dirty || HubSave.dirty) flushSave(); });
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && (SaveStore.dirty || HubSave.dirty)) flushSave(); });
+addEventListener('pagehide', () => { if (SaveStore.dirty || WorldSave.dirty) flushSave(); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && (SaveStore.dirty || WorldSave.dirty)) flushSave(); });
 
 // ---- export / import (progress can travel between browsers, devices and hosts) ----
 function fnv(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(16); }
@@ -151,7 +173,7 @@ function importSaveCode(code) {
   doc = normalize(doc);
   Object.assign(Save, doc.profile); doc.profile = Save;                // keep the same object the game code points at
   SaveStore.doc = doc; SaveStore.newer = doc.v > SAVE_SCHEMA;
-  muted = !!doc.settings.muted; HubSave.edits.clear(); HubSave.orig.clear(); HubSave.dirty = false;
+  muted = !!doc.settings.muted; WorldSave.dirty = false;
   if (!doc.hub.seed) doc.hub.seed = ((Math.random() * 4294967295) >>> 0) || 1;
   flushSave();
   return { ok: true, msg: 'Save imported: ' + Save.gems + ' gems, ' + Save.unlocked.filter(Boolean).length + '/5 weapons.' };

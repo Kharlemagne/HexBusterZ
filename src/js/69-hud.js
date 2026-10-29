@@ -6,7 +6,7 @@ function updateHUD() {
   const r = RANKS[S.rank]; txt(el.rank, r.l); css(el.rank, 'color', r.c); txt(el.rankname, r.n); css(el.rankname, 'color', r.c);
   css(el.sfill, 'width', ((S.style % 120) / 120 * 100) + '%'); css(el.sfill, 'background', r.c);
   txt(el.score, S.score.toLocaleString());
-  if (mode === 'hub') txt(el.wave, 'EMBER VILLAGE'); else { const c = Run.cur; txt(el.wave, c ? (c.state === 'active' ? (c.type === 'boss' ? 'BOSS ' : 'ROOM ') + '— ' + (Net.role === 'client' ? Net.left : enemies.length + Run.queue.length) + ' LEFT' : (c.type === 'boss' && Run.glyph ? 'STEP INTO THE GLYPH' : c.type === 'treasure' ? 'TREASURE ROOM' : c.type === 'start' ? 'THE DEPTHS' : 'CLEARED')) : 'THE DEPTHS'); }
+  if (mode === 'hub') { const ng = useChunks ? nearestGate(P.x, P.z) : null; txt(el.wave, biomeAt(P.x, P.z) + (ng && villageD(P.x, P.z) > 30 ? '  ·  HELLGATE ' + Math.round(ng.d) + 'm ' + dirArrow(ng.g.x - P.x, ng.g.z - P.z) : '')); } else { const c = Run.cur; txt(el.wave, c ? (c.state === 'active' ? (c.type === 'boss' ? 'BOSS ' : 'ROOM ') + '— ' + (Net.role === 'client' ? Net.left : enemies.length + Run.queue.length) + ' LEFT' : (c.type === 'boss' && Run.glyph ? 'STEP INTO THE GLYPH' : c.type === 'treasure' ? 'TREASURE ROOM' : c.type === 'start' ? 'THE DEPTHS' : 'CLEARED')) : 'THE DEPTHS'); }
   txt(el.gems, '◆ ' + Save.gems + (mode === 'dungeon' ? '  (+' + Run.gems + ' this run)' + (Run.hasKey ? '   ⚿ BOSS KEY' : '') : ''));
   css(mini, 'display', mode === 'dungeon' ? 'block' : 'none');
   const pt = state === 'play' ? interactPrompt() : ''; css(el.prompt, 'display', pt ? 'block' : 'none'); if (pt) txt(el.prompt, pt);
@@ -21,3 +21,8 @@ function updateHUD() {
   const showB = P.weapon === 4; css(el.bsel, 'display', showB ? 'block' : 'none'); if (showB) txt(el.bsel, '◼ ' + BUILD[P.buildSel][1] + '   (mouse wheel)');
 }
 
+
+function dirArrow(dx, dz) {                              // compass direction from the player to a point, relative to north = -z
+  const a = Math.atan2(dx, -dz), names = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+  return names[((Math.round(a / (Math.PI / 4)) % 8) + 8) % 8];
+}

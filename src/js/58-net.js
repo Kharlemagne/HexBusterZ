@@ -58,7 +58,7 @@ const Net = {
   announceWorld() { if (this.role === 'host') for (const p of this.peers.values()) this._sendWorld(p); },
   _sendWorld(peer) {
     const w = { mode, wave: Wv.n };
-    if (mode === 'hub') { w.hubSeed = SaveStore.doc.hub.seed; w.edits = [...HubSave.edits].map(([i, id]) => [i % 64, (i / 4096) | 0, ((i / 64) | 0) % 64, id]); }
+    if (mode === 'hub') { w.worldSeed = OW.seed; w.villageSeed = OW.villageSeed; w.edits = WorldSave.list(); }
     else { w.runSeed = Run.seed; w.seals = Run.rooms.map((r, i) => r.state === 'active' ? i : -1).filter(i => i >= 0); const b = bossRoom(); w.unl = b && !b.locked ? 1 : 0; }
     this._put(peer, 'world', w);
   },
@@ -67,7 +67,7 @@ const Net = {
     try {
       enemies.length = 0; eprojs.length = 0; haz.length = 0; bombs.length = 0; this.proxies.clear();
       Wv.n = w.wave || 1;
-      if (w.mode === 'hub') { this.hubOverride = { seed: w.hubSeed, edits: w.edits || [] }; enterHub(false, false); }
+      if (w.mode === 'hub') { this.hubOverride = { seed: w.worldSeed, villageSeed: w.villageSeed, edits: w.edits || [] }; OW.returnTo = null; enterHub(false, false); }
       else {
         this.hubOverride = null; enterDungeon(w.runSeed);
         for (const i of w.seals || []) setSeal(Run.rooms[i], true);

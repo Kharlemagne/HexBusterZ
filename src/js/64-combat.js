@@ -5,7 +5,7 @@ function carve(cx, cy, cz, r, debris) {
   for (let y = y0; y <= y1; y++) for (let z = z0; z <= z1; z++) for (let x = x0; x <= x1; x++) {
     const dx = x + .5 - cx, dy = y + .5 - cy, dz = z + .5 - cz;
     if (dx * dx + dy * dy + dz * dz > r * r) continue;
-    const id = get(x, y, z); if (!id || id === 9 || id === 10 || id === 11 || y < 1 || x < 1 || z < 1 || x >= N - 1 || z >= N - 1) continue;
+    const id = get(x, y, z); if (!id || id === 9 || id === 10 || id === 11 || y < 1 || (!useChunks && (x < 1 || z < 1 || x >= N - 1 || z >= N - 1))) continue;
     if (debris && n < 16 && Math.random() < .5 && id !== 4) { n++; const c = COL[id]; emit(x + .5, y + .5, z + .5, dx * rnd(2, 5), rnd(2, 8), dz * rnd(2, 5), rnd(.12, .3), c, rnd(1.5, 4), 0); }
     setBlock(x, y, z, 0);
   }

@@ -20,7 +20,7 @@ function moveBody(b, dt, hw, h) {
       b.vy = 0; b.hitY = true;
     }
   }
-  b.x = clamp(b.x, .6, N - .6); b.z = clamp(b.z, .6, N - .6);
+  if (!useChunks) { b.x = clamp(b.x, .6, N - .6); b.z = clamp(b.z, .6, N - .6); }
 }
 function rayAABB(ox, oy, oz, dx, dy, dz, mnx, mny, mnz, mxx, mxy, mxz) {
   let t0 = 0, t1 = 1e9;

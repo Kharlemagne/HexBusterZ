@@ -3,15 +3,17 @@ const COL = Object.fromEntries(Object.entries(DATA.blocks.colors).map(([k, v]) =
 const EMIT = new Set(DATA.blocks.emissive);
 const SHADE = [[.74, .74], [.46, 1], [.86, .86]];
 const AOV = [.42, .64, .84, 1];
-const chunkBuf = [], chunkCount = [], dirty = new Set();
+const meshes = new Map(), dirty = new Set();             // chunk key -> { buf, count }
 let gl, prog, loc = {};
 function buildChunk(cx, cz) {
-  const out = []; const x0 = cx * CS, z0 = cz * CS;
+  const key = ckey(cx, cz), ch = useChunks ? OW.chunks.get(key) : null; if (useChunks && !ch) return;
+  const out = []; const x0 = cx * CS, z0 = cz * CS, yMax = ch ? Math.min(H, ch.top + 2) : H;
   const n = [0, 0, 0], p = [0, 0, 0], q = [0, 0, 0], ao = [0, 0, 0, 0];
   const cu = [0, 1, 1, 0], cv = [0, 0, 1, 1];
-  for (let y = 0; y < H; y++) for (let z = z0; z < z0 + CS; z++) for (let x = x0; x < x0 + CS; x++) {
-    const id = world[idx(x, y, z)]; if (!id) continue;
-    const b = COL[id], em = EMIT.has(id), bl = blood[idx(x, y, z)];
+  for (let y = 0; y < yMax; y++) for (let z = z0; z < z0 + CS; z++) for (let x = x0; x < x0 + CS; x++) {
+    const li = ch ? ((x & 15) | ((z & 15) << 4) | (y << 8)) : 0;
+    const id = ch ? ch.b[li] : world[idx(x, y, z)]; if (!id) continue;
+    const b = COL[id], em = EMIT.has(id), bl = ch ? (ch.blood ? ch.blood[li] : 0) : blood[idx(x, y, z)];
     const vr = .86 + hash(x * 7 + y * 13, z * 5 + y * 3) * .28;
     for (let d = 0; d < 3; d++) for (let s = -1; s <= 1; s += 2) {
       n[0] = n[1] = n[2] = 0; n[d] = s;
@@ -40,32 +42,45 @@ function buildChunk(cx, cz) {
       for (const k of tri) for (let j = 0; j < 7; j++) out.push(verts[k * 7 + j]);
     }
   }
-  if (!out.length) { if (!chunkCount[cx]) chunkCount[cx] = []; chunkCount[cx][cz] = 0; return; }
+  let m = meshes.get(key);
+  if (!out.length) { if (m) m.count = 0; return; }
   const arr = new Float32Array(out);
-  if (!chunkBuf[cx]) chunkBuf[cx] = [];
-  if (!chunkCount[cx]) chunkCount[cx] = [];
-  if (!chunkBuf[cx][cz]) chunkBuf[cx][cz] = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, chunkBuf[cx][cz]);
+  if (!m) { m = { buf: gl.createBuffer(), count: 0 }; meshes.set(key, m); }
+  gl.bindBuffer(gl.ARRAY_BUFFER, m.buf);
   gl.bufferData(gl.ARRAY_BUFFER, arr, gl.STATIC_DRAW);
-  chunkCount[cx][cz] = arr.length / 7;
+  m.count = arr.length / 7;
 }
-function buildAll() { for (let cx = 0; cx < NC; cx++) for (let cz = 0; cz < NC; cz++) buildChunk(cx, cz); dirty.clear(); }
+function freeMesh(key) { const m = meshes.get(key); if (m) { try { gl.deleteBuffer(m.buf); } catch (e) { } meshes.delete(key); } }
+function buildAll() {
+  if (useChunks) for (const ch of OW.chunks.values()) buildChunk(ch.cx, ch.cz);
+  else for (let cx = 0; cx < NC; cx++) for (let cz = 0; cz < NC; cz++) buildChunk(cx, cz);
+  dirty.clear();
+}
 function markDirty(x, z) {
   const cx = Math.floor(x / CS), cz = Math.floor(z / CS);
-  const add = (a, b) => { if (a >= 0 && b >= 0 && a < NC && b < NC) dirty.add(a * 100 + b); };
+  const add = (a, b) => { if (useChunks ? OW.chunks.has(ckey(a, b)) : (a >= 0 && b >= 0 && a < NC && b < NC)) dirty.add(ckey(a, b)); };
   add(cx, cz);
   const lx = x - cx * CS, lz = z - cz * CS;
   if (lx === 0) add(cx - 1, cz); if (lx === CS - 1) add(cx + 1, cz);
   if (lz === 0) add(cx, cz - 1); if (lz === CS - 1) add(cx, cz + 1);
 }
 function setBlock(x, y, z, id) {
-  if (x < 0 || z < 0 || x >= N || z >= N || y < 1 || y >= H) return false;
+  if (y < 1 || y >= H) return false;
+  if (useChunks) {
+    const old = OW.set(x, y, z, id);                       // -1 = that chunk is not loaded (the edit is still remembered)
+    if (old !== -1) markDirty(x, z);
+    if (old !== id) for (const fn of blockListeners) fn(x, y, z, id, old);
+    return true;
+  }
+  if (x < 0 || z < 0 || x >= N || z >= N) return false;
   const i = idx(x, y, z), old = world[i]; world[i] = id; blood[i] = 0; markDirty(x, z);
   if (old !== id) for (const fn of blockListeners) fn(x, y, z, id, old);
   return true;
 }
 function bloodAt(x, y, z) {
-  if (x < 0 || z < 0 || x >= N || z >= N || y < 0 || y >= H) return;
+  if (y < 0 || y >= H) return;
+  if (useChunks) { const ch = OW.chunks.get(ckey(x >> 4, z >> 4)); if (!ch) return; const li = (x & 15) | ((z & 15) << 4) | (y << 8); if (!ch.b[li] || EMIT.has(ch.b[li])) return; if (!ch.blood) ch.blood = new Uint8Array(ch.b.length); if (ch.blood[li] < 3) { ch.blood[li]++; markDirty(x, z); } return; }
+  if (x < 0 || z < 0 || x >= N || z >= N) return;
   const i = idx(x, y, z); if (!world[i] || EMIT.has(world[i])) return;
   if (blood[i] < 3) { blood[i]++; markDirty(x, z); }
 }

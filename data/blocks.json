@@ -11,16 +11,117 @@
   "8": "#7f8a9c",
   "9": "#ff2a38",
   "10": "#2a2236",
-  "11": "#d9a441"
+  "11": "#d9a441",
+  "12": "#1a0f2e",
+  "13": "#17252e",
+  "14": "#27f0ff",
+  "15": "#ff2bd6",
+  "16": "#4a1230",
+  "17": "#8a5566",
+  "18": "#8d99ad",
+  "19": "#a64bff",
+  "20": "#4a4752",
+  "21": "#7a3a22",
+  "22": "#ff6ad0"
  },
- "emissive": [4, 6, 9, 11],
+ "emissive": [
+  4,
+  6,
+  9,
+  11,
+  14,
+  15,
+  19,
+  22
+ ],
  "build": [
-  [2, "NETHERRACK"],
-  [1, "BASALT"],
-  [3, "OBSIDIAN"],
-  [5, "BONE"],
-  [7, "FLESH"],
-  [8, "STEEL"],
-  [6, "HELLSTONE"]
- ]
+  [
+   2,
+   "NETHERRACK"
+  ],
+  [
+   1,
+   "BASALT"
+  ],
+  [
+   3,
+   "OBSIDIAN"
+  ],
+  [
+   5,
+   "BONE"
+  ],
+  [
+   7,
+   "FLESH"
+  ],
+  [
+   8,
+   "STEEL"
+  ],
+  [
+   6,
+   "HELLSTONE"
+  ],
+  [
+   12,
+   "VOID STONE"
+  ],
+  [
+   13,
+   "CIRCUIT"
+  ],
+  [
+   14,
+   "NEON CYAN"
+  ],
+  [
+   15,
+   "NEON MAGENTA"
+  ],
+  [
+   16,
+   "FLESH MOSS"
+  ],
+  [
+   17,
+   "SINEW"
+  ],
+  [
+   18,
+   "CHROME"
+  ],
+  [
+   20,
+   "ASH"
+  ],
+  [
+   21,
+   "RUST"
+  ]
+ ],
+ "names": {
+  "1": "BASALT",
+  "2": "NETHERRACK",
+  "3": "OBSIDIAN",
+  "5": "BONE",
+  "6": "HELLSTONE",
+  "7": "FLESH",
+  "8": "STEEL",
+  "12": "VOID STONE",
+  "13": "CIRCUIT",
+  "14": "NEON CYAN",
+  "15": "NEON MAGENTA",
+  "16": "FLESH MOSS",
+  "17": "SINEW",
+  "18": "CHROME",
+  "19": "VIOLET VEIN",
+  "20": "ASH",
+  "21": "RUST",
+  "22": "DEMON ORE",
+  "11": "AMBER",
+  "4": "LAVA",
+  "9": "SEAL",
+  "10": "BEDROCK-ISH"
+ }
 }

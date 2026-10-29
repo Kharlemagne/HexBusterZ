@@ -14,9 +14,9 @@ function house(x0, z0, w, d, hgt, door) {
   for (const [px, pz] of [[x0, z0], [x0 + w - 1, z0], [x0, z0 + d - 1], [x0 + w - 1, z0 + d - 1]]) fillBox(px, 9, pz, px, 8 + hgt, pz, 3);
   if (door === 'W') setRaw(x0 - 1, 11, cz, 6); if (door === 'E') setRaw(x0 + w, 11, cz, 6);
 }
-function genHub(hubSeed) {
-  hubSeed = (hubSeed === undefined ? (Net.hubOverride ? Net.hubOverride.seed : SaveStore.doc.hub.seed) : hubSeed) >>> 0;
-  clearWorld(64); seed = hubSeed | 0; setWorldSeed(hubSeed ^ 0x9E3779B9);
+function genVillage(hubSeed) {                   // Ember Village, built into the fixed array, then stamped into the open world (see OW.ensureStamp)
+  hubSeed = hubSeed >>> 0;
+  resetFixed(64); seed = hubSeed | 0; setWorldSeed(hubSeed ^ 0x9E3779B9);
   const HB = 8;
   for (let z = 0; z < 64; z++) for (let x = 0; x < 64; x++) {
     const dx = x - 32, dz = z - 32, d = Math.max(Math.abs(dx), Math.abs(dz)), r = hyp(dx, dz);
@@ -32,7 +32,8 @@ function genHub(hubSeed) {
       world[idx(x, y, z)] = id;
     }
     if (lava) for (let y = h + 1; y <= 6; y++) world[idx(x, y, z)] = 4;
-    if (d === 24) { world[idx(x, 9, z)] = 3; world[idx(x, 10, z)] = (x + z) % 4 === 0 ? 6 : 3; }
+    const exitGap = (z > 32 && Math.abs(dx) <= 2) || (Math.abs(dz) <= 2 && z >= 32 - 2);          // south, east and west gates in the village wall
+    if (d === 24 && !exitGap) { world[idx(x, 9, z)] = 3; world[idx(x, 10, z)] = (x + z) % 4 === 0 ? 6 : 3; }
     // build-plot outline
     if (x >= 24 && x <= 40 && z >= 46 && z <= 56 && (x === 24 || x === 40 || z === 46 || z === 56)) world[idx(x, HB, z)] = 5;
   }
@@ -61,26 +62,35 @@ function genHub(hubSeed) {
     if (world[idx(x, 9, z)] || world[idx(x, 8, z)] !== 2 || z < 16 || (x > 14 && x < 28 && z > 35 && z < 46)) continue;
     fillBox(x, 9, z, x, 8 + 2 + (i % 4), z, 5);
   }
-  HubSave.apply();                  // the player's own builds, on top of the generated village
+}
+// Build (or rebuild) the open world around a spawn point. Seeds come from the player's save, or from the host when joining co-op.
+function genHub(hubSeed, sx, sz) {
+  const o = Net.hubOverride, doc = SaveStore.doc.world;
+  const wseed = hubSeed !== undefined ? hubSeed : o ? o.seed : doc.seed, vseed = o ? o.villageSeed : doc.villageSeed;
+  OW.begin(sx === undefined ? 32.5 : sx, sz === undefined ? 44.5 : sz, wseed, vseed, o ? o.edits : doc.edits);
 }
 function nearNPC() { return mode === 'hub' && Math.hypot(P.x - NPC.x, P.z - NPC.z) < 4.6 && Math.abs(P.y - NPC.y) < 3; }
 function enterHub(first, fromRun) {
-  genHub(); buildAll(); mode = 'hub'; flushSave();
+  mode = 'hub';
+  const rt = fromRun && OW.returnTo, sx = rt ? rt.x : 32.5, sz = rt ? rt.z : (fromRun ? 15.5 : 44.5);
+  genHub(undefined, sx, sz); flushSave();
   enemies.length = 0; eprojs.length = 0; bombs.length = 0; beams.length = 0; PL.fill(0);
   Run.chests = []; Run.turrets = []; Run.smoke = []; Run.hasKey = false; Run.glyph = null; Run.cur = null; resetBossSystems(); sky = null;
-  const sx = 32.5, sz = fromRun ? 15.5 : 44.5;
-  Object.assign(P, { x: sx, y: topY(32, Math.floor(sz)) + 1.01, z: sz, vx: 0, vy: 0, vz: 0, yaw: fromRun ? Math.PI : 0, pitch: 0, hp: 100, alive: true, sliding: false, slamming: false, slamT: null, lock: null, dashT: 0, dashF: 3, inv: 0, shake: 0, hurtFlash: 0, charge: 0, h: 1.75, eye: 1.6, airT: 0 });
+  Object.assign(P, { x: sx, y: topY(Math.floor(sx), Math.floor(sz)) + 1.01, z: sz, vx: 0, vy: 0, vz: 0, yaw: rt ? 0 : fromRun ? Math.PI : 0, pitch: 0, hp: 100, alive: true, sliding: false, slamming: false, slamT: null, lock: null, dashT: 0, dashF: 3, inv: 0, shake: 0, hurtFlash: 0, charge: 0, h: 1.75, eye: 1.6, airT: 0 });
   Object.assign(S, { style: 0, rank: 0, combo: 0, lastKill: -99, wHist: {}, time: 0 });
   P.weapon = -1; switchWeapon(0); refreshHotbar();
   el.dead.classList.remove('on'); el.feed.innerHTML = '';
   Net.announceWorld();
-  banner(fromRun ? 'BACK IN THE VILLAGE' : 'EMBER VILLAGE', fromRun ? 'SPEND YOUR GEMS AT THE SMITH' : 'WALK INTO THE HELLGATE TO BEGIN A RUN');
+  banner(rt ? 'BACK IN THE OPEN' : fromRun ? 'BACK IN THE VILLAGE' : 'EMBER VILLAGE', fromRun ? 'SPEND YOUR GEMS AT THE SMITH' : 'THE HELLGATE IS NORTH · THE WORLD IS OPEN');
 }
 function updateHub(dt) {
   NPC.t += dt;
   const d = Math.hypot(P.x - NPC.x, P.z - NPC.z); NPC.yaw = d < 14 ? Math.atan2(P.x - NPC.x, P.z - NPC.z) : Math.PI;
-  P.hp = Math.min(100, P.hp + 12 * dt);
-  if (P.x > GATE.x0 && P.x < GATE.x1 && P.z > GATE.z0 && P.z < GATE.z1 && P.y > GATE.y0 - 1 && P.y < GATE.y1 && Net.role !== 'client') enterDungeon();
+  if (villageD(P.x, P.z) < 34) P.hp = Math.min(100, P.hp + 12 * dt);                     // the village heals you; the wilderness doesn't
+  if (Net.role !== 'client') {
+    if (P.x > GATE.x0 && P.x < GATE.x1 && P.z > GATE.z0 && P.z < GATE.z1 && P.y > GATE.y0 - 1 && P.y < GATE.y1) { OW.returnTo = null; enterDungeon(); }
+    else { const g = gateAtPlayer(P.x, P.y, P.z); if (g) { OW.returnTo = { x: g.x + .5, z: g.z + 7.5 }; enterDungeon(g.seed); } }
+  }
   if (Math.random() < dt * 40) { const x = rnd(29.3, 35.7); emit(x, rnd(9, 13), 10.5 + rnd(-.3, .3), rnd(-.3, .3), rnd(1, 4), rnd(-.3, .3), rnd(.08, .16), Math.random() < .5 ? [.7, .2, 1] : [1, .2, .3], rnd(.5, 1.2), 2); }
 }
 

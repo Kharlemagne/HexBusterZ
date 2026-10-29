@@ -25,7 +25,7 @@ function initGL() {
 }
 initGL();
 canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); glLost = true; showToast('graphics context lost, restoring'); });
-canvas.addEventListener('webglcontextrestored', () => { try { initGL(); chunkBuf.length = 0; for (let i = 0; i < 16; i++) chunkCount[i] = []; buildAll(); glLost = false; } catch (e) { showFatal(e.message, 'The graphics context could not be restored. Reload to continue.'); } });
+canvas.addEventListener('webglcontextrestored', () => { try { initGL(); meshes.clear(); buildAll(); glLost = false; } catch (e) { showFatal(e.message, 'The graphics context could not be restored. Reload to continue.'); } });
 function bindAttribs() { gl.vertexAttribPointer(loc.p, 3, gl.FLOAT, false, 28, 0); gl.vertexAttribPointer(loc.c, 4, gl.FLOAT, false, 28, 12); }
 function flushDyn() {
   if (!dn) return;
@@ -33,13 +33,14 @@ function flushDyn() {
   gl.bufferData(gl.ARRAY_BUFFER, dyn.subarray(0, dn), gl.DYNAMIC_DRAW);
   bindAttribs(); gl.drawArrays(gl.TRIANGLES, 0, dn / 7); dn = 0;
 }
-let camX = 0, camZ = 0, cullR = 140;
+let camX = 0, camY = 20, camZ = 0, camFX = 0, camFZ = 1, cullR = 140;
 function drawWorld() {
-  for (let cx = 0; cx < NC; cx++) for (let cz = 0; cz < NC; cz++) {
-    if (!chunkCount[cx] || !chunkCount[cx][cz]) continue;
-    const dx = cx * CS + 8 - camX, dz = cz * CS + 8 - camZ; if (dx * dx + dz * dz > cullR * cullR) continue;
-    gl.bindBuffer(gl.ARRAY_BUFFER, chunkBuf[cx][cz]); bindAttribs();
-    gl.drawArrays(gl.TRIANGLES, 0, chunkCount[cx][cz]);
+  for (const [k, m] of meshes) {
+    if (!m.count) continue;
+    const dx = ckx(k) * CS + 8 - camX, dz = ckz(k) * CS + 8 - camZ, d2 = dx * dx + dz * dz; if (d2 > cullR * cullR) continue;
+    if (useChunks && d2 > 900 && (dx * camFX + dz * camFZ) < -14 * Math.sqrt(d2) * .5 - 16) continue;      // behind the camera (cheap cull for the big open world)
+    gl.bindBuffer(gl.ARRAY_BUFFER, m.buf); bindAttribs();
+    gl.drawArrays(gl.TRIANGLES, 0, m.count);
   }
 }
 // math

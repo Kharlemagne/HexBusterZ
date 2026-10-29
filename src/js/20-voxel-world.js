@@ -1,8 +1,11 @@
 // ---------------- world ----------------
-let N = 64, NC = 4; const H = 36, CS = 16, MAXN = 224;
-const world = new Uint8Array(MAXN * MAXN * H), blood = new Uint8Array(MAXN * MAXN * H);
+let N = 64, NC = 4, H = 36; const CS = 16, MAXN = 224, FIXED_H = 36, WORLD_H = 96;
+let useChunks = false;            // true in the open world (streamed chunks, see 24-overworld.js); false in dungeons (fixed arrays below)
+const world = new Uint8Array(MAXN * MAXN * FIXED_H), blood = new Uint8Array(MAXN * MAXN * FIXED_H);
+const ckey = (cx, cz) => (cx + 32768) * 65536 + (cz + 32768), ckx = k => Math.floor(k / 65536) - 32768, ckz = k => (k % 65536) - 32768;
 const idx = (x, y, z) => x + N * (z + N * y);
 function get(x, y, z) {
+  if (useChunks) return OW.get(x, y, z);
   if (x < 0 || z < 0 || x >= N || z >= N || y < 0) return 3;
   if (y >= H) return 0;
   return world[idx(x, y, z)];

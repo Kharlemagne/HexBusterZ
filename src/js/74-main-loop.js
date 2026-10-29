@@ -20,6 +20,7 @@ function update(dt) {
 const SIM_DT = 1 / 120; let simAcc = 0;
 let last = performance.now(), hudT = 0, lastTitle = 0, lastSaveStat = 0;
 function frame(now) { requestAnimationFrame(frame); try { frameInner(now); } catch (e) { reportErr(e && e.message || 'frame error'); } }
+const streamCenters = () => (Net.role === 'host' ? players.filter(q => q === P || q.alive) : [P]).map(q => ({ x: q.x, z: q.z }));
 function frameInner(now) {
   const rdt = Math.min(.1, (now - last) / 1000); last = now; T += (state === "paused" && window.__freezeT) ? 0 : rdt;
   pollGamepad();
@@ -31,7 +32,8 @@ function frameInner(now) {
     }
     if (steps >= 12) simAcc = 0;                       // far behind (tab was hidden): drop the backlog instead of spiralling
   } else { simAcc = 0; updateParticles(rdt); if (state === 'dead') { for (const e of enemies) e.t += rdt; } }
-  for (let n = 0; n < 2 && dirty.size; n++) { const k = dirty.values().next().value; dirty.delete(k); buildChunk(Math.floor(k / 100), k % 100); }
+  if (useChunks) { OW.update(streamCenters(), state === 'play' ? 5 : 12); OW.pump(state === 'play' ? 5 : 12); }
+  else for (let n = 0; n < 2 && dirty.size; n++) { const k = dirty.values().next().value; dirty.delete(k); buildChunk(ckx(k), ckz(k)); }
   renderFrame(rdt);
   if (titleCv && !el.menu.classList.contains('hide') && now - lastTitle > 42) { lastTitle = now; drawTitle(now / 1000); }
   if (!el.menu.classList.contains('hide') && now - lastSaveStat > 500) { lastSaveStat = now; updateSaveStatus(); }

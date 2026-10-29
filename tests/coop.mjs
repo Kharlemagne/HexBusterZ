@@ -20,7 +20,7 @@ const step = async (n, hf = () => { }, gf = () => { }) => {
     await Promise.all([H.page.evaluate(() => { __g.update(1 / 60); __g.Net.tick(1 / 60); }), G.page.evaluate(() => { __g.update(1 / 60); __g.Net.tick(1 / 60); })]);
   }
 };
-const hash = p => p.evaluate(() => { let h = 0; const w = __g.world; for (let i = 0; i < w.length; i++) h = (h * 31 + w[i]) | 0; return h; });
+const hash = p => p.evaluate(() => { let h = 0; if (__g.useChunks()) { for (let z = -16; z < 80; z++) for (let x = -16; x < 80; x++) for (let y = 0; y < 60; y++) h = (h * 31 + __g.get(x, y, z)) | 0; return h; } const w = __g.world; for (let i = 0; i < w.length; i++) h = (h * 31 + w[i]) | 0; return h; });
 
 // the host builds something before the guest joins
 await H.page.evaluate(() => { __g.setBlock(30, 12, 30, 3); });
@@ -30,7 +30,7 @@ await step(30);
 check('guest joined the host (role + id)', await G.page.evaluate(() => __g.Net.role === 'client' && __g.P.id === 1));
 check('host knows the guest', await H.page.evaluate(() => __g.players.length === 2 && __g.players[1].id === 1));
 check('guest rebuilt the same hub, including the host\'s build', (await hash(H.page)) === (await hash(G.page)));
-check('guest\'s own save was not touched by the host\'s hub', await G.page.evaluate(() => __g.SaveStore.doc.hub.edits.length === 0));
+check('guest\'s own save was not touched by the host\'s hub', await G.page.evaluate(() => __g.SaveStore.doc.world.edits.length === 0));
 
 // positions
 await G.page.evaluate(() => { Object.assign(__g.P, { x: 20.5, y: 12, z: 20.5, yaw: 1 }); });
@@ -55,7 +55,7 @@ await H.page.evaluate(() => __g.setBlock(26, 12, 26, 6));
 await step(10);
 check('guest block edit reaches the host', await H.page.evaluate(() => __g.get(25, 12, 25) === 5));
 check('host block edit reaches the guest', await G.page.evaluate(() => __g.get(26, 12, 26) === 6));
-check('host saves the guest\'s build in its village', await H.page.evaluate(() => { __g.SaveStore.doc.hub.edits.length; return __g.HubSave.edits.size >= 2; }));
+check('host saves the guest\'s build in its village', await H.page.evaluate(() => { return __g.WorldSave.list().length >= 2; }));
 
 // damage to the guest (the village heals ~12hp/s, so look right after the hit)
 await G.page.evaluate(() => { __g.P.inv = 0; __g.P.hp = 50; });

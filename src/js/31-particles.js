@@ -61,7 +61,9 @@ function sparkBurst(x, y, z, n, col, spd) {
 const EMB = []; for (let i = 0; i < 140; i++) EMB.push({ x: rnd(N), y: rnd(2, 36), z: rnd(N), s: rnd(.05, .13) });
 function drawEmbers(dt, t) {
   for (const e of EMB) {
-    e.y += dt * (1 + e.s * 8); e.x += Math.sin(t * .7 + e.z) * dt * .6; if (e.y > 38) { e.y = 1; e.x = rnd(N); e.z = rnd(N); }
+    e.y += dt * (1 + e.s * 8); e.x += Math.sin(t * .7 + e.z) * dt * .6;
+    if (useChunks) { if (e.y > camY + 30 || e.y < camY - 12 || Math.abs(e.x - camX) > 46 || Math.abs(e.z - camZ) > 46) { e.x = camX + rnd(-44, 44); e.z = camZ + rnd(-44, 44); e.y = camY + rnd(-8, 20); } }
+    else if (e.y > 38) { e.y = 1; e.x = rnd(N); e.z = rnd(N); }
     pushBox(e.x, e.y, e.z, e.s, e.s, e.s, 1, .45 + e.s * 2, .1, null, false, 1);
   }
 }
