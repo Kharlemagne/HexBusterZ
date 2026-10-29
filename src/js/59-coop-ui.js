@@ -125,7 +125,7 @@ function openCoopBox() {
     + (live ? '<div class="sh-m">' + (Net.role === 'host' ? 'HOSTING · ' + (players.length - 1) + ' friend(s) connected' : 'CONNECTED TO A HOST') + '</div><div><button onclick="coopLeave()">DISCONNECT</button><button onclick="closeSaveBox()">CLOSE</button></div>'
     : '<div class="sb-l">HOST — you get a room code to tell your friend</div><div><button onclick="coopHostRoom()">HOST A GAME</button></div><div id="cp-room" style="font-size:44px;letter-spacing:12px;color:#37f0ff;margin:6px"></div>'
     + '<div class="sb-l">JOIN — type the room code your friend gave you</div><input id="cp-code" maxlength="5" placeholder="ABCDE" style="font-size:28px;letter-spacing:8px;text-align:center;width:9em;background:#06020f;color:#cfe;border:2px solid #4a2a8a;padding:6px;text-transform:uppercase"><div><button onclick="coopJoinRoom()">JOIN</button></div>'
-    + '<div><button onclick="openCoopManual()" style="font-size:9px;opacity:.7">trouble connecting? use manual codes</button><button onclick="closeSaveBox()">CLOSE</button></div>')
+    + '<div><button onclick="coopTest()" style="font-size:9px;opacity:.7">test my connection</button><button onclick="openCoopManual()" style="font-size:9px;opacity:.7">manual codes</button><button onclick="closeSaveBox()">CLOSE</button></div>')
     + '<div class="sh-m" id="cp-msg"></div><div class="sh-m" style="opacity:.6;font-size:10px">version ' + BUILD_ID + ' — you and your friend should see the same one (if not, hard-refresh)</div>';
   el.savebox.classList.add('on');
 }
@@ -138,4 +138,17 @@ async function coopHostRoom() {
 }
 async function coopJoinRoom() {
   try { cpMsg('Joining…'); await Coop.joinRoom($('cp-code').value); cpMsg('Connected!'); setTimeout(() => { closeSaveBox(); startGame(); }, 700); } catch (e) { cpMsg(e.message); }
+}
+
+// ---- connection test: tells us (and you) why a direct link can't open ----
+async function coopTest() {
+  cpMsg('Testing your connection for ~8 seconds…');
+  const pc = new RTCPeerConnection(PEER_OPTS.config), seen = { host: 0, srflx: 0, relay: 0 }, errs = [];
+  pc.createDataChannel('t');
+  pc.onicecandidate = e => { if (e.candidate && e.candidate.type) seen[e.candidate.type] = (seen[e.candidate.type] || 0) + 1; };
+  pc.onicecandidateerror = e => { const u = (e.url || '').replace(/^(turns?|stuns?):/, '').split('?')[0]; errs.push(u + ' → ' + e.errorCode + (e.errorText ? ' ' + e.errorText : '')); };
+  await pc.setLocalDescription(await pc.createOffer()); await new Promise(r => { setTimeout(r, 8000); pc.addEventListener('icegatheringstatechange', () => { if (pc.iceGatheringState === 'complete') r(); }); });
+  pc.close();
+  const verdict = seen.relay ? 'RELAY OK — your network can use a relay.' : seen.srflx ? 'NO RELAY — direct links only; strict NATs on both sides will fail.' : 'NO PUBLIC ADDRESS FOUND — something is blocking WebRTC (VPN, firewall, browser setting).';
+  cpMsg('TEST: ' + verdict + '  [local ' + seen.host + ' · public ' + seen.srflx + ' · relay ' + seen.relay + ']' + (errs.length ? '  errors: ' + [...new Set(errs)].slice(0, 4).join(' | ') : ''));
 }
