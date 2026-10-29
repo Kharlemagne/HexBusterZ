@@ -126,7 +126,7 @@ function openCoopBox() {
     : '<div class="sb-l">HOST — you get a room code to tell your friend</div><div><button onclick="coopHostRoom()">HOST A GAME</button></div><div id="cp-room" style="font-size:44px;letter-spacing:12px;color:#37f0ff;margin:6px"></div>'
     + '<div class="sb-l">JOIN — type the room code your friend gave you</div><input id="cp-code" maxlength="5" placeholder="ABCDE" style="font-size:28px;letter-spacing:8px;text-align:center;width:9em;background:#06020f;color:#cfe;border:2px solid #4a2a8a;padding:6px;text-transform:uppercase"><div><button onclick="coopJoinRoom()">JOIN</button></div>'
     + '<div><button onclick="openCoopManual()" style="font-size:9px;opacity:.7">trouble connecting? use manual codes</button><button onclick="closeSaveBox()">CLOSE</button></div>')
-    + '<div class="sh-m" id="cp-msg"></div>';
+    + '<div class="sh-m" id="cp-msg"></div><div class="sh-m" style="opacity:.6;font-size:10px">version ' + BUILD_ID + ' — you and your friend should see the same one (if not, hard-refresh)</div>';
   el.savebox.classList.add('on');
 }
 async function coopHostRoom() {

@@ -9,6 +9,7 @@
 //  Messages  host -> guest: world, snap, block, hurt, bye     guest -> host: in, dmg, block
 // ============================================================
 const NET_HZ = 20;
+const BUILD_ID = BUILD_INFO.version + '-' + BUILD_INFO.commit;      // shown in the CO-OP box; both players should match
 const Net = {
   role: 'offline',                 // 'offline' | 'host' | 'client'
   myId: 0, peers: new Map(),       // host: id -> { id, tr, body }     client: id 0 -> { tr }
@@ -33,7 +34,7 @@ const Net = {
     this.peers.set(id, peer);
     tr.onmessage = s => this._recv(peer, s);
     tr.onclose = () => this._drop(id);
-    this._put(peer, 'welcome', { id }); this._sendWorld(peer);
+    this._put(peer, 'welcome', { id, build: BUILD_ID }); this._sendWorld(peer);
     feed('PLAYER ' + id + ' JOINED', '#37f0ff');
     return id;
   },
@@ -127,7 +128,10 @@ const Net = {
 
   // ---- guest receives ----
   proxies: new Map(),
-  _on_welcome(peer, { id }) { this.myId = id; P.id = id; },
+  _on_welcome(peer, { id, build }) {
+    this.myId = id; P.id = id;
+    if (build && build !== BUILD_ID) { feed('⚠ HOST RUNS A DIFFERENT VERSION (' + build + ' vs yours ' + BUILD_ID + ') — REFRESH BOTH PAGES', '#ffd23a'); banner('VERSION MISMATCH', 'Both players should hard-refresh (Ctrl+Shift+R)'); }
+  },
   _on_world(peer, w) { this._applyWorld(w); },
   _on_hurt(peer, [id, d, nx, nz, kb]) { if (id === this.myId) hurtPlayer(d, nx, nz, kb); },
   _on_bye() { this.leave(); },
