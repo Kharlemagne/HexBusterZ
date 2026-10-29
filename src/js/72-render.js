@@ -44,7 +44,7 @@ function renderFrame(dt) {
   else { drawSmoke(T); drawTurrets(T); drawChests(T); drawGlyph(T); if (inBoss) { drawSky(T); drawAsh(state === 'play' ? dt : 0, T); } }
   drawHaz(T);
   drawLockOn(); drawSlashes(); drawLatchFx();
-  drawEnemies(); drawParticles(); drawEProjs(); drawBeams(state === 'play' ? dt : 0); drawBombs();
+  drawEnemies(); drawRemotePlayers(T); drawParticles(); drawEProjs(); drawBeams(state === 'play' ? dt : 0); drawBombs();
   if (state === 'play' && P.weapon === 4) { const h = targetBlock(); if (h) pushOutline(h.x, h.y, h.z); }
   flushDyn();
   if (state === 'play' || state === 'paused') {

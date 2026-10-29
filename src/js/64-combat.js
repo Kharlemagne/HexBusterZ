@@ -13,6 +13,7 @@ function carve(cx, cy, cz, r, debris) {
 function damageEnemy(e, dmg, o) {
   if (e.dead) return;
   o = o || {};
+  if (Net.role === 'client') { Net.send('dmg', [e.id, dmg, JSON.parse(JSON.stringify(o))]); P.hitT = .13; SFX.hit(); return; }   // the host owns enemy health
   if (e.pieces) return damageBoss(e, dmg, o);
   e.hp -= dmg; e.flash = .07; addStyle(dmg * .15); P.hitT = .13;
   if (o.dir) { const k = (o.knock || 3) / e.def.mass; e.vx += o.dir.x !== undefined ? o.dir.x * k : o.dir[0] * k; e.vz += o.dir.z !== undefined ? o.dir.z * k : o.dir[2] * k; e.vy += (o.up || 0) + (o.dir.y !== undefined ? o.dir.y : o.dir[1]) * k * .4; if (e.vy > 0) e.onGround = false; }

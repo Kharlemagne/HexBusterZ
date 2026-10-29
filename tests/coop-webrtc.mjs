@@ -1,0 +1,26 @@
+// The real WebRTC handshake with copy/paste codes, between two browser contexts on this machine.
+import { openGame, startPlaying, check, done, chromium, GL_ARGS } from './lib.mjs';
+console.log('co-op over WebRTC (join codes)');
+const slow = () => { const raf = window.requestAnimationFrame.bind(window); window.requestAnimationFrame = f => setTimeout(() => raf(f), 700); };
+const browser = await chromium.launch({ args: [...GL_ARGS, '--disable-features=WebRtcHideLocalIpsWithMdns'] });
+const H = await openGame({ width: 320, height: 200, init: slow, browser }); await startPlaying(H.page);
+const G = await openGame({ width: 320, height: 200, init: slow, browser }); await startPlaying(G.page);
+const invite = await H.page.evaluate(() => __g.Coop.makeInvite());
+check('host makes an invite code', /^HBZJ1\./.test(invite), invite.slice(0, 20));
+const reply = await G.page.evaluate(c => __g.Coop.joinInvite(c), invite);
+check('guest makes a reply code', /^HBZJ1\./.test(reply));
+const ok = await H.page.evaluate(c => Promise.race([__g.Coop.acceptReply(c), new Promise(r => setTimeout(() => r('timeout'), 20000))]), reply);
+check('peer connection opens', ok === true, String(ok));
+for (let i = 0; i < 40; i++) await Promise.all([H.page.evaluate(() => { __g.update(1 / 60); __g.Net.tick(1 / 60); }), G.page.evaluate(() => { __g.update(1 / 60); __g.Net.tick(1 / 60); })]);
+await new Promise(r => setTimeout(r, 300));
+for (let i = 0; i < 20; i++) await Promise.all([H.page.evaluate(() => { __g.update(1 / 60); __g.Net.tick(1 / 60); }), G.page.evaluate(() => { __g.update(1 / 60); __g.Net.tick(1 / 60); })]);
+check('host sees a guest', await H.page.evaluate(() => __g.Net.role === 'host' && __g.players.length === 2));
+check('guest is a client in the host\'s world', await G.page.evaluate(() => __g.Net.role === 'client' && __g.P.id === 1));
+await G.page.evaluate(() => { Object.assign(__g.P, { x: 22.5, z: 22.5 }); });
+await new Promise(r => setTimeout(r, 200));
+for (let i = 0; i < 30; i++) await Promise.all([H.page.evaluate(() => { __g.update(1 / 60); __g.Net.tick(1 / 60); }), G.page.evaluate(() => { __g.update(1 / 60); __g.Net.tick(1 / 60); })]);
+await new Promise(r => setTimeout(r, 300));
+await H.page.evaluate(() => { __g.update(1 / 60); });
+check('movement travels over the data channel', await H.page.evaluate(() => Math.abs(__g.players[1].x - 22.5) < .3));
+await H.close(); await G.close(); await browser.close();
+done([...H.errors, ...G.errors]);

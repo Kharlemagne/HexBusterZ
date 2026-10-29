@@ -128,6 +128,7 @@ function enterDungeon(forceSeed) {
   Object.assign(S, { style: 0, rank: 0, combo: 0, lastKill: -99, wHist: {}, kills: 0, score: 0 });
   if (P.weapon === 4) { P.weapon = -1; switchWeapon(0); }
   refreshHotbar(); markKnown(s);
+  Net.announceWorld();
   banner('THE DEPTHS', 'FIND THE KEY IN THE TREASURE ROOM · SLAY THE BOSS'); SFX.wave();
 }
 function markKnown(r) { r.visited = true; r.known = true; for (const d of DIRS) { if (r.doors[d.k]) { const n = Run.map.get((r.gx + d.dx) + ',' + (r.gz + d.dz)); if (n) n.known = true; } } }

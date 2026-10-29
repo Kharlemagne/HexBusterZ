@@ -48,6 +48,6 @@ document.addEventListener('pointerlockchange', () => {
 document.addEventListener('pointerlockerror', () => { fallback = true; });
 el.menu.addEventListener('click', ev => {
   if (ev.target && ev.target.id === 'padbtn') { openPadSetup(); return; }
-  if (ev.target && ev.target.id === 'savebtn') { openSaveBox(); return; } if (state === 'paused') { state = 'play'; el.menu.classList.add('hide'); try { const p = canvas.requestPointerLock(); if (p && p.catch) p.catch(() => { fallback = true; }); } catch (e) { } } else startGame(); });
+  if (ev.target && ev.target.id === 'savebtn') { openSaveBox(); return; } if (ev.target && ev.target.id === 'coopbtn') { openCoopBox(); return; } if (state === 'paused') { state = 'play'; el.menu.classList.add('hide'); try { const p = canvas.requestPointerLock(); if (p && p.catch) p.catch(() => { fallback = true; }); } catch (e) { } } else startGame(); });
 el.dead.addEventListener('click', () => startGame());
 

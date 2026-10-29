@@ -17,8 +17,8 @@ export const GAME_URL = process.env.GAME_URL || pathToFileURL(path.join(path.dir
 // Software-GL flags so the game runs on CI machines without a GPU.
 export const GL_ARGS = ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--use-angle=swiftshader', '--autoplay-policy=no-user-gesture-required'];
 
-export async function openGame({ width = 960, height = 540, init, url = GAME_URL, context } = {}) {
-  const browser = await chromium.launch({ args: GL_ARGS });
+export async function openGame({ width = 960, height = 540, init, url = GAME_URL, context, browser: shared } = {}) {
+  const browser = shared || await chromium.launch({ args: GL_ARGS });
   const ctx = context ? await browser.newContext(context) : await browser.newContext({ viewport: { width, height } });
   const page = await ctx.newPage();
   const errors = [];
@@ -27,7 +27,7 @@ export async function openGame({ width = 960, height = 540, init, url = GAME_URL
   if (init) await page.addInitScript(init);
   await page.goto(url);
   await page.waitForFunction(() => window.__g && document.getElementById('msub') && /CLICK TO PLAY/.test(document.getElementById('msub').textContent), null, { timeout: 20000 });
-  return { browser, ctx, page, errors, async close() { await browser.close(); } };
+  return { browser, ctx, page, errors, async close() { if (shared) await ctx.close(); else await browser.close(); } };
 }
 export async function startPlaying(page) { await page.click('#menu'); await page.waitForFunction(() => __g.state() === 'play'); }
 

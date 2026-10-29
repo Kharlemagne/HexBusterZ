@@ -6,9 +6,11 @@ function update(dt) {
   const bt = P.bt > 0, wdt = bt ? dt * .1 : dt, pdt = bt ? dt * .5 : dt;      // bullet time: world at 10%, you at 50%
   worldDt = wdt; musicSlow = bt ? .4 : 1; musicMode = mode === 'hub' ? 0 : (Run.cur && Run.cur.type === 'boss' && Run.cur.state === 'active') ? 2 : 1;
   updatePlayer(pdt); updateWeapons(dt);
-  for (const e of enemies) if (!e.dead) { if (e.type === 'boss') updateBoss(e, wdt); else updateEnemy(e, wdt); }
-  for (let i = enemies.length - 1; i >= 0; i--) if (enemies[i].dead) enemies.splice(i, 1);
-  updateEProjs(wdt); updateBombs(wdt); updateBossSystems(wdt); updateWorld(wdt);
+  if (Net.role !== 'client') {                       // a guest only renders what the host tells it
+    for (const e of enemies) if (!e.dead) { if (e.type === 'boss') updateBoss(e, wdt); else updateEnemy(e, wdt); }
+    for (let i = enemies.length - 1; i >= 0; i--) if (enemies[i].dead) enemies.splice(i, 1);
+    updateEProjs(wdt); updateBombs(wdt); updateBossSystems(wdt); updateWorld(wdt);
+  } else for (let i = enemies.length - 1; i >= 0; i--) if (enemies[i].dead) enemies.splice(i, 1);
   S.style = Math.max(0, S.style - (10 + S.rank * 14) * dt);
   const nr = clamp(Math.floor(S.style / 120), 0, 8);
   if (nr > S.rank) SFX.rank(); S.rank = nr; S.bestRank = Math.max(S.bestRank, nr); if (nr > Save.stats.bestRank) { Save.stats.bestRank = nr; saveSoon(); } musicIntensity = nr;

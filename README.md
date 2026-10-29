@@ -16,4 +16,6 @@ Code is in `src/js/*.js` (concatenated in filename order), game data in `data/*.
 - [Save system rules](docs/SAVE_SYSTEM.md) — read before changing anything persisted
 - [Multiplayer plan](docs/MULTIPLAYER.md)
 
+**Co-op:** title screen -> CO-OP. One player hosts and sends an invite code; the other pastes it and sends back a reply code. Works on the hosted (Pages) build.
+
 Deploys to GitHub Pages on push to `main` (Settings → Pages → Source: GitHub Actions).

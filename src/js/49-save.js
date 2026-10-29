@@ -112,7 +112,7 @@ const HubSave = {
   },
   apply() {                                              // called right after the hub terrain is generated
     this.edits.clear(); this.orig.clear();
-    for (const [x, y, z, id] of SaveStore.doc.hub.edits) {
+    for (const [x, y, z, id] of (Net.hubOverride ? Net.hubOverride.edits : SaveStore.doc.hub.edits)) {
       if (x < 0 || z < 0 || x >= 64 || z >= 64 || y < 1 || y >= H) continue;
       const i = x + 64 * (z + 64 * y); this.orig.set(i, world[i]); this.edits.set(i, id); world[i] = id;
     }
@@ -120,7 +120,7 @@ const HubSave = {
   collect() { if (!this.dirty) return; SaveStore.doc.hub.edits = [...this.edits].map(([i, id]) => [i % 64, (i / 4096) | 0, ((i / 64) | 0) % 64, id]); this.dirty = false; },
   reset() { this.edits.clear(); this.orig.clear(); SaveStore.doc.hub.edits = []; this.dirty = false; SaveStore.dirty = true; }
 };
-blockListeners.push((x, y, z, id, old) => { if (mode === 'hub') HubSave.record(x + 64 * (z + 64 * y), old, id); });
+blockListeners.push((x, y, z, id, old) => { if (mode === 'hub' && Net.role !== 'client') HubSave.record(x + 64 * (z + 64 * y), old, id); });
 
 loadSave();
 const Save = SaveStore.doc.profile;                      // the rest of the game uses this object directly (gems, unlocked, runs, wins, stats)

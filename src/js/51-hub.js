@@ -15,7 +15,7 @@ function house(x0, z0, w, d, hgt, door) {
   if (door === 'W') setRaw(x0 - 1, 11, cz, 6); if (door === 'E') setRaw(x0 + w, 11, cz, 6);
 }
 function genHub(hubSeed) {
-  hubSeed = (hubSeed === undefined ? SaveStore.doc.hub.seed : hubSeed) >>> 0;
+  hubSeed = (hubSeed === undefined ? (Net.hubOverride ? Net.hubOverride.seed : SaveStore.doc.hub.seed) : hubSeed) >>> 0;
   clearWorld(64); seed = hubSeed | 0; setWorldSeed(hubSeed ^ 0x9E3779B9);
   const HB = 8;
   for (let z = 0; z < 64; z++) for (let x = 0; x < 64; x++) {
@@ -73,13 +73,14 @@ function enterHub(first, fromRun) {
   Object.assign(S, { style: 0, rank: 0, combo: 0, lastKill: -99, wHist: {}, time: 0 });
   P.weapon = -1; switchWeapon(0); refreshHotbar();
   el.dead.classList.remove('on'); el.feed.innerHTML = '';
+  Net.announceWorld();
   banner(fromRun ? 'BACK IN THE VILLAGE' : 'EMBER VILLAGE', fromRun ? 'SPEND YOUR GEMS AT THE SMITH' : 'WALK INTO THE HELLGATE TO BEGIN A RUN');
 }
 function updateHub(dt) {
   NPC.t += dt;
   const d = Math.hypot(P.x - NPC.x, P.z - NPC.z); NPC.yaw = d < 14 ? Math.atan2(P.x - NPC.x, P.z - NPC.z) : Math.PI;
   P.hp = Math.min(100, P.hp + 12 * dt);
-  if (P.x > GATE.x0 && P.x < GATE.x1 && P.z > GATE.z0 && P.z < GATE.z1 && P.y > GATE.y0 - 1 && P.y < GATE.y1) enterDungeon();
+  if (P.x > GATE.x0 && P.x < GATE.x1 && P.z > GATE.z0 && P.z < GATE.z1 && P.y > GATE.y0 - 1 && P.y < GATE.y1 && Net.role !== 'client') enterDungeon();
   if (Math.random() < dt * 40) { const x = rnd(29.3, 35.7); emit(x, rnd(9, 13), 10.5 + rnd(-.3, .3), rnd(-.3, .3), rnd(1, 4), rnd(-.3, .3), rnd(.08, .16), Math.random() < .5 ? [.7, .2, 1] : [1, .2, .3], rnd(.5, 1.2), 2); }
 }
 
