@@ -78,7 +78,7 @@ function gateAtPlayer(px, py, pz) {                                      // the 
 // ---- column description
 function colInfo(x, z) {
   const { h: bh, bi, w } = baseHeight(x, z), D = villageD(x, z);
-  let h = bh; const wv = sstep(clamp((D - 26) / 46, 0, 1)); h = 8 + (h - 8) * wv;
+  let h = bh; const wv = sstep(clamp((D - 26) / 100, 0, 1));          // flat start area, mountains only far out h = 8 + (h - 8) * wv;
   for (const g of gatesNear(x, z, 17)) { const dd = Math.hypot(x - g.x, z - g.z); h += (g.y - h) * (1 - sstep(clamp((dd - 9) / 7, 0, 1))); }
   return { h: clamp(Math.floor(h), 3, WORLD_H - 8), bi, w };
 }

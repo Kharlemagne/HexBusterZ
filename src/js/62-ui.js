@@ -1,6 +1,6 @@
 // ---------------- UI ----------------
 const el = {};
-['wave', 'bossw', 'bossbar', 'bossname', 'rank', 'rankname', 'sfill', 'score', 'feed', 'hpf', 'hptxt', 'dash', 'hotbar', 'cross', 'vig', 'banner', 'menu', 'dead', 'dstats', 'mtitle', 'msub', 'wname', 'bsel', 'shop', 'gems', 'prompt', 'bossbars', 'btbar', 'shield', 'btv', 'btring', 'pad', 'padsetup', 'savestat', 'savebox'].forEach(k => el[k] = $(k));
+['wave', 'bossw', 'bossbar', 'bossname', 'rank', 'rankname', 'sfill', 'score', 'feed', 'hpf', 'hptxt', 'dash', 'hotbar', 'cross', 'vig', 'banner', 'menu', 'dead', 'dstats', 'mtitle', 'msub', 'wname', 'bsel', 'shop', 'inv', 'invcur', 'gems', 'prompt', 'bossbars', 'btbar', 'shield', 'btv', 'btring', 'pad', 'padsetup', 'savestat', 'savebox'].forEach(k => el[k] = $(k));
 const hotSlots = [];
 for (let i = 0; i < 5; i++) { const d = document.createElement('div'); d.className = 'slot'; d.innerHTML = '<b>' + (i + 1) + '</b><span>' + WNAMES[i] + '</span>'; el.hotbar.appendChild(d); hotSlots.push(d); }
 const dashBars = []; for (let i = 0; i < 3; i++) { const d = document.createElement('i'); el.dash.appendChild(d); dashBars.push(d); }

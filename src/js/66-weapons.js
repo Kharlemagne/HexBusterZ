@@ -58,6 +58,7 @@ function updateWeapons(dt) {
     if (L && digCd <= 0 && h) {
       const id = get(h.x, h.y, h.z);
       if (h.y >= 1 && id !== 9 && id !== 10 && id !== 11 && setBlock(h.x, h.y, h.z, 0)) {
+        { const [dk, dn] = dropOf(id); const left = Inv.add(dk, dn); if (typeof dk === 'string') feed('+' + dn + ' ' + itemName(dk), '#ff6ad0'); if (left) feed('INVENTORY FULL', '#ff8a3a'); }
         for (let i = 0; i < 7; i++) emit(h.x + .5, h.y + .5, h.z + .5, rnd(-3, 3), rnd(1, 5), rnd(-3, 3), rnd(.08, .2), COL[id] || [1, 1, 1], rnd(1, 3), 0);
         SFX.dig(); digCd = .12; P.swing = 1;
       }
@@ -65,7 +66,9 @@ function updateWeapons(dt) {
     if (R && digCd <= 0 && h) {
       const px = h.x + h.nx, py = h.y + h.ny, pz = h.z + h.nz;
       if (get(px, py, pz) === 0 || get(px, py, pz) === 4) {
-        if (!playerOverlaps(px, py, pz) && setBlock(px, py, pz, BUILD[P.buildSel][0])) { SFX.place(); digCd = .15; P.swing = .6; }
+        const bid = Inv.selBlock();
+        if (!bid) { if (digCd <= 0) { feed('NO BLOCK SELECTED — OPEN INVENTORY (I)', '#ff8a3a'); SFX.empty(); digCd = .5; } }
+        else if (!playerOverlaps(px, py, pz) && setBlock(px, py, pz, bid)) { Inv.useSel(); SFX.place(); digCd = .15; P.swing = .6; }
       }
     }
   }

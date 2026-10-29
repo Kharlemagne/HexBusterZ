@@ -18,7 +18,7 @@ function updateHUD() {
   el.cross.classList.toggle('hit', P.hitT > 0);
   css(el.cross, 'transform', 'translate(-50%,-50%) scale(' + (1 + (P.weapon === 0 ? P.charge * 1.6 : 0)) + ')');
   css(el.cross, 'display', P.zoom ? 'none' : 'block');
-  const showB = P.weapon === 4; css(el.bsel, 'display', showB ? 'block' : 'none'); if (showB) txt(el.bsel, '◼ ' + BUILD[P.buildSel][1] + '   (mouse wheel)');
+  drawBuildBar();
 }
 
 

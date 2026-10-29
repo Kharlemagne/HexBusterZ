@@ -24,7 +24,9 @@ const streamCenters = () => (Net.role === 'host' ? players.filter(q => q === P |
 function frameInner(now) {
   const rdt = Math.min(.1, (now - last) / 1000); last = now; T += (state === "paused" && window.__freezeT) ? 0 : rdt;
   pollGamepad();
-  if (state === 'play') {
+  const simulate = state === 'play' || ((state === 'inv' || state === 'shop') && Net.role !== 'offline');   // in co-op the world doesn't freeze while you shop / sort your bag
+  if (simulate) {
+    if (state !== 'play') for (const k in keys) keys[k] = false;
     simAcc += rdt; let steps = 0;
     while (simAcc >= SIM_DT && steps < 12) {
       let dt = SIM_DT; if (hitstop > 0) { hitstop -= SIM_DT; dt = SIM_DT * .1; }

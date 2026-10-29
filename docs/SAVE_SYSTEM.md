@@ -9,3 +9,7 @@ Goal: updates never wipe a player's progress.
 7. Export/Import codes (`HBZ1.<base64>.<checksum>`) move saves between origins (e.g. artifact vs GitHub Pages).
 8. Wiping is a last resort: needs a documented reason in CHANGELOG and an export prompt first.
 Hub terrain is saved as seed + sparse block edits. Run `tests/save-migration.mjs` after any change here.
+
+## Schema history
+- **v1** — `hub: {seed, edits}`, `profile`, `settings`.
+- **v2** — the village became part of an open world: `world: {seed, villageSeed, genVersion, edits}` and `inv` (inventory). Migration `1 -> 2` copies old village edits into `world.edits` and keeps the old hub seed as `villageSeed` *only if the player had built something*, so existing builds still fit; everyone else gets the shared Ember Village. The old `hub` block is left untouched.

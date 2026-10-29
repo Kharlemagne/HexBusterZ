@@ -16,8 +16,13 @@ function renderShop() {
     const own = Save.unlocked[it.w], can = Save.gems >= it.cost;
     h += '<div class="sh-i' + (i === shopSel ? ' sel' : '') + (own ? ' own' : (can ? '' : ' no')) + '" onclick="shopSel=' + i + ';buyItem(' + i + ')"><b>' + it.name + '</b><span>' + (own ? 'OWNED' : '◆ ' + it.cost) + '</span><i>' + it.desc + '</i></div>';
   });
+  { const n = Inv.count('shard'); h += '<div class="sh-i' + (n ? '' : ' own') + '" onclick="sellShards()"><b>SELL DEMON SHARDS</b><span>' + (n ? n + ' × ◆ ' + ITEMS.shard.value : 'NONE') + '</span><i>Break glowing pink DEMON ORE underground with the dig kit. X to sell them all.</i></div>'; }
   h += '<div class="sh-m">' + (shopMsg || 'Gems come from chests and bosses in the Hellgate.') + '</div><div class="sh-f">CLICK / 1-3 / A to forge · ESC / E / B to leave</div>';
   el.shop.innerHTML = h;
+}
+function sellShards() {
+  const n = Inv.count('shard'); if (!n) { shopMsg = 'No shards on you. Dig deep.'; SFX.empty(); renderShop(); return; }
+  Inv.remove('shard', n); Save.gems += n * ITEMS.shard.value; saveGame(); SFX.rank(); shopMsg = 'Sold ' + n + ' shards for ◆ ' + n * ITEMS.shard.value + '.'; renderShop();
 }
 function buyItem(i) {
   const it = SHOP[i]; if (!it) return;

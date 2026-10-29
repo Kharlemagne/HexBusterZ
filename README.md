@@ -13,6 +13,7 @@ Code is in `src/js/*.js` (concatenated in filename order), game data in `data/*.
 
 ## Docs
 - [Architecture](docs/ARCHITECTURE.md)
+- [Open world & inventory](docs/WORLD.md)
 - [Save system rules](docs/SAVE_SYSTEM.md) — read before changing anything persisted
 - [Multiplayer plan](docs/MULTIPLAYER.md)
 

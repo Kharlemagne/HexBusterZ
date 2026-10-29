@@ -118,7 +118,7 @@ function pollGamepad() {
     if (pr('interact')) { if (!tryInteract()) switchWeapon(P.lastWeapon); }
     if (pr('prev')) nextWeapon(-1);
     if (pr('next')) nextWeapon(1);
-    if (P.weapon === 4) { if (!padCustom && pr('dl')) P.buildSel = (P.buildSel + BUILD.length - 1) % BUILD.length; if (!padCustom && pr('dr')) P.buildSel = (P.buildSel + 1) % BUILD.length; }
+    if (P.weapon === 4) { if (!padCustom && pr('dl')) Inv.cycle(-1); if (!padCustom && pr('dr')) Inv.cycle(1); }
   }
   for (const n in down) gp.prevD[n] = down[n];
 }

@@ -107,7 +107,7 @@ function loadSave() {
 }
 function flushSave() {
   if (!SaveStore.doc) return false;
-  WorldSave.collect(); SaveStore.doc.updated = Date.now();
+  WorldSave.collect(); try { Inv.collect(); } catch (e) { } SaveStore.doc.updated = Date.now();
   if (!SaveStore.persistent) { SaveStore.dirty = false; return false; }
   const ok = lsSet(SAVE_KEY, JSON.stringify(SaveStore.doc));
   if (ok) { SaveStore.lastSaved = Date.now(); SaveStore.dirty = false; } else SaveStore.notes.push('Could not write the save (storage full or blocked).');
