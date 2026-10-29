@@ -57,7 +57,7 @@ function slamLand(t) {
   if (heal > 0) { P.hp = Math.min(100, P.hp + heal); feed('+' + Math.round(heal) + ' HP', '#6dff9c'); }
   if (t) {
     P.dashF = 3; P.djump = 1; feed('DASH RECHARGED · DOUBLE JUMP', '#6ec8ff');
-    const c = enemyCenter(t); slashes.push({ x: c[0], y: c[1], z: c[2], phi: Math.atan2(px - c[0], pz - c[2]), L: Math.max(1.7, t.h * .75), t0: T });
+    const c = enemyCenter(t); slashes.push({ x: c[0], y: c[1], z: c[2], phi: Math.atan2(px - c[0], pz - c[2]), L: Math.max(1.7, t.h * .75), t0: T }); Net.fx('slash', [r2(c[0]), r2(c[1]), r2(c[2]), r2(Math.atan2(px - c[0], pz - c[2])), Math.max(1.7, t.h * .75)]);
     SFX.shink(); sparkBurst(c[0], c[1], c[2], 22, [.8, .4, 1], 9); sparkBurst(c[0], c[1], c[2], 10, [1, 1, 1], 11);
   }
   P.vy = 12; P.vx *= .3; P.vz *= .3; P.inv = Math.max(P.inv, .4); P.onGround = false;

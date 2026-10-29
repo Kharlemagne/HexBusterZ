@@ -51,6 +51,7 @@ function bloodBurst(x, y, z, n, dir, spd) {
   }
 }
 function sparkBurst(x, y, z, n, col, spd) {
+  Net.fx('spark', [r2(x), r2(y), r2(z), n, col, spd]);
   for (let i = 0; i < n; i++) {
     const a = rnd(TAU), b = rnd(-1, 1), s = rnd(1, spd);
     emit(x, y, z, Math.cos(a) * s * (1 - Math.abs(b) * .3), b * s + 1, Math.sin(a) * s * (1 - Math.abs(b) * .3), rnd(.05, .12), col, rnd(.25, .6), 2);

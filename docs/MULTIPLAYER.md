@@ -12,16 +12,23 @@
 - `src/js/58-net.js` — `Net` (roles, messages, snapshots, proxies, remote player drawing). Transport = `{ send(str), onmessage, onclose, close() }`.
 - `src/js/59-coop-ui.js` — WebRTC (`Coop`) + the lobby panel.
 - `players[]` / `TGT` / `nearestPlayer()` in `60-game-state.js`: `P` is always the local player; others are `remote` bodies. Enemies and bosses chase the nearest living player; `hurtPlayer(..., who)` routes damage to remote players through `Net`.
-- Tests: `tests/boss-attacks.mjs` (all 20 attacks with 2 players), `tests/coop.mjs` (two browsers over a relay), `tests/coop-webrtc.mjs` (real WebRTC handshake).
+- Tests: `tests/coop-dungeon.mjs` (rooms/doors/chests/fx with two players), `tests/boss-attacks.mjs` (all 20 attacks with 2 players), `tests/coop.mjs` (two browsers over a relay), `tests/coop-webrtc.mjs` (real WebRTC handshake).
+
+## Dungeon rules in co-op
+- The host runs the rooms for everyone: any living player can wake a room, open a chest (the opener gets the gems), use the key, or step into the glyph (everyone returns to the village).
+- Door seals are sent as `fill` messages (and to late joiners in `world`), so nobody can walk through a sealed door.
+- The snapshot carries the room states, "enemies left", key, glyph, chests and turrets; guests show those on their HUD.
+- Room clear heals every player; boss gems go to every player.
+- Shots, slashes, sparks and key sounds are sent as batched `fx` messages (`Net.fx`) and replayed on the other machines.
+- Turrets are bought by whoever pays; the host runs them.
 
 ## Known gaps (next milestones)
-1. **Dungeon progression is host-led**: rooms seal/unseal based on the *host's* position; chests, keys, gems, glyph and "return to village" only react to the host. Needs the room logic in `53-interaction.js` to consider every player and send chest/key/gem events.
-2. **Kill credit / loot** (score, style, gems) goes to the host only.
-3. Remote players are drawn as simple placeholder robots; weapons/shots of other players are not shown yet (no remote muzzle flashes, beams or sounds).
-4. Bullet time is local to whoever triggered it (the host's slows the host's simulation of the world; a guest's affects only their own view). Needs a co-op rule.
-5. No reconnect, no host migration, no relay for the ~10-15% of networks that block direct connections (would need a TURN server).
-6. Death / revive rules for co-op.
-7. Math.sin/cos may differ between browsers; world generation uses seeded RNG and tests assert identical worlds within one engine.
+1. **Kill credit** (score, style points) goes to the host only; gems from kills are not a thing, so only the score differs.
+2. Other players' *projectile* weapons (rockets / grenades) are not drawn in flight, only their explosions (sparks/sounds); hitscan tracers, slashes and sounds are shared. No muzzle flashes on the placeholder robot yet.
+3. Bullet time is local to whoever triggered it. Needs a co-op rule.
+4. No reconnect, no host migration, no relay for networks that block direct connections (would need a TURN server).
+5. Death / revive rules for co-op.
+6. Math.sin/cos may differ between browsers; world generation uses seeded RNG and tests assert identical worlds within one engine.
 
 ## Rules for changing the game
 - Anything that changes enemy/boss/projectile/hazard state must run only when `Net.role !== 'client'`.

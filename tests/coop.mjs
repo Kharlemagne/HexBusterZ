@@ -57,11 +57,11 @@ check('guest block edit reaches the host', await H.page.evaluate(() => __g.get(2
 check('host block edit reaches the guest', await G.page.evaluate(() => __g.get(26, 12, 26) === 6));
 check('host saves the guest\'s build in its village', await H.page.evaluate(() => { __g.SaveStore.doc.hub.edits.length; return __g.HubSave.edits.size >= 2; }));
 
-// damage to the guest
-const hpG = await G.page.evaluate(() => { __g.P.inv = 0; return __g.P.hp; });
+// damage to the guest (the village heals ~12hp/s, so look right after the hit)
+await G.page.evaluate(() => { __g.P.inv = 0; __g.P.hp = 50; });
 await H.page.evaluate(() => { const q = __g.players[1]; q.inv = 0; __g.hurtPlayer(12, 0, 0, 0, undefined, q); });
-await step(10);
-check('host-side damage is applied to the guest\'s own health', await G.page.evaluate(h => __g.P.hp === h - 12, hpG));
+await step(2);
+check('host-side damage is applied to the guest\'s own health', await G.page.evaluate(() => __g.P.hp < 45 && __g.P.hp > 30), String(await G.page.evaluate(() => __g.P.hp)));
 
 // into the dungeon together
 await H.page.evaluate(() => __g.enterDungeon(777));

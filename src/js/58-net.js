@@ -12,7 +12,7 @@ const NET_HZ = 20;
 const Net = {
   role: 'offline',                 // 'offline' | 'host' | 'client'
   myId: 0, peers: new Map(),       // host: id -> { id, tr, body }     client: id 0 -> { tr }
-  applying: false, acc: 0, nextPeer: 1, hubOverride: null, status: '', log: [],
+  applying: false, fxApplying: false, fxq: [], left: 0, acc: 0, nextPeer: 1, hubOverride: null, status: '', log: [],
   isAuthority() { return this.role !== 'client'; },
   active() { return this.role !== 'offline'; },
 
@@ -58,7 +58,7 @@ const Net = {
   _sendWorld(peer) {
     const w = { mode, wave: Wv.n };
     if (mode === 'hub') { w.hubSeed = SaveStore.doc.hub.seed; w.edits = [...HubSave.edits].map(([i, id]) => [i % 64, (i / 4096) | 0, ((i / 64) | 0) % 64, id]); }
-    else w.runSeed = Run.seed;
+    else { w.runSeed = Run.seed; w.seals = Run.rooms.map((r, i) => r.state === 'active' ? i : -1).filter(i => i >= 0); const b = bossRoom(); w.unl = b && !b.locked ? 1 : 0; }
     this._put(peer, 'world', w);
   },
   _applyWorld(w) {
@@ -67,7 +67,11 @@ const Net = {
       enemies.length = 0; eprojs.length = 0; haz.length = 0; bombs.length = 0; this.proxies.clear();
       Wv.n = w.wave || 1;
       if (w.mode === 'hub') { this.hubOverride = { seed: w.hubSeed, edits: w.edits || [] }; enterHub(false, false); }
-      else { this.hubOverride = null; enterDungeon(w.runSeed); }
+      else {
+        this.hubOverride = null; enterDungeon(w.runSeed);
+        for (const i of w.seals || []) setSeal(Run.rooms[i], true);
+        const b = bossRoom(); if (w.unl && b && b.locked) { b.locked = false; const bx = doorBox(b, Object.keys(b.doors)[0]); fillSeal(bx[0], bx[1], bx[2], bx[3], bx[4], bx[5], 0); }
+      }
       if (state === 'menu') startGame();
     } finally { this.applying = false; }
   },
@@ -78,8 +82,10 @@ const Net = {
     if (this.role === 'client') this._clientStep(dt);
     for (const q of players) if (q.remote && q.inv > 0) q.inv -= dt;
     this.acc += dt; if (this.acc < 1 / NET_HZ) return; this.acc = 0;
+    if (this.fxq.length) { this.send('fx', this.fxq); this.fxq = []; }
     if (this.role === 'host') this._sendSnap(); else this._sendInput();
   },
+  fx(type, data) { if (this.role === 'offline' || this.fxApplying) return; if (this.fxq.length < 400) this.fxq.push([type, data]); },
   _sendInput() {
     this.send('in', [r2(P.x), r2(P.y), r2(P.z), r2(P.vx), r2(P.vy), r2(P.vz), r2(P.yaw), r2(P.pitch), Math.round(P.hp), P.alive ? 1 : 0, P.weapon, shieldOn() ? 1 : 0, P.sliding ? 1 : 0]);
   },
@@ -94,7 +100,10 @@ const Net = {
     }
     const pr = eprojs.map(p => [p.id, r2(p.x), r2(p.y), r2(p.z), r2(p.size), p.rf ? 1 : 0, p.col || null]);
     const hz = JSON.parse(JSON.stringify(haz));
-    this.broadcast('snap', { t: r2(S.time), pl, en, pr, hz, mode });
+    const snap = { t: r2(S.time), pl, en, pr, hz, mode };
+    if (mode === 'dungeon') snap.rm = { cur: Run.rooms.indexOf(Run.cur), st: Run.rooms.map(r => r.state), left: enemies.length + Run.queue.length, key: Run.hasKey ? 1 : 0, lk: (bossRoom() || {}).locked ? 1 : 0,
+      gl: Run.glyph ? [r2(Run.glyph.x), r2(Run.glyph.y), r2(Run.glyph.z)] : null, ch: Run.chests.map(c => c.open ? 1 : 0), tu: Run.turrets.map(t => [t.on ? 1 : 0, r2(t.yaw), r2(t.pitch)]) };
+    this.broadcast('snap', snap);
   },
   _recv(peer, s) {
     let m; try { m = JSON.parse(s); } catch (e) { return; }
@@ -122,6 +131,26 @@ const Net = {
   _on_world(peer, w) { this._applyWorld(w); },
   _on_hurt(peer, [id, d, nx, nz, kb]) { if (id === this.myId) hurtPlayer(d, nx, nz, kb); },
   _on_bye() { this.leave(); },
+  _on_fill(peer, a) { fillSeal(...a); },
+  _on_banner(peer, [a, b]) { banner(a, b); },
+  _on_clear(peer, [g]) {
+    P.hp = Math.min(100, P.hp + 5);
+    if (g) { Save.gems += g; Run.gems += g; Save.wins++; Save.stats.bosses++; saveGame(); feed('+' + g + ' DEMON GEMS', '#ff2bd6'); SFX.rank(); }
+  },
+  _on_chest(peer, [i, wid, g]) { chestOpened(i, wid, g); },
+  _on_turret(peer, [i]) { const t = Run.turrets[i]; if (t && !t.on) { t.on = true; feed('TURRET ONLINE', '#37f0ff'); } },
+  _on_fx(peer, list) {                                    // other players' (and the host's) shots, slashes, sparks and sounds
+    this.fxApplying = true;
+    try {
+      for (const [type, d] of list) {
+        if (type === 'beam') beams.push({ a: d[0], b: d[1], th: d[2], col: d[3], life: d[4], t: d[4] });
+        else if (type === 'spark') sparkBurst(d[0], d[1], d[2], Math.min(d[3], 40), d[4], d[5]);
+        else if (type === 'slash') slashes.push({ x: d[0], y: d[1], z: d[2], phi: d[3], L: d[4], t0: T });
+        else if (type === 'snd') { if (Math.hypot(d[1] - P.x, d[2] - P.y, d[3] - P.z) < 70 && SFX_RAW[d[0]]) SFX_RAW[d[0]](); }
+      }
+    } finally { this.fxApplying = false; }
+    if (this.role === 'host') this.broadcast('fx', list, peer.id);
+  },
   _on_snap(peer, s) {
     if (s.mode !== mode) return;                         // world switch still in flight
     // players
@@ -141,7 +170,13 @@ const Net = {
       e.tx = o.x; e.ty = o.y; e.tz = o.z; e.tyaw = o.a; e.hp = o.hp; e.maxhp = o.mh; e.flash = o.f ? .05 : 0; e.walkT = o.w;
       if (o.pc) { o.pc.forEach((p, k) => { const q = e.pieces[k]; q.broken = !!p[1]; q.hp = p[2]; q.max = p[3]; q.flash = p[4] ? .05 : 0; }); e.fx = o.tele ? [{ tele: true }] : []; }
     }
-    for (const [id, e] of this.proxies) if (!ids.has(id)) { this.proxies.delete(id); e.dead = true; sparkBurst(e.x, e.y + e.h * .5, e.z, 14, [1, .3, .1], 6); }
+    for (const [id, e] of this.proxies) if (!ids.has(id)) { this.proxies.delete(id); e.dead = true; this.fxApplying = true; sparkBurst(e.x, e.y + e.h * .5, e.z, 14, [1, .3, .1], 6); this.fxApplying = false; }
+    if (s.rm && mode === 'dungeon') {
+      const m = s.rm; m.st.forEach((st, i) => { if (Run.rooms[i]) Run.rooms[i].state = st; }); if (m.cur >= 0) Run.cur = Run.rooms[m.cur];
+      this.left = m.left; Run.hasKey = !!m.key; const b = bossRoom(); if (b) b.locked = !!m.lk;
+      if (m.gl) { if (!Run.glyph) Run.glyph = { x: m.gl[0], y: m.gl[1], z: m.gl[2], t: 0 }; } else Run.glyph = null;
+      m.ch.forEach((o, i) => { if (Run.chests[i]) Run.chests[i].open = !!o; }); m.tu.forEach((o, i) => { const t = Run.turrets[i]; if (t) { t.on = !!o[0]; t.yaw = o[1]; t.pitch = o[2]; } });
+    }
     // projectiles + hazards are pure view data on a guest
     eprojs.length = 0; for (const p of s.pr) eprojs.push({ id: p[0], x: p[1], y: p[2], z: p[3], size: p[4], rf: !!p[5], col: p[6], life: 1, vx: 0, vy: 0, vz: 0, dmg: 0 });
     haz.length = 0; for (const h of s.hz) haz.push(h);
@@ -179,4 +214,11 @@ function drawRemotePlayers(t) {
     pushBox(q.x + R[2] * .2, q.y + 1.3, q.z + R[8] * .2, .3, .09, .06, .2, 1, 1, R, true);   // visor
     pushBox(q.x + R[0] * .42 + R[2] * .3, q.y + .85, q.z + R[6] * .42 + R[8] * .3, .16, .16, .55, 1, .5, .15, R, false);   // buster arm
   }
+}
+
+// sounds other players should hear (own shots, slashes, big booms); the raw versions are what plays when the sound arrives from the network
+const SFX_RAW = {};
+for (const name of ['revolver', 'charged', 'shotgun', 'blast', 'rivet', 'bomb', 'rail', 'boom', 'shink', 'slam', 'reflect']) {
+  const f = SFX[name]; if (!f) continue; SFX_RAW[name] = f;
+  SFX[name] = function (...a) { f.apply(SFX, a); if (Net.role !== 'offline') Net.fx('snd', [name, r2(P.x), r2(P.y), r2(P.z)]); };
 }

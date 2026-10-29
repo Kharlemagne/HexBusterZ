@@ -19,7 +19,7 @@ function surfaceTarget() {
   if (!h || h.ny === 1) return null;
   return { x: o[0] + f[0] * h.t, y: o[1] + f[1] * h.t, z: o[2] + f[2] * h.t, nx: h.nx, ny: h.ny, nz: h.nz, t: h.t };
 }
-function addSlashAt(x, y, z, L) { slashes.push({ x, y, z, phi: Math.atan2(P.x - x, P.z - z), L, t0: T }); }
+function addSlashAt(x, y, z, L) { slashes.push({ x, y, z, phi: Math.atan2(P.x - x, P.z - z), L, t0: T }); Net.fx('slash', [r2(x), r2(y), r2(z), r2(Math.atan2(P.x - x, P.z - z)), L]); }
 function releaseLatch(kick) { const l = P.latch; if (!l) return; P.latch = null; if (kick) { P.vx += l.nx * 4; P.vz += l.nz * 4; } }
 // camera snaps glide there quickly instead of cutting
 function snapLook(yaw, pitch) { let d = yaw - P.yaw; while (d > Math.PI) d -= TAU; while (d < -Math.PI) d += TAU; P.snap = { y: P.yaw + d, p: clamp(pitch, -1.55, 1.55), t: 0 }; }

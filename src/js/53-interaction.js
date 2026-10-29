@@ -5,15 +5,15 @@ function nearTurret() {
   return null;
 }
 function bossRoom() { return Run.rooms.find(r => r.type === 'boss'); }
-function nearLock() {
-  const b = bossRoom(); if (!b || !b.locked) return false;
-  const dc = doorCenter(b, Object.keys(b.doors)[0]); return Math.hypot(P.x - dc[0], P.z - dc[1]) < 7 && Math.abs(P.y - 5) < 4;
+function nearLock(q) {
+  q = q || P; const b = bossRoom(); if (!b || !b.locked) return false;
+  const dc = doorCenter(b, Object.keys(b.doors)[0]); return Math.hypot(q.x - dc[0], q.z - dc[1]) < 7 && Math.abs(q.y - 5) < 4;
 }
 function tryInteract() {
   if (mode === 'hub') { if (nearNPC()) { openShop(); return true; } return false; }
   const t = nearTurret();
   if (t && !t.on) {
-    if (Save.gems >= t.price) { Save.gems -= t.price; t.on = true; saveGame(); SFX.rank(); SFX.place(); feed('TURRET ONLINE', '#37f0ff'); }
+    if (Save.gems >= t.price) { Save.gems -= t.price; if (Net.role === 'client') Net.send('turret', [Run.turrets.indexOf(t)]); else t.on = true; saveGame(); SFX.rank(); SFX.place(); feed('TURRET ONLINE', '#37f0ff'); }
     else { feed('NEED ◆ ' + t.price + ' DEMON GEMS', '#ff8a3a'); SFX.empty(); }
     return true;
   }
@@ -50,29 +50,41 @@ function updateTurrets(dt) {
   }
 }
 function updateDungeon(dt) {
-  const r = roomAt(P.x, P.z);
-  if (r) {
-    if (r !== Run.cur) { Run.cur = r; markKnown(r); }
-    const lx = P.x - r.ox, lz = P.z - r.oz, m = r.sz - 5;
-    if (r.state === 'fresh' && lx >= 5 && lx <= m && lz >= 5 && lz <= m) activateRoom(r);
+  // The host runs the rooms for EVERYONE: any living player can wake a room, open a chest, use the key or step into the glyph.
+  const bodies = livePlayers();
+  let act = Run.rooms.find(r => r.state === 'active');
+  for (const q of bodies) {
+    const r = roomAt(q.x, q.z); if (!r) continue;
+    if (!r.visited) markKnown(r);
+    if (!act && r.state === 'fresh') { const lx = q.x - r.ox, lz = q.z - r.oz, m = r.sz - 5; if (lx >= 5 && lx <= m && lz >= 5 && lz <= m) { activateRoom(r); act = r; } }
   }
+  if (act) Run.cur = act;
+  else { const r = roomAt(P.x, P.z); if (r && r !== Run.cur) { Run.cur = r; markKnown(r); } }
   if (Run.cur && Run.cur.type === 'boss' && P.y > 12) { const rr = Run.cur; P.x = clamp(P.x, rr.ox + 2.4, rr.ox + rr.sz - 2.4); P.z = clamp(P.z, rr.oz + 2.4, rr.oz + rr.sz - 2.4); }
   const b = bossRoom();
-  if (b && b.locked && Run.hasKey && nearLock()) {
+  if (b && b.locked && Run.hasKey && bodies.some(q => nearLock(q))) {
     b.locked = false; const bx = doorBox(b, Object.keys(b.doors)[0]); fillSeal(bx[0], bx[1], bx[2], bx[3], bx[4], bx[5], 0);
     banner('DOOR UNLOCKED', 'THE BOSS WAITS BEYOND THE SMOKE'); SFX.rank(); SFX.boom();
   }
-  const c = Run.cur;
+  const c = act;
   if (c && c.state === 'active') {
     Run.spawnT -= dt;
     if (Run.spawnT <= 0 && Run.queue.length && enemies.length < 12) { const t = Run.queue.shift(), p = roomSpawn(c, ED[t].fly); if (t === 'boss') spawnBoss(p[0], p[1], p[2]); else spawnEnemy(t, p[0], p[1], p[2]); Run.spawnT = t === 'boss' ? 1.2 : .4; }
     if (!Run.queue.length && !enemies.length) clearRoom(c);
   }
   updateTurrets(dt);
-  for (const ch of Run.chests) { ch.t += dt; if (!ch.open && Math.hypot(P.x - ch.x, P.z - ch.z) < 2.1 && Math.abs(P.y - ch.y) < 2.5) openChest(ch); }
+  for (const ch of Run.chests) { ch.t += dt; if (!ch.open) { const q = bodies.find(q => Math.hypot(q.x - ch.x, q.z - ch.z) < 2.1 && Math.abs(q.y - ch.y) < 2.5); if (q) openChest(ch, q); } }
   const g = Run.glyph;
-  if (g) { g.t += dt; if (Math.random() < dt * 30) { const a = rnd(TAU); emit(g.x + Math.cos(a) * 2.2, g.y + .2, g.z + Math.sin(a) * 2.2, 0, rnd(2, 5), 0, .1, [.4, .9, 1], 1, 2); }
-    if (Math.hypot(P.x - g.x, P.z - g.z) < 2.3 && Math.abs(P.y - g.y) < 3) returnToHub(); }
+  if (g) { g.t += dt; glyphFx(g, dt); if (bodies.some(q => Math.hypot(q.x - g.x, q.z - g.z) < 2.3 && Math.abs(q.y - g.y) < 3)) returnToHub(); }
+}
+function glyphFx(g, dt) { if (Math.random() < dt * 30) { const a = rnd(TAU); emit(g.x + Math.cos(a) * 2.2, g.y + .2, g.z + Math.sin(a) * 2.2, 0, rnd(2, 5), 0, .1, [.4, .9, 1], 1, 2); } }
+// a guest runs only the view-side bits of the dungeon; the host owns the rules
+function updateDungeonClient(dt) {
+  const r = roomAt(P.x, P.z); if (r && !r.visited) markKnown(r);
+  if (Run.cur && Run.cur.type === 'boss' && P.y > 12) { const rr = Run.cur; P.x = clamp(P.x, rr.ox + 2.4, rr.ox + rr.sz - 2.4); P.z = clamp(P.z, rr.oz + 2.4, rr.oz + rr.sz - 2.4); }
+  for (const ch of Run.chests) ch.t += dt;
+  if (Run.glyph) { Run.glyph.t += dt; glyphFx(Run.glyph, dt); }
+  for (const t of Run.turrets) t.t += dt;
 }
 function updateWorld(dt) { if (mode === 'hub') updateHub(dt); else updateDungeon(dt); }
 

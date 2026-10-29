@@ -1,6 +1,6 @@
 // ---------------- beams (tracers) ----------------
 const beams = [];
-function addBeam(a, b, th, col, life) { beams.push({ a, b, th, col, life, t: life }); }
+function addBeam(a, b, th, col, life) { beams.push({ a, b, th, col, life, t: life }); Net.fx('beam', [a.map(r2), b.map(r2), th, col, life]); }
 function drawBeams(dt) {
   for (let i = beams.length - 1; i >= 0; i--) {
     const m = beams[i]; m.t -= dt; if (m.t <= 0) { beams.splice(i, 1); continue; }

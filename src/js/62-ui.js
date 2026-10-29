@@ -10,6 +10,7 @@ function feed(text, color) {
   setTimeout(() => d.remove(), 2600);
 }
 function banner(big, small) {
+  if (Net.role === 'host') Net.broadcast('banner', [big, small]);
   el.banner.innerHTML = '<h1>' + big + '</h1><p>' + (small || '') + '</p>'; el.banner.classList.remove('show'); void el.banner.offsetWidth; el.banner.classList.add('show');
 }
 

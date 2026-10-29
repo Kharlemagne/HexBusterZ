@@ -137,6 +137,7 @@ function setSeal(r, on) {
   for (const k in r.doors) { const b = doorBox(r, k); fillSeal(b[0], b[1], b[2], b[3], b[4], b[5], id); }
 }
 function fillSeal(x0, y0, z0, x1, y1, z1, id) {
+  if (Net.role === 'host') Net.broadcast('fill', [x0, y0, z0, x1, y1, z1, id]);
   for (let y = y0; y <= y1; y++) for (let z = z0; z <= z1; z++) for (let x = x0; x <= x1; x++) { world[idx(x, y, z)] = id; markDirty(x, z); }
 }
 function roomSpawn(r, fly) {
@@ -164,19 +165,27 @@ function activateRoom(r) {
 }
 function clearRoom(r) {
   r.state = 'cleared'; setSeal(r, false); P.hp = Math.min(100, P.hp + 5);
+  let g = 0;
   if (r.type === 'boss') {
     Run.glyph = { x: r.ox + r.sz / 2 + .5, y: 5, z: r.oz + r.sz / 2 + .5, t: 0 };
-    const g = 40 + r.depth * 4; Save.gems += g; Run.gems += g; Save.wins++; Save.stats.bosses++; saveGame();
+    g = 40 + r.depth * 4; Save.gems += g; Run.gems += g; Save.wins++; Save.stats.bosses++; saveGame();
     banner('BOSS SLAIN', '+' + g + ' DEMON GEMS · STEP INTO THE GLYPH'); feed('+' + g + ' DEMON GEMS', '#ff2bd6'); SFX.rank();
     gemBurst(Run.glyph.x, 6, Run.glyph.z, 50);
   } else { banner('ROOM CLEARED', '+5 HP'); }
+  Net.broadcast('clear', [g]);                              // every guest heals and (after a boss) gets the gems too
 }
 function gemBurst(x, y, z, n) {
   for (let i = 0; i < n; i++) { const a = rnd(TAU), s = rnd(2, 8); emit(x, y, z, Math.cos(a) * s, rnd(4, 12), Math.sin(a) * s, rnd(.1, .2), Math.random() < .5 ? [1, .2, .85] : [.7, .3, 1], rnd(4, 8), 0); }
 }
-function openChest(c) {
-  c.open = true; const g = Math.round((8 + c.depth * 2 + rnd(0, 6)) * (c.treasure ? 2 : 1));
-  Save.gems += g; Run.gems += g; saveGame(); gemBurst(c.x, c.y + 1, c.z, 18 + g); feed('+' + g + ' DEMON GEMS', '#ff2bd6'); SFX.rank(); SFX.dig();
+function openChest(c, who) {                                // who = the player that opened it (local P by default)
+  c.open = true; const g = Math.round((8 + c.depth * 2 + rnd(0, 6)) * (c.treasure ? 2 : 1)), wid = who ? who.id : P.id;
+  chestOpened(Run.chests.indexOf(c), wid, g);
+  Net.broadcast('chest', [Run.chests.indexOf(c), wid, g]);
+}
+function chestOpened(i, wid, g) {                           // runs on every machine
+  const c = Run.chests[i]; if (!c) return; c.open = true;
+  if (wid === P.id) { Save.gems += g; Run.gems += g; saveGame(); feed('+' + g + ' DEMON GEMS', '#ff2bd6'); }
+  gemBurst(c.x, c.y + 1, c.z, 18 + g); SFX.rank(); SFX.dig();
   if (c.treasure) { Run.hasKey = true; feed('BOSS KEY ACQUIRED', '#ffd23a'); banner('BOSS KEY', 'THE BOSS DOOR IS NOW OPEN TO YOU'); }
 }
 function returnToHub() {

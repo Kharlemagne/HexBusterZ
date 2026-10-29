@@ -10,7 +10,7 @@ function update(dt) {
     for (const e of enemies) if (!e.dead) { if (e.type === 'boss') updateBoss(e, wdt); else updateEnemy(e, wdt); }
     for (let i = enemies.length - 1; i >= 0; i--) if (enemies[i].dead) enemies.splice(i, 1);
     updateEProjs(wdt); updateBombs(wdt); updateBossSystems(wdt); updateWorld(wdt);
-  } else for (let i = enemies.length - 1; i >= 0; i--) if (enemies[i].dead) enemies.splice(i, 1);
+  } else { for (let i = enemies.length - 1; i >= 0; i--) if (enemies[i].dead) enemies.splice(i, 1); if (mode === 'dungeon') updateDungeonClient(wdt); else updateHub(wdt); }
   S.style = Math.max(0, S.style - (10 + S.rank * 14) * dt);
   const nr = clamp(Math.floor(S.style / 120), 0, 8);
   if (nr > S.rank) SFX.rank(); S.rank = nr; S.bestRank = Math.max(S.bestRank, nr); if (nr > Save.stats.bestRank) { Save.stats.bestRank = nr; saveSoon(); } musicIntensity = nr;
