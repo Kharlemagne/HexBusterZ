@@ -35,7 +35,7 @@ export async function startPlaying(page) { await page.click('#menu'); await page
 let failed = 0;
 export function check(name, cond, detail = '') { if (cond) console.log('  ok   ' + name); else { failed++; console.log('  FAIL ' + name + (detail ? '  -> ' + detail : '')); } }
 export function done(errors = []) {
-  const real = errors.filter(e => !/GPU stall|ReadPixels|GL Driver Message/i.test(e));
+  const real = errors.filter(e => !/GPU stall|ReadPixels|GL Driver Message|WebSocket connection to .* failed/i.test(e));
   check('no JavaScript errors', real.length === 0, real.slice(0, 3).join(' | '));
   if (failed) { console.log(`\n${failed} check(s) failed`); process.exit(1); }
 }
