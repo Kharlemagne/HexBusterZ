@@ -34,7 +34,8 @@ function breakPiece(e, idx, pt) {
 }
 function updateBoss(e, dt) {
   curBossE = e; e.t += dt; e.bodyCd -= dt; for (const p of e.pieces) p.flash = Math.max(0, p.flash - dt);
-  const dx = P.x - e.x, dz = P.z - e.z, dist = Math.hypot(dx, dz) || .001, nx = dx / dist, nz = dz / dist;
+  TGT = nearestPlayer(e.x, e.z);
+  const dx = TGT.x - e.x, dz = TGT.z - e.z, dist = Math.hypot(dx, dz) || .001, nx = dx / dist, nz = dz / dist;
   // fx
   for (let i = e.fx.length - 1; i >= 0; i--) { const f = e.fx[i]; f.t -= dt; f.upd(f, dt); if (f.t <= 0) { if (f.end) f.end(f); e.fx.splice(i, 1); } }
   // attack scheduling (one heavy move at a time via lock)
@@ -57,7 +58,7 @@ function updateBoss(e, dt) {
   moveBody(e, dt, e.hw, e.h);
   if ((e.hitX || e.hitZ) && e.onGround && !e.ovr) e.vy = 12;
   e.walk += Math.hypot(e.vx, e.vz) * dt * 1.2;
-  if (e.bodyCd <= 0 && dist < e.hw + .7 && Math.abs(P.y - e.y) < 3.5) { hurtPlayer(12, nx, nz, 8, e); e.bodyCd = 1.1; }
+  if (e.bodyCd <= 0 && dist < e.hw + .7 && Math.abs(TGT.y - e.y) < 3.5) { hurtPlayer(12, nx, nz, 8, e, TGT); e.bodyCd = 1.1; }
   for (const o of enemies) { if (o === e || o.dead) continue; const ax = o.x - e.x, az = o.z - e.z, dd = Math.hypot(ax, az); if (dd < e.hw + o.hw && dd > .001) { o.vx += ax / dd * 30 * dt; o.vz += az / dd * 30 * dt; } }
   for (let i = 0; i < 3; i++) if (e.pieces[i].broken && Math.random() < dt * 3) { const c = pieceCenter(e, i); emit(c[0] + rnd(-.6, .6), c[1], c[2] + rnd(-.6, .6), rnd(-1, 1), rnd(1, 3), rnd(-1, 1), .15, [.15, .12, .12], 1.2, 2); }
 }

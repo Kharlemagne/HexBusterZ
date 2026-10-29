@@ -17,11 +17,11 @@ function updateHaz(dt) {
     switch (h.k) {
       case 'erupt': if (h.t >= h.delay) {
         for (let j = 0; j < 30; j++) { const a = rnd(TAU), rr = rnd(0, h.r); emit(h.x + Math.cos(a) * rr, h.y + .2, h.z + Math.sin(a) * rr, rnd(-1, 1), rnd(7, 16), rnd(-1, 1), rnd(.15, .35), Math.random() < .5 ? [1, .4, .1] : [.9, .2, .1], rnd(.5, 1), 2); }
-        if (Math.hypot(P.x - h.x, P.z - h.z) < h.r && P.y < h.y + 4) { hurtPlayer(h.dmg, 0, 0, 0); P.vy = Math.max(P.vy, 10); P.onGround = false; }
+        for (const q of players) if (q.alive && Math.hypot(q.x - h.x, q.z - h.z) < h.r && q.y < h.y + 4) { hurtPlayer(h.dmg, 0, 0, 0, undefined, q); if (!q.remote) { q.vy = Math.max(q.vy, 10); q.onGround = false; } }
         SFX.slam(); P.shake = Math.max(P.shake, .3); dead = true;
       } break;
       case 'track': {
-        if (h.t < h.delay - .45) { h.x = lerp(h.x, P.x, Math.min(1, 3.2 * dt)); h.z = lerp(h.z, P.z, Math.min(1, 3.2 * dt)); h.y = floorSurf(h.x, h.z); }
+        if (h.t < h.delay - .45) { const T2 = nearestPlayer(h.x, h.z); h.x = lerp(h.x, T2.x, Math.min(1, 3.2 * dt)); h.z = lerp(h.z, T2.z, Math.min(1, 3.2 * dt)); h.y = floorSurf(h.x, h.z); }
         if (h.t >= h.delay) { bossBlast(h.x, h.y + .5, h.z, h.r + .4, h.dmg); dead = true; }
       } break;
       case 'meteor': {
@@ -33,32 +33,33 @@ function updateHaz(dt) {
         if (h.t >= h.delay) { bossBlast(h.tgt[0], h.tgt[1] + .4, h.tgt[2], h.r, h.dmg); dead = true; }
       } break;
       case 'mine': {
-        if (h.t > .9 && (Math.hypot(P.x - h.x, P.z - h.z) < 2.3 && Math.abs(P.y - h.y) < 2.5 || h.t > 8)) { bossBlast(h.x, h.y + .4, h.z, h.r, h.dmg); dead = true; }
+        if (h.t > .9 && (players.some(q => q.alive && Math.hypot(q.x - h.x, q.z - h.z) < 2.3 && Math.abs(q.y - h.y) < 2.5) || h.t > 8)) { bossBlast(h.x, h.y + .4, h.z, h.r, h.dmg); dead = true; }
       } break;
       case 'cloud': {
         if (h.t > h.dur) dead = true;
         else { h.tick = (h.tick || 0) + dt; if (Math.random() < dt * 14) emit(h.x + rnd(-h.r, h.r) * .8, h.y + .3, h.z + rnd(-h.r, h.r) * .8, rnd(-.3, .3), rnd(.5, 1.5), rnd(-.3, .3), rnd(.25, .5), [.3, .55, .15], rnd(.8, 1.6), 2);
-          if (h.tick > .45 && Math.hypot(P.x - h.x, P.z - h.z) < h.r && P.y < h.y + 3) { h.tick = 0; hurtPlayer(h.dmg, 0, 0, 0); } }
+          if (h.tick > .45) for (const q of players) if (q.alive && Math.hypot(q.x - h.x, q.z - h.z) < h.r && q.y < h.y + 3) { h.tick = 0; hurtPlayer(h.dmg, 0, 0, 0, undefined, q); } }
       } break;
       case 'ring': {
         h.r += h.sp * dt; if (h.r > h.max) dead = true;
-        if (!h.hit && Math.abs(Math.hypot(P.x - h.x, P.z - h.z) - h.r) < 1.4 && P.y < h.y + 1.3) { h.hit = true; const dx = P.x - h.x, dz = P.z - h.z, l = Math.hypot(dx, dz) || 1; hurtPlayer(h.dmg, dx / l, dz / l, 9); }
+        if (!h.hit) for (const q of players) if (q.alive && Math.abs(Math.hypot(q.x - h.x, q.z - h.z) - h.r) < 1.4 && q.y < h.y + 1.3) { h.hit = true; const dx = q.x - h.x, dz = q.z - h.z, l = Math.hypot(dx, dz) || 1; hurtPlayer(h.dmg, dx / l, dz / l, 9, undefined, q); }
       } break;
       case 'laser': {
         const tt = h.t - h.tele, a = tt < 0 ? h.a0 : lerp(h.a0, h.a1, clamp(tt / h.sweep, 0, 1));
         h.dir = [Math.sin(a), 0, Math.cos(a)]; h.len = beamEnd(h.sx, h.y, h.sz, h.dir, 70);
         if (tt >= 0) {
-          const rx = P.x - h.sx, rz = P.z - h.sz, al = rx * h.dir[0] + rz * h.dir[2], pe = Math.abs(rx * h.dir[2] - rz * h.dir[0]);
-          if (al > 0 && al < h.len && pe < 1 && P.y < h.y + .5 && P.y + P.h > h.y - .55) hurtPlayer(h.dmg, 0, 0, 6);
+          for (const q of players) { if (!q.alive) continue;
+            const rx = q.x - h.sx, rz = q.z - h.sz, al = rx * h.dir[0] + rz * h.dir[2], pe = Math.abs(rx * h.dir[2] - rz * h.dir[0]);
+            if (al > 0 && al < h.len && pe < 1 && q.y < h.y + .5 && q.y + q.h > h.y - .55) hurtPlayer(h.dmg, 0, 0, 6, undefined, q); }
           if (tt > h.sweep) dead = true;
         }
       } break;
       case 'rail': {
-        if (h.t < h.tele - .25) h.dir = aimFrom([h.sx, h.sy, h.sz], 0, 0);
+        if (h.t < h.tele - .25) { TGT = nearestPlayer(h.sx, h.sz); h.dir = aimFrom([h.sx, h.sy, h.sz], 0, 0); }
         h.len = beamEnd(h.sx, h.sy, h.sz, h.dir, 90);
         if (!h.fired && h.t >= h.tele) {
           h.fired = true; SFX.rail(); P.shake = Math.max(P.shake, .4);
-          if (segDist(P.x, P.y + .9, P.z, h.sx, h.sy, h.sz, h.dir, h.len) < 1.0) hurtPlayer(h.dmg, h.dir[0], h.dir[2], 10);
+          for (const q of players) if (q.alive && segDist(q.x, q.y + .9, q.z, h.sx, h.sy, h.sz, h.dir, h.len) < 1.0) hurtPlayer(h.dmg, h.dir[0], h.dir[2], 10, undefined, q);
           sparkBurst(h.sx + h.dir[0] * h.len, h.sy + h.dir[1] * h.len, h.sz + h.dir[2] * h.len, 18, [.6, 1, 1], 8);
         }
         if (h.t > h.tele + .18) dead = true;

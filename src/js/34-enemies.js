@@ -15,7 +15,7 @@ function hasLOS(ax, ay, az, bx, by, bz) {
 }
 function fireEProj(e, speed, dmg, size, yawOff, spread, pitchOff) {
   const sx = e.x, sy = e.y + e.h * .72, sz = e.z;
-  let tx = P.x + P.vx * .18, ty = P.y + P.eye * .75, tz = P.z + P.vz * .18;
+  let tx = TGT.x + TGT.vx * .18, ty = TGT.y + TGT.eye * .75, tz = TGT.z + TGT.vz * .18;
   let dx = tx - sx, dy = ty - sy, dz = tz - sz; const dl = Math.hypot(dx, dy, dz) || 1; dx /= dl; dy /= dl; dz /= dl;
   if (yawOff) { const c = Math.cos(yawOff), s = Math.sin(yawOff); const nx = dx * c - dz * s, nz = dx * s + dz * c; dx = nx; dz = nz; }
   if (pitchOff) dy += pitchOff;
@@ -25,26 +25,27 @@ function fireEProj(e, speed, dmg, size, yawOff, spread, pitchOff) {
 }
 function updateEnemy(e, dt) {
   const d = e.def; e.t += dt; e.cd -= dt; e.flash = Math.max(0, e.flash - dt);
-  const dx = P.x - e.x, dz = P.z - e.z, cyE = e.y + e.h * .5, dy = (P.y + 1.0) - cyE;
+  TGT = nearestPlayer(e.x, e.z);
+  const dx = TGT.x - e.x, dz = TGT.z - e.z, cyE = e.y + e.h * .5, dy = (TGT.y + 1.0) - cyE;
   const dist = Math.hypot(dx, dz) || .001, nx = dx / dist, nz = dz / dist;
   e.yaw = Math.atan2(dx, dz);
   let tx = 0, tz = 0, sp = d.speed;
-  const slow = P.slowT > 0 ? .35 : 1; // never used for now, hook for future
+  const slow = TGT.slowT > 0 ? .35 : 1; // never used for now, hook for future
   if (e.type === 'husk') {
     if (dist > 11) { tx = nx; tz = nz; } else if (dist > 5) { tx = nx * .3 - nz * e.sdir * .9; tz = nz * .3 + nx * e.sdir * .9; } else { tx = -nx * .6 - nz * e.sdir * .6; tz = -nz * .6 + nx * e.sdir * .6; }
     if (Math.sin(e.t * .5) > .8) e.sdir = -e.sdir;
-    if (e.cd <= 0 && dist < 26 && hasLOS(e.x, e.y + e.h * .72, e.z, P.x, P.y + 1.2, P.z)) { fireEProj(e, 17, 9, .34, 0, .02); e.cd = rnd(1.5, 2.6); }
+    if (e.cd <= 0 && dist < 26 && hasLOS(e.x, e.y + e.h * .72, e.z, TGT.x, TGT.y + 1.2, TGT.z)) { fireEProj(e, 17, 9, .34, 0, .02); e.cd = rnd(1.5, 2.6); }
   } else if (e.type === 'gnasher') {
     tx = nx; tz = nz; if (dist < 9 && dist > 2.5) { tx += -nz * e.sdir * .4; tz += nx * e.sdir * .4; }
     if (dist < 1.9 && Math.abs(dy) < 2 && e.cd <= 0) { hurtPlayer(14, nx, nz, undefined, e); e.cd = .8; e.vx = -nx * 5; e.vz = -nz * 5; }
     if (e.onGround && dist < 8 && dist > 3 && Math.random() < dt * .9) { e.vy = 9; e.vx = nx * 14; e.vz = nz * 14; }
   } else if (e.type === 'wraith') {
     const want = 9, ang = e.t * .7 * e.sdir;
-    const gx = P.x - nx * want * .2 + Math.cos(ang) * want * .8, gz = P.z - nz * want * .2 + Math.sin(ang) * want * .8, gy = P.y + 3.2 + Math.sin(e.t * 1.3);
+    const gx = TGT.x - nx * want * .2 + Math.cos(ang) * want * .8, gz = TGT.z - nz * want * .2 + Math.sin(ang) * want * .8, gy = TGT.y + 3.2 + Math.sin(e.t * 1.3);
     const ddx = gx - e.x, ddz = gz - e.z, dd = Math.hypot(ddx, ddz) || 1; tx = ddx / dd * Math.min(1, dd / 2); tz = ddz / dd * Math.min(1, dd / 2);
     e.vy += clamp(gy - e.y, -3, 3) * 4 * dt; e.vy *= 1 - 1.5 * dt;
     if (e.burst > 0) { e.bcd -= dt; if (e.bcd <= 0) { fireEProj(e, 19, 8, .3, 0, .03); e.burst--; e.bcd = .13; } }
-    else if (e.cd <= 0 && dist < 28 && hasLOS(e.x, e.y + .6, e.z, P.x, P.y + 1.2, P.z)) { e.burst = 3; e.bcd = 0; e.cd = rnd(2.2, 3.4); }
+    else if (e.cd <= 0 && dist < 28 && hasLOS(e.x, e.y + .6, e.z, TGT.x, TGT.y + 1.2, TGT.z)) { e.burst = 3; e.bcd = 0; e.cd = rnd(2.2, 3.4); }
   }
   // locomotion
   if (d.fly) {
@@ -87,7 +88,7 @@ function updateEProjs(dt) {
   for (let i = eprojs.length - 1; i >= 0; i--) {
     const p = eprojs[i]; p.life -= dt;
     if (p.g) p.vy -= p.g * dt;
-    if (p.home && !p.rf) { const sp = Math.hypot(p.vx, p.vy, p.vz) || 1, tx = P.x - p.x, ty = P.y + 1.1 - p.y, tz = P.z - p.z, td = Math.hypot(tx, ty, tz) || 1; let nx = p.vx / sp + tx / td * p.home * dt, ny = p.vy / sp + ty / td * p.home * dt, nz = p.vz / sp + tz / td * p.home * dt; const nl = Math.hypot(nx, ny, nz) || 1; p.vx = nx / nl * sp; p.vy = ny / nl * sp; p.vz = nz / nl * sp; }
+    if (p.home && !p.rf) { const T2 = nearestPlayer(p.x, p.z), sp = Math.hypot(p.vx, p.vy, p.vz) || 1, tx = T2.x - p.x, ty = T2.y + 1.1 - p.y, tz = T2.z - p.z, td = Math.hypot(tx, ty, tz) || 1; let nx = p.vx / sp + tx / td * p.home * dt, ny = p.vy / sp + ty / td * p.home * dt, nz = p.vz / sp + tz / td * p.home * dt; const nl = Math.hypot(nx, ny, nz) || 1; p.vx = nx / nl * sp; p.vy = ny / nl * sp; p.vz = nz / nl * sp; }
     p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
     let dead = p.life <= 0 || solid(Math.floor(p.x), Math.floor(p.y), Math.floor(p.z)), boom = false;
     // slide / dash shield: anything that gets close is thrown back at whoever fired it
@@ -103,10 +104,11 @@ function updateEProjs(dt) {
       if (dead && p.exp) boom = true;
       if (boom) explode(p.x, p.y, p.z, p.exp[0] * 1.2, p.exp[1] * 2.2, 0, { w: 10 });
     } else if (p.exp) {
-      if (!dead && P.alive && Math.abs(p.x - P.x) < P.hw + p.size * .5 + .3 && Math.abs(p.z - P.z) < P.hw + p.size * .5 + .3 && p.y > P.y - .4 && p.y < P.y + P.h + .4) dead = true;
+      if (!dead && players.some(q => q.alive && Math.abs(p.x - q.x) < q.hw + p.size * .5 + .3 && Math.abs(p.z - q.z) < q.hw + p.size * .5 + .3 && p.y > q.y - .4 && p.y < q.y + q.h + .4)) dead = true;
       if (dead) { bossBlast(p.x, p.y, p.z, p.exp[0], p.exp[1]); eprojs.splice(i, 1); continue; }
-    } else if (!dead && P.alive && Math.abs(p.x - P.x) < P.hw + p.size * .5 && Math.abs(p.z - P.z) < P.hw + p.size * .5 && p.y > P.y - p.size * .5 && p.y < P.y + P.h + p.size * .5) {
-      const l = Math.hypot(p.vx, p.vz) || 1; hurtPlayer(p.dmg, p.vx / l, p.vz / l, undefined, p.owner); dead = true;
+    } else if (!dead) {
+      const q = players.find(q => q.alive && Math.abs(p.x - q.x) < q.hw + p.size * .5 && Math.abs(p.z - q.z) < q.hw + p.size * .5 && p.y > q.y - p.size * .5 && p.y < q.y + q.h + p.size * .5);
+      if (q) { const l = Math.hypot(p.vx, p.vz) || 1; hurtPlayer(p.dmg, p.vx / l, p.vz / l, undefined, p.owner, q); dead = true; }
     }
     if (Math.random() < dt * 30) emit(p.x, p.y, p.z, rnd(-.5, .5), rnd(-.5, .5), rnd(-.5, .5), .08, p.rf ? [.4, 1, 1] : [1, .5, .1], .25, 2);
     if (dead) { sparkBurst(p.x, p.y, p.z, 5, p.rf ? [.4, 1, 1] : [1, .4, .1], 4); eprojs.splice(i, 1); }

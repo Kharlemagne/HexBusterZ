@@ -23,7 +23,8 @@ function reflectProj(p) {
   p.vx = d[0] * sp; p.vy = d[1] * sp; p.vz = d[2] * sp; p.rf = true; p.life = 4; p.col = [.4, 1, 1]; p.dmg = Math.max(10, p.dmg * 2); p.size *= 1.15; p.home = 0; p.g = 0;
   sparkBurst(p.x, p.y, p.z, 8, [.4, 1, 1], 6);
 }
-function hurtPlayer(d, nx, nz, kb, src) {
+function hurtPlayer(d, nx, nz, kb, src, who) {
+  if (who && who.remote) { if (who.alive && d > 0 && who.inv <= 0) { who.inv = .18; Net.send('hurt', [who.id, d, nx, nz, kb === undefined ? 3 : kb], who.id); } return; }   // the owner applies damage to themselves
   if (!P.alive || d <= 0) return;
   if (src !== 'self' && shieldOn()) { reflectDamage(d, src); return; }
   if (P.dashT > 0 || P.inv > 0) return;
