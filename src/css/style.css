@@ -185,3 +185,5 @@ h1.hx::after{color:#00f0ff;transform:translate(5px,-1px);animation:glb 2.3s infi
 .stats{margin-top:8px;font-size:10px;letter-spacing:2px;color:#9a8cc0;line-height:1.7}
 #charcv{position:static!important;inset:auto!important;display:block}
 #inv{justify-content:flex-start!important}#inv>:first-child{margin-top:auto}#inv>:last-child{margin-bottom:auto}
+
+.gf{outline:3px solid #37f0ff!important;outline-offset:2px;background:#54448a!important;color:#ffe96a!important}.ic.pc{border-color:#ffe96a!important;box-shadow:0 0 12px #ffe96a}

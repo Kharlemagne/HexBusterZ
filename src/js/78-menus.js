@@ -10,7 +10,7 @@ const Menu = {
   show(name) { this.stack = [name]; this.msg = ''; this.render(); },
   top() { return this.stack[this.stack.length - 1]; },
   render() {
-    const t = this.top(), h = SCREENS[t] ? SCREENS[t]() : ''; $('mscreen').innerHTML = h; $('mscreen').dataset.screen = t;
+    this.pf = 0; const t = this.top(), h = SCREENS[t] ? SCREENS[t]() : ''; $('mscreen').innerHTML = h; $('mscreen').dataset.screen = t;
     el.menu.classList.toggle('pause', state === 'paused'); el.menu.classList.toggle('sub', t !== 'title' && state !== 'paused');
     const f = $('mscreen').querySelector('[data-focus]'); if (f && f.tagName === 'INPUT') setTimeout(() => { try { f.focus(); f.select(); } catch (e) { } }, 30);
   },

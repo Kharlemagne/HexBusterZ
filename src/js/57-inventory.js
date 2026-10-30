@@ -65,7 +65,7 @@ function closeInv() {
   try { const p = canvas.requestPointerLock(); if (p && p.catch) p.catch(() => { }); } catch (e) { }
   saveSoon();
 }
-const invCell = (s, i, extra) => '<div class="ic' + (i < 9 ? ' hb' : '') + (i === Inv.sel ? ' sel' : '') + (extra || '') + '" onclick="Inv.click(' + i + ',false,event.shiftKey)" oncontextmenu="Inv.click(' + i + ',true,event.shiftKey);return false">'
+const invCell = (s, i, extra) => '<div data-i="' + i + '" class="ic' + (i < 9 ? ' hb' : '') + (i === Inv.sel ? ' sel' : '') + (extra || '') + '" onclick="Inv.click(' + i + ',false,event.shiftKey)" oncontextmenu="Inv.click(' + i + ',true,event.shiftKey);return false">'
   + (s ? '<u style="background:' + itemColor(s.k) + '"></u><em>' + itemName(s.k) + '</em><b>' + s.n + '</b>' : '') + (i < 9 ? '<small>' + (i + 1) + '</small>' : '') + '</div>';
 function invWeapon(i) { if (weaponOK(i)) { switchWeapon(i); renderInv(); } }
 function renderInv() {
@@ -79,7 +79,7 @@ function renderInv() {
   if (Inv.creative) { h += '<div class="sb-l">CREATIVE — click a block to grab a full stack</div><div class="ig cat">'; for (const [id, nm] of DATA.blocks.build) h += '<div class="ic" onclick="Inv.cursor={k:' + id + ',n:99};renderInv()"><u style="background:' + itemColor(id) + '"></u><em>' + nm + '</em></div>'; h += '</div>'; }
   h += '<div class="invbtn"><button onclick="Inv.sort();renderInv()">SORT BAG</button><button onclick="Inv.cursor=null;Inv.changed();renderInv()">TRASH HELD</button><button onclick="Inv.creative=!Inv.creative;Inv.changed();renderInv()">CREATIVE: ' + (Inv.creative ? 'ON' : 'OFF') + '</button><button onclick="closeInv()">CLOSE (I)</button></div>';
   h += '<div class="sh-f">CLICK pick up / drop / swap · RIGHT-CLICK half or one · SHIFT-CLICK bag ⇄ hotbar · 1-9 pick a hotbar slot · the dig kit places from the selected slot</div>';
-  el.inv.innerHTML = h; updateInvCursor();
+  el.inv.innerHTML = h; updateInvCursor(); if (gp.active) padInvMark();
 }
 // the doll turns to look at your mouse; called every frame while the screen is open
 function animateCharPreview() {

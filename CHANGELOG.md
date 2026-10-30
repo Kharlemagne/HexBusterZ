@@ -1,5 +1,6 @@
 # Changelog
 ## Unreleased
+- **Gamepad**: BACK opens the backpack / character screen, START opens the game menu; D-pad or left stick navigates every menu (A select, B back, left/right on sliders) and the backpack (A pick up/drop, X half/one, Y quick-move, LB/RB weapon, RT sort).
 - **Menus**: Minecraft-style title screen with a living panorama, splash text, world list (create with name / seed / mode, rename, delete), options (volumes, render distance, FOV, sensitivity, shake, invert), pause menu, save and quit. Save schema 3: many worlds, each with its own blocks, time and inventory.
 - **Sky**: sun and moons now set behind the horizon; two eldritch suns and four eldritch moons; fog only hides the render-distance edge.
 - **Lava** flows (world-space animated shader, swelling surface, embers). **Item drops** from broken blocks. **Player model** (black skeleton-robot) and a character screen with loadout, equipment slots and backpack.

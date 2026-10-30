@@ -99,19 +99,24 @@ function pollGamepad() {
   const pr = n => down[n] && !gp.prevD[n];
   gp.slide = down.dash; gp.lt = dval(pad, padMap.alt); gp.rt = dval(pad, padMap.fire); gp.a = down.jump;
   // any raw button counts as activity (so START / any button works even on an unmapped layout)
-  let rawRise = false, anyRaw = false;
-  pad.buttons.forEach((bb, i) => { const on = bb.pressed || bb.value > .5; if (on) { anyRaw = true; if (!gp.prevRaw[i]) { rawRise = true; gp.lastRaw = 'BUTTON ' + i; } } gp.prevRaw[i] = on; });
+  let rawRise = false, anyRaw = false; const rose = new Set();                    // raw (standard-layout) buttons that went down this frame, used by the menus
+  pad.buttons.forEach((bb, i) => { const on = bb.pressed || bb.value > .5; if (on) { anyRaw = true; if (!gp.prevRaw[i]) { rawRise = true; rose.add(i); gp.lastRaw = 'BUTTON ' + i; } } gp.prevRaw[i] = on; });
   pad.axes.forEach((v, i) => { if (Math.abs(v) > .7 && !gp.prevRaw['a' + i]) gp.lastRaw = 'AXIS ' + i + (v > 0 ? '+' : '−'); gp.prevRaw['a' + i] = Math.abs(v) > .7; });
   const any = anyRaw || Math.abs(gp.lx) + Math.abs(gp.ly) + Math.abs(gp.rx) + Math.abs(gp.ry) > .2;
   if (any) { gp.active = true; fallback = true; if (AC && AC.state === 'suspended') AC.resume(); }
+  const nav = padNav(bi, state === 'play');
   if (state === 'shop') {
     if (pr('next')) { shopSel = (shopSel + SHOP.length - 1) % SHOP.length; renderShop(); }
     if (pr('prev')) { shopSel = (shopSel + 1) % SHOP.length; renderShop(); }
     if (pr('jump')) buyItem(shopSel);
     if (pr('xcross') || pr('start') || pr('interact')) closeShop();
-  } else if (state !== 'play') { if (rawRise && state === 'paused') resumeGame(); else if (rawRise && state === 'dead') startGame(); }
+  } else if (state === 'inv') padInv(rose, nav);
+  else if (state === 'menu' || state === 'paused') padMenu(rose, nav);
+  else if (state === 'dead') { if (rawRise) startGame(); }
+  else if (state !== 'play') { /* pad setup, etc. */ }
   else {
-    if (pr('start')) { /* reserved */ }
+    if (rose.has(8)) { openInv(); for (const n in down) gp.prevD[n] = down[n]; return; }               // BACK / SELECT = backpack + character
+    if (pr('start') || rose.has(9)) { openPause(); for (const n in down) gp.prevD[n] = down[n]; return; }   // START = game menu
     if (pr('xcross')) P.cEdge = true;
     if (pr('dash')) tryDash();
     if (pr('jump')) P.jEdge = true;
@@ -123,3 +128,42 @@ function pollGamepad() {
   for (const n in down) gp.prevD[n] = down[n];
 }
 
+
+// ---- gamepad navigation for menus and the backpack (standard layout: A=0 B=1 X=2 Y=3 LB=4 RB=5 RT=7 BACK=8 START=9, D-pad 12-15, left stick) ----
+function padNav(bi, inPlay) {
+  const out = { up: false, down: false, left: false, right: false }; if (inPlay) { gp.navT = {}; return out; }
+  const now = performance.now(), want = { up: bi(12) || gp.ly < -.55, down: bi(13) || gp.ly > .55, left: bi(14) || gp.lx < -.55, right: bi(15) || gp.lx > .55 }; gp.navT = gp.navT || {};
+  for (const d in want) { if (!want[d]) { gp.navT[d] = 0; continue; } if (!gp.navT[d]) { gp.navT[d] = now + 380; out[d] = true; } else if (now > gp.navT[d]) { gp.navT[d] = now + 110; out[d] = true; } }
+  return out;
+}
+function padMenu(rose, nav) {
+  const items = [...document.querySelectorAll('#mscreen .mb:not(:disabled), #mscreen .wl[data-id], #mscreen input[type=range]')], n = items.length;
+  document.querySelectorAll('#mscreen .gf').forEach(e => e.classList.remove('gf'));
+  if (state === 'paused' && rose.has(9) && Menu.top() === 'pause') { resumeGame(); return; }
+  if (rose.has(1) || rose.has(8)) { if (Menu.stack.length > 1 || state === 'paused') { Menu.back(); return; } }
+  if (!n) return;
+  if (nav.down) Menu.pf = ((Menu.pf | 0) + 1) % n; if (nav.up) Menu.pf = ((Menu.pf | 0) + n - 1) % n;
+  Menu.pf = clamp(Menu.pf | 0, 0, n - 1); const it = items[Menu.pf];
+  if (it.type === 'range') {
+    if (nav.left || nav.right) { const st = +it.step || 1, v = clamp(+it.value + (nav.right ? st : -st), +it.min, +it.max); it.value = v; it.dispatchEvent(new Event('input', { bubbles: true })); }
+  } else if (rose.has(0)) {
+    try { initAudio(); } catch (e) { }
+    if (it.classList.contains('wl')) { if (Menu.sel === it.dataset.id) ACT.play(); else ACT.pick(it); } else it.click();
+    return;
+  }
+  const mark = it.type === 'range' ? it.parentElement : it; mark.classList.add('gf'); if (mark.scrollIntoView) mark.scrollIntoView({ block: 'nearest' });
+}
+function padInv(rose, nav) {
+  if (rose.has(1) || rose.has(8) || rose.has(9)) { closeInv(); return; }
+  let c = Inv.pc || { r: 3, c: 0 };
+  if (nav.left) c.c = (c.c + 8) % 9; if (nav.right) c.c = (c.c + 1) % 9; if (nav.up) c.r = Math.max(0, c.r - 1); if (nav.down) c.r = Math.min(3, c.r + 1); Inv.pc = c;
+  const idx = c.r === 3 ? c.c : 9 + c.r * 9 + c.c;
+  if (rose.has(0)) Inv.click(idx, false, false); else if (rose.has(2)) Inv.click(idx, true, false); else if (rose.has(3)) Inv.click(idx, false, true);
+  else if (rose.has(7)) { Inv.sort(); renderInv(); } else if (rose.has(4) || rose.has(5)) { let w = P.weapon; for (let i = 0; i < 5; i++) { w = (w + (rose.has(5) ? 1 : 4)) % 5; if (weaponOK(w)) break; } invWeapon(w); }
+  padInvMark();
+}
+function padInvMark() {
+  const c = Inv.pc || { r: 3, c: 0 }, idx = c.r === 3 ? c.c : 9 + c.r * 9 + c.c;
+  document.querySelectorAll('#inv .ic.pc').forEach(e => e.classList.remove('pc'));
+  const cell = document.querySelector('#inv .ic[data-i="' + idx + '"]'); if (cell) { cell.classList.add('pc'); const r = cell.getBoundingClientRect(); mpos.x = r.left + r.width * .6; mpos.y = r.top + r.height * .6; updateInvCursor(); }
+}
