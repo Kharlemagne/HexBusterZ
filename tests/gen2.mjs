@@ -2,7 +2,7 @@
 import { openGame, startPlaying, check, done } from './lib.mjs';
 console.log('floating islands and the Helicarrier');
 {
-  const g = await openGame({ width: 320, height: 200 }); const { page } = g; await startPlaying(page);
+  const g = await openGame({ width: 320, height: 200 }); const { page } = g; await startPlaying(page, 2);
   const r = await page.evaluate(() => { const P = __g.P; return { gen: __g.OW.gen, y: P.y, bio: __g.biomeAt(P.x, P.z), deck: __g.get(Math.floor(P.x), 104, Math.floor(P.z)) > 0, below: __g.get(Math.floor(P.x), 30, Math.floor(P.z)) }; });
   check('new worlds are generation 2 and spawn on the carrier deck', r.gen === 2 && r.deck && r.y > 104 && r.bio === 'THE HELICARRIER', JSON.stringify(r));
   const gate = await page.evaluate(() => { const r = __g.gatesNear(32, -56, 12)[0]; return r && { x: r.x, z: r.z, y: r.y }; });

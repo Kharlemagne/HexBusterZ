@@ -30,7 +30,23 @@
   "27": "#ff7a10",
   "28": "#ff7a10",
   "29": "#ff7a10",
-  "30": "#ff7a10"
+  "30": "#ff7a10",
+  "32": "#3b4350",
+  "33": "#b9bcc4",
+  "34": "#4a5a6e",
+  "35": "#b4572e",
+  "36": "#1f2a38",
+  "37": "#2a2d36",
+  "38": "#ffb14a",
+  "39": "#d8f2ff",
+  "40": "#f4fbff",
+  "41": "#ff8a1e",
+  "42": "#2f9bff",
+  "43": "#38ff8a",
+  "44": "#e8b820",
+  "45": "#2a9d9a",
+  "46": "#c8a050",
+  "47": "#8a5a3a"
  },
  "emissive": [
   4,
@@ -48,7 +64,13 @@
   27,
   28,
   29,
-  30
+  30,
+  38,
+  39,
+  40,
+  41,
+  42,
+  43
  ],
  "build": [
   [
@@ -114,6 +136,70 @@
   [
    21,
    "RUST"
+  ],
+  [
+   32,
+   "HULLPLATE"
+  ],
+  [
+   33,
+   "CONCRETE"
+  ],
+  [
+   34,
+   "DARKBRICK"
+  ],
+  [
+   35,
+   "RUSTBRICK"
+  ],
+  [
+   36,
+   "TECHWALL"
+  ],
+  [
+   37,
+   "STREET"
+  ],
+  [
+   44,
+   "HAZARD"
+  ],
+  [
+   45,
+   "TEALPANEL"
+  ],
+  [
+   46,
+   "GOLDPANEL"
+  ],
+  [
+   47,
+   "PIPE"
+  ],
+  [
+   38,
+   "AMBERWINDOW"
+  ],
+  [
+   39,
+   "WHITEWINDOW"
+  ],
+  [
+   40,
+   "LAMPPANEL"
+  ],
+  [
+   41,
+   "NEONORANGE"
+  ],
+  [
+   42,
+   "NEONBLUE"
+  ],
+  [
+   43,
+   "NEONGREEN"
   ]
  ],
  "names": {
@@ -146,6 +232,22 @@
   "27": "LAVA (FLOWING)",
   "28": "LAVA (FLOWING)",
   "29": "LAVA (FLOWING)",
-  "30": "LAVA (FALLING)"
+  "30": "LAVA (FALLING)",
+  "32": "HULLPLATE",
+  "33": "CONCRETE",
+  "34": "DARKBRICK",
+  "35": "RUSTBRICK",
+  "36": "TECHWALL",
+  "37": "STREET",
+  "38": "AMBERWINDOW",
+  "39": "WHITEWINDOW",
+  "40": "LAMPPANEL",
+  "41": "NEONORANGE",
+  "42": "NEONBLUE",
+  "43": "NEONGREEN",
+  "44": "HAZARD",
+  "45": "TEALPANEL",
+  "46": "GOLDPANEL",
+  "47": "PIPE"
  }
 }

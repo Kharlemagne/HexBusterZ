@@ -1,7 +1,7 @@
 // Rendering: textures, sky and day/night produce sane output and no GL errors.
 import { openGame, startPlaying, check, done } from './lib.mjs';
 console.log('rendering');
-const g = await openGame({ width: 400, height: 240 }); const { page } = g; await startPlaying(page);
+const g = await openGame({ width: 400, height: 240 }); const { page } = g; await startPlaying(page, 2);
 const r = await page.evaluate(() => {
   const out = {}, gl = document.getElementById('c').getContext('webgl'), P = __g.P;
   const DN = __g.DayNight; DN.len = 1e9;

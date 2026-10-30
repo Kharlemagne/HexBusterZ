@@ -72,8 +72,8 @@ function genHub(hubSeed, sx, sz) {
 function nearNPC() { return mode === 'hub' && Math.hypot(P.x - NPC.x, P.z - NPC.z) < 4.6 && Math.abs(P.y - NPC.y) < 3; }
 function enterHub(first, fromRun) {
   mode = 'hub';
-  const g2 = (Net.hubOverride ? Net.hubOverride.gen : WorldStore.cur.meta.gen) === 2;
-  const rt = fromRun && OW.returnTo, sx = rt ? rt.x : g2 ? CAR_SPAWN.x : 32.5, sz = rt ? rt.z : g2 ? CAR_SPAWN.z : (fromRun ? 15.5 : 44.5);
+  const gv = Net.hubOverride ? Net.hubOverride.gen : WorldStore.cur.meta.gen, g2 = gv >= 2, g3 = gv === 3;
+  const rt = fromRun && OW.returnTo, sx = rt ? rt.x : g3 ? STN.spawn.x : g2 ? CAR_SPAWN.x : 32.5, sz = rt ? rt.z : g3 ? STN.spawn.z : g2 ? CAR_SPAWN.z : (fromRun ? 15.5 : 44.5);
   genHub(undefined, sx, sz); flushSave();
   enemies.length = 0; eprojs.length = 0; bombs.length = 0; beams.length = 0; drops.length = 0; PL.fill(0);
   Run.chests = []; Run.turrets = []; Run.smoke = []; Run.hasKey = false; Run.glyph = null; Run.cur = null; resetBossSystems(); sky = null;
@@ -82,13 +82,13 @@ function enterHub(first, fromRun) {
   P.weapon = -1; switchWeapon(0); refreshHotbar();
   el.dead.classList.remove('on'); el.feed.innerHTML = '';
   Net.announceWorld();
-  banner(g2 ? (fromRun ? 'BACK ABOARD' : 'THE HELICARRIER') : rt ? 'BACK IN THE OPEN' : fromRun ? 'BACK IN THE VILLAGE' : 'EMBER VILLAGE', fromRun ? 'SPEND YOUR GEMS AT THE SMITH' : g2 ? 'THE HELLGATE WAITS AT THE FAR FRONT · THE SKY IS OPEN' : 'THE HELLGATE IS NORTH · THE WORLD IS OPEN');
+  banner(g3 ? (fromRun ? 'BACK ABOARD' : 'THE HELICARRIER') : g2 ? (fromRun ? 'BACK ABOARD' : 'THE HELICARRIER') : rt ? 'BACK IN THE OPEN' : fromRun ? 'BACK IN THE VILLAGE' : 'EMBER VILLAGE', fromRun ? 'SPEND YOUR GEMS AT THE SMITH' : g3 ? 'THE HELLGATE WAITS AT THE FRONT · THE STATION HURTLES THROUGH THE DEEP' : g2 ? 'THE HELLGATE WAITS AT THE FAR FRONT · THE SKY IS OPEN' : 'THE HELLGATE IS NORTH · THE WORLD IS OPEN');
 }
 function updateHub(dt) {
   NPC.t += dt;
   const d = Math.hypot(P.x - NPC.x, P.z - NPC.z); NPC.yaw = d < 14 ? Math.atan2(P.x - NPC.x, P.z - NPC.z) : Math.PI;
-  if (OW.gen === 2 ? (onCarrier(P.x, P.z) && P.y > CAR.deck - 3) : villageD(P.x, P.z) < 34) P.hp = Math.min(100, P.hp + 12 * dt);       // home heals you; the wild doesn't
-  if (OW.gen === 2) for (const L of LIFTS) { const dx = P.x - L.x, dz = P.z - L.z; if (Math.hypot(dx, dz) < 2.7 && P.y > 20 && P.y < CAR.deck + 1.5) { P.vy = Math.min(Math.max(P.vy, 0) + 70 * dt, 24); P.onGround = false; P.vx -= dx * 4 * dt; P.vz -= dz * 4 * dt; } }     // tractor beams
+  if (OW.gen === 3 ? (onStation(P.x, P.z) && P.y > SD - 3) : OW.gen === 2 ? (onCarrier(P.x, P.z) && P.y > CAR.deck - 3) : villageD(P.x, P.z) < 34) P.hp = Math.min(100, P.hp + 12 * dt);       // home heals you; the wild doesn't
+  if (OW.gen >= 2) for (const L of HUB.lifts) { const dx = P.x - L.x, dz = P.z - L.z; if (Math.hypot(dx, dz) < 2.7 && P.y > L.y0 - 1 && P.y < L.y1) { P.vy = Math.min(Math.max(P.vy, 0) + 70 * dt, 24); P.onGround = false; P.vx -= dx * 4 * dt; P.vz -= dz * 4 * dt; } }     // tractor beams
   if (Net.role !== 'client') {
     if (OW.gen === 1 && P.x > GATE.x0 && P.x < GATE.x1 && P.z > GATE.z0 && P.z < GATE.z1 && P.y > GATE.y0 - 1 && P.y < GATE.y1) { OW.returnTo = null; enterDungeon(); }
     else { const g = gateAtPlayer(P.x, P.y, P.z); if (g) { OW.returnTo = { x: g.x + .5, z: g.z + 7.5 }; enterDungeon(g.seed); } }

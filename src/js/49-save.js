@@ -71,7 +71,7 @@ function normalize(doc) {
   doc.worlds = doc.worlds.filter(w => w && typeof w === 'object' && typeof w.id === 'string' && w.id);
   for (const w of doc.worlds) {
     w.name = String(w.name || 'NEW WORLD').slice(0, 32); if (!w.seed) w.seed = ((Math.random() * 4294967295) >>> 0) || 1; if (!w.villageSeed) w.villageSeed = VILLAGE_SEED_DEFAULT;
-    w.gen = w.gen === 2 ? 2 : 1; w.created = +w.created || Date.now(); w.played = +w.played || w.created; w.mode = w.mode === 'creative' ? 'creative' : 'survival';
+    w.gen = w.gen === 3 ? 3 : w.gen === 2 ? 2 : 1; w.created = +w.created || Date.now(); w.played = +w.played || w.created; w.mode = w.mode === 'creative' ? 'creative' : 'survival';
     if (w.data && Array.isArray(w.data.edits)) w.data.edits = w.data.edits.filter(e => Array.isArray(e) && e.length === 4 && e.every(Number.isFinite));
   }
   if (!doc.worlds.some(w => w.id === doc.lastWorld)) doc.lastWorld = doc.worlds.length ? doc.worlds.slice().sort((a, b) => b.played - a.played)[0].id : '';
@@ -106,7 +106,7 @@ const WorldStore = {
   create({ name, seed, mode }) {
     const base = (name || 'NEW WORLD').trim().slice(0, 32) || 'NEW WORLD'; let nm = base, n = 2;
     while (SaveStore.doc.worlds.some(w => w.name === nm)) nm = base + ' (' + n++ + ')';
-    const meta = { id: 'w' + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36), name: nm, seed: seed || ((Math.random() * 4294967295) >>> 0) || 1, villageSeed: VILLAGE_SEED_DEFAULT, gen: 2, created: Date.now(), played: Date.now(), mode: mode === 'creative' ? 'creative' : 'survival' };
+    const meta = { id: 'w' + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36), name: nm, seed: seed || ((Math.random() * 4294967295) >>> 0) || 1, villageSeed: VILLAGE_SEED_DEFAULT, gen: 3, created: Date.now(), played: Date.now(), mode: mode === 'creative' ? 'creative' : 'survival' };
     SaveStore.doc.worlds.push(meta); const d = this.newData(); this.writeRaw(meta.id, d); SaveStore.doc.lastWorld = meta.id; saveGame(); return meta;
   },
   open(id) {                                             // make this the active world (call before building the terrain)
@@ -119,7 +119,7 @@ const WorldStore = {
   },
   openDemo() {                                           // the title-screen backdrop: a throwaway world that is never saved
     if (this.cur && !this.cur.ephemeral) { try { flushSave(); } catch (e) { } }
-    this.cur = { meta: { id: '', name: 'DEMO', seed: 20261029, villageSeed: VILLAGE_SEED_DEFAULT, gen: 2, mode: 'survival' }, data: this.newData(), ephemeral: true };
+    this.cur = { meta: { id: '', name: 'DEMO', seed: 20261029, villageSeed: VILLAGE_SEED_DEFAULT, gen: 3, mode: 'survival' }, data: this.newData(), ephemeral: true };
     try { Inv.load(); } catch (e) { } try { DayNight.load(); } catch (e) { }
   },
   ensureReal() { if (this.cur && !this.cur.ephemeral) return; const w = this.find(SaveStore.doc.lastWorld) || this.list()[0]; if (w) this.open(w.id); else this.open(this.create({ name: 'MY WORLD' }).id); },

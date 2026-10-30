@@ -1,7 +1,7 @@
 // Minecraft-style lava: spreads 3 blocks, falls, fills holes you dig, dries up when its source is removed, and meshes without cracks.
 import { openGame, startPlaying, check, done } from './lib.mjs';
 console.log('lava physics');
-const g = await openGame({ width: 320, height: 200 }); const { page } = g; await startPlaying(page);
+const g = await openGame({ width: 320, height: 200 }); const { page } = g; await startPlaying(page, 2);
 const run = n => page.evaluate(n => { for (let i = 0; i < n; i++) __g.Fluid.tick(.25); return __g.Fluid.q.size; }, n);
 await page.evaluate(() => { for (let x = 24; x < 48; x++) for (let z = 110; z < 126; z++) { __g.setBlock(x, 104, z, 3); __g.setBlock(x, 103, z, 3); for (let y = 105; y < 112; y++) __g.setBlock(x, y, z, 0); } __g.Fluid.reset(); __g.P.x = 30.5; __g.P.z = 118.5; __g.P.y = 106; __g.setBlock(30, 105, 118, 4); });
 await run(30);

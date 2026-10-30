@@ -2,7 +2,7 @@
 import { openGame, startPlaying, check, done } from './lib.mjs';
 console.log('open world');
 {
-  const g = await openGame({ width: 320, height: 200 }); const { page } = g; await startPlaying(page);
+  const g = await openGame({ width: 320, height: 200 }); const { page } = g; await startPlaying(page, 2);
   check('the open world is running in chunk mode', await page.evaluate(() => __g.useChunks() && __g.OW.chunks.size >= 60));
   await page.evaluate(() => { for (let i = 0; i < 120; i++) __g.update(1 / 60); });
   check('you spawn on the Helicarrier deck', await page.evaluate(() => __g.P.onGround && __g.P.y > 104 && __g.P.y < 107 && __g.biomeAt(__g.P.x, __g.P.z) === 'THE HELICARRIER'));
@@ -48,7 +48,7 @@ console.log('old village builds carry into the open world');
 {
   const save = JSON.stringify({ game: 'hexbusterz', v: 1, profile: { gems: 9, unlocked: [true, false, false, false, true], runs: 1, wins: 0 }, settings: {}, hub: { seed: 4242, genVersion: 1, edits: [[30, 9, 50, 7], [31, 9, 50, 8]] } });
   const g = await openGame({ width: 320, height: 200, init: `(() => { if (localStorage.getItem('__seeded')) return; localStorage.setItem('hbz.save', ${JSON.stringify(save)}); localStorage.setItem('__seeded', '1'); })();` }); const { page } = g;
-  await startPlaying(page);
+  await startPlaying(page, 2);
   const r = await page.evaluate(() => ({ v: __g.SaveStore.doc.v, vs: __g.WorldStore.cur.meta.villageSeed, b1: __g.get(30, 9, 50), b2: __g.get(31, 9, 50), gems: __g.Save.gems, backups: Object.keys(localStorage).filter(k => k.startsWith('hbz.backup')).length }));
   check('save upgraded to the current format and the old village seed is kept (so the build still fits)', r.v === 3 && r.vs === 4242, JSON.stringify(r));
   check('old village blocks are where you left them', r.b1 === 7 && r.b2 === 8);

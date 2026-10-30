@@ -11,7 +11,7 @@ function spawnDrop(x, y, z, k, n, vx, vy, vz) {
 function updateDrops(dt) {
   for (let i = drops.length - 1; i >= 0; i--) {
     const d = drops[i]; d.age += dt; d.t += dt;
-    if (d.age > 300 || d.y < (OW.gen === 2 ? VOID_Y - 4 : -10)) { drops.splice(i, 1); continue; }
+    if (d.age > 300 || d.y < (OW.gen >= 2 ? HUB.voidY - 4 : -10)) { drops.splice(i, 1); continue; }
     const px = P.x - d.x, py = P.y + .8 - d.y, pz = P.z - d.z, dist = Math.hypot(px, py, pz);
     const canTake = P.alive && d.age > .45 && Inv.canTake(d.k);
     if (canTake && dist < 3.4) {                                                  // magnet: accelerate toward the player

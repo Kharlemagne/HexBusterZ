@@ -157,8 +157,30 @@ void tent(float az,float h,vec3 haze,inout vec3 col){
   }
 }
 
+// DEEP SPACE: the station hurtles toward -z through a dimensional tunnel: spiralling nebula, hyperspace streaks racing out of the rift ahead, and far below the swirling abyss with huge tentacles rising out of the miasma
+vec3 space(vec3 d){
+  float h=d.y;vec3 F=vec3(0.0,0.0,-1.0);float th=acos(clamp(dot(d,F),-1.0,1.0));float ph=atan(d.y,d.x);
+  float sp=sin(ph*3.0+log(th+0.06)*4.5-tm*0.22)*0.5+0.5,sp2=sin(ph*5.0-log(th+0.1)*7.0+tm*0.15+2.0)*0.5+0.5;
+  vec3 col=vec3(0.012,0.004,0.035)+vec3(0.16,0.03,0.2)*pow(sp,3.0)*smoothstep(2.6,0.2,th)+vec3(0.02,0.14,0.2)*pow(sp2,4.0)*smoothstep(2.4,0.6,th)*0.8;
+  col+=vec3(0.7,0.35,1.0)*exp(-th*10.0)*(0.7+0.3*sin(tm*1.3))+vec3(1.0,0.5,0.9)*exp(-pow((th-0.16-0.02*sin(tm*0.8))*18.0,2.0))*0.55;
+  float sh=h3(floor(d*380.0));if(sh>0.9978)col+=vec3(0.8,0.9,1.0)*(0.5+0.5*sin(tm*2.0+sh*300.0))*0.8;
+  for(int L=0;L<3;L++){
+    float fl=float(L),nP=70.0+fl*55.0,cell=floor((ph/6.2832+0.5)*nP),r1=h2(vec2(cell,fl*3.1)),r2=h2(vec2(cell+7.0,fl));if(r1<0.5)continue;
+    float phc=(cell+0.5)/nP*6.2832-3.1416,dp=abs(ph-phc)*sin(th),wdt=0.0011*(1.0+fl*0.6);if(dp>wdt)continue;
+    float t0=fract(r2+tm*(0.07+fl*0.035)),th0=pow(t0,1.7)*2.6,len=0.07+0.2*th0*th0;if(th<th0-len||th>th0)continue;
+    float f=(th-(th0-len))/len;col+=mix(vec3(0.6,0.8,1.0),vec3(1.0,0.5,0.9),r1)*f*f*(1.0-dp/wdt*0.5)*(0.5+0.9*th0/2.6);
+  }
+  float az=atan(d.x,d.z);vec3 hz=vec3(0.16,0.03,0.22);
+  if(h<0.2){
+    col=mix(col,vec3(0.01,0.0,0.025)+vec3(0.14,0.02,0.12)*pow(sp,4.0)+vec3(0.02,0.1,0.16)*pow(sp2,5.0)*0.6,smoothstep(0.08,-0.2,h)*0.9);
+    if(h>-0.65){tent(az,h+0.62,hz,col);tent(az+2.1,h+0.42,hz*0.8,col);}
+    col+=hz*0.5*exp(-abs(h+0.05)*9.0)*0.5;
+  }
+  return col;
+}
 void main(){
   vec3 d=normalize(fwd+rgt*(ndc.x*tanf.x)+upv*(ndc.y*tanf.y));
+  if(fx>1.5){gl_FragColor=vec4(space(d),1.0);return;}
   float h=d.y;
   vec3 col=mix(hor,zen,pow(clamp(h*1.7,0.0,1.0),0.55));
   col=mix(col,gnd,smoothstep(0.0,-0.08,h));

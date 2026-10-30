@@ -6,7 +6,7 @@ function update(dt) {
   const bt = P.bt > 0, wdt = bt ? dt * .1 : dt, pdt = bt ? dt * .5 : dt;      // bullet time: world at 10%, you at 50%
   worldDt = wdt; musicSlow = bt ? .4 : 1; musicMode = mode === 'hub' ? 0 : (Run.cur && Run.cur.type === 'boss' && Run.cur.state === 'active') ? 2 : 1;
   updatePlayer(pdt); updateWeapons(dt); updateDrops(wdt);
-  if (useChunks && OW.gen === 2 && P.alive && P.y < VOID_Y && Net.role !== 'client') { feed('SWALLOWED BY THE DEEP', '#a64bff'); hurtPlayer(9999, 0, 0, 0, 'self'); }       // fall off the world and the abyss takes you
+  if (useChunks && OW.gen >= 2 && P.alive && P.y < HUB.voidY && Net.role !== 'client') { feed('SWALLOWED BY THE DEEP', '#a64bff'); hurtPlayer(9999, 0, 0, 0, 'self'); }       // fall off the world and the abyss takes you
   if (Net.role !== 'client') {                       // a guest only renders what the host tells it
     for (const e of enemies) if (!e.dead) { if (e.type === 'boss') updateBoss(e, wdt); else updateEnemy(e, wdt); }
     for (let i = enemies.length - 1; i >= 0; i--) if (enemies[i].dead) enemies.splice(i, 1);

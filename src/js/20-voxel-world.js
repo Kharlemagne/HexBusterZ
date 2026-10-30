@@ -11,6 +11,10 @@ function get(x, y, z) {
   return world[idx(x, y, z)];
 }
 const isLava = i => i === 4 || (i >= 23 && i <= 30);          // 4 = source, 23..29 = flowing (level 1..7), 30 = falling
+// 32..47 = city blocks; 48..63 = their BOTTOM slabs (half blocks), 64..79 = TOP slabs. A slab keeps the look of the block it is made from.
+const slabKind = i => i >= 48 && i <= 79 ? (i < 64 ? 1 : 2) : 0;          // 0 = full block, 1 = bottom half, 2 = top half
+const slabBase = i => 32 + ((i - 32) & 15);
+const isFull = i => i !== 0 && !isLava(i) && !slabKind(i);
 const solid = (x, y, z) => { const i = get(x, y, z); return i !== 0 && !isLava(i); };
 const blockListeners = [];     // fn(x, y, z, newId, oldId): save system now, netcode later
 let seed = 1337;

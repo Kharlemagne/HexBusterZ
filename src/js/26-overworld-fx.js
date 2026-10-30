@@ -2,7 +2,7 @@
 const BIOME_FOG = [[.02, .06, .11], [.13, .02, .07], [.07, .02, .17], [.16, .05, .02]];
 let fogCur = FOG.slice();
 function owFogTarget(x, z) {                                  // biome tint (dark colours); the day/night cycle (27-daynight.js) decides how bright the haze is
-  const w = biomeWeights(x, z), vs = OW.gen === 2 ? 0 : 1 - sstep(clamp((villageD(x, z) - 30) / 50, 0, 1)); const c = [0, 0, 0];
+  const w = biomeWeights(x, z), vs = OW.gen >= 2 ? 0 : 1 - sstep(clamp((villageD(x, z) - 30) / 50, 0, 1)); const c = [0, 0, 0];
   for (let i = 0; i < 4; i++) for (let k = 0; k < 3; k++) c[k] += BIOME_FOG[i][k] * w[i];
   return c.map((v, k) => lerp(v, FOG[k], vs));
 }

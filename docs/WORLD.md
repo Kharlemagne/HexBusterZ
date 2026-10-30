@@ -42,3 +42,6 @@ Only player changes are stored: `OW.edits` (grouped by chunk) ⇄ `doc.world.edi
 
 ## Day and night
 No continuous cycle. `DayNight` (src/js/27-daynight.js) holds `phase` (day/night) and, during a changeover, `ev = {to, age}` (16 s: rift opens 0-3.5, bodies emerge 3.5-7.5, beams 9-12, sky recolours 10-13.5, rift closes 12-14.5). The host starts events; guests follow `DayNight.pack()` in every snapshot. Saved world `time` is 0.5 (day) or 0 (night); old values map to the nearest phase.
+
+## Generation 3: the station
+`src/js/25-station-gen3.js` paints the whole station once into a dense voxel grid (identical in every world, independent of the seed) and chunks copy their slice. Everything off the hull is empty: stepping off is death. `HUB` (25-overworld-gen.js) holds the fixed points (spawn, gate, smith, lifts) for gen 2 and 3. Sky: `fx = 2` in the sky shader (`space()`); `DayNight` is bypassed. Half blocks: ids 48-63 bottom slabs and 64-79 top slabs of base blocks 32-47 (`slabKind`, `slabBase`); the mesher scales them, culls shared faces, and physics (`boxHits`, `floorUnder`, `ceilingOver`, auto step-up) treats them as half-height.

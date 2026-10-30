@@ -66,7 +66,8 @@ function updateWeapons(dt) {
     if (R && digCd <= 0 && h) {
       const px = h.x + h.nx, py = h.y + h.ny, pz = h.z + h.nz;
       if (get(px, py, pz) === 0 || isLava(get(px, py, pz))) {
-        const bid = Inv.selBlock();
+        let bid = Inv.selBlock();
+        if (slabKind(bid) === 1) { const e = eyePos(), f = fwdV(), hy = e[1] + f[1] * h.t; if (h.ny < 0 || (h.ny === 0 && hy - py >= .5)) bid += 16; }       // aim at the upper half of a wall, or under a block, and the slab goes in the top half
         if (!bid) { if (digCd <= 0) { feed('NO BLOCK SELECTED — OPEN INVENTORY (I)', '#ff8a3a'); SFX.empty(); digCd = .5; } }
         else if (!playerOverlaps(px, py, pz) && setBlock(px, py, pz, bid)) { Inv.useSel(); SFX.place(); digCd = .15; P.swing = .6; }
       }

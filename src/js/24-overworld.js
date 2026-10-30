@@ -56,7 +56,7 @@ const OW = {
   },
   // start (or restart) the open world around a spawn point; loads the first chunks synchronously so the player never spawns in the void
   begin(sx, sz, seed, villageSeed, editsList, gen) {
-    this.drop(); if (typeof Fluid !== 'undefined') Fluid.reset(); this.seed = seed >>> 0; this.villageSeed = villageSeed >>> 0; OWG.S = this.seed | 0; this.gen = gen === 2 ? 2 : 1;
+    this.drop(); if (typeof Fluid !== 'undefined') Fluid.reset(); this.seed = seed >>> 0; this.villageSeed = villageSeed >>> 0; OWG.S = this.seed | 0; this.gen = gen === 3 ? 3 : gen === 2 ? 2 : 1;
     if (this.gen === 1) this.ensureStamp(); useChunks = true; H = WORLD_H; N = 64; this.configure();
     WorldSave.load(editsList || []);
     const cx = Math.floor(sx / CS), cz = Math.floor(sz / CS);
@@ -64,7 +64,8 @@ const OW = {
     buildAll(); this.active = true;
   },
   configure() {                                                       // where the smith stands depends on the generation
-    if (this.gen === 2) Object.assign(NPC, { x: CAR_NPC.x, y: CAR.deck + 1.01, z: CAR_NPC.z }); else Object.assign(NPC, { x: 22.5, y: 9.01, z: 40.5 });
+    hubSet(this.gen);
+    if (this.gen >= 2) Object.assign(NPC, { x: HUB.npc.x, y: HUB.deck + 1.01, z: HUB.npc.z }); else Object.assign(NPC, { x: 22.5, y: 9.01, z: 40.5 });
   },
   ensureStamp() {                                                       // the village is built once into the old fixed array, then copied out
     if (this.stamp && this.stampSeed === this.villageSeed) return;

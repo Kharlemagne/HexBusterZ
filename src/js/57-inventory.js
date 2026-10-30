@@ -7,7 +7,7 @@ const ITEMS = { shard: { name: 'DEMON SHARD', color: '#ff6ad0', value: 3 } };   
 const STACK_MAX = 99;
 const itemName = k => typeof k === 'number' ? (DATA.blocks.names[k] || 'BLOCK ' + k) : (ITEMS[k] ? ITEMS[k].name : String(k));
 const itemColor = k => typeof k === 'number' ? (DATA.blocks.colors[k] || '#888') : (ITEMS[k] ? ITEMS[k].color : '#888');
-const dropOf = id => id === 22 ? ['shard', 1 + ((Math.random() * 2) | 0)] : [id, 1];     // ore drops shards, everything else drops itself
+const dropOf = id => id === 22 ? ['shard', 1 + ((Math.random() * 2) | 0)] : [slabKind(id) === 2 ? id - 16 : id, 1];     // ore drops shards, everything else drops itself
 const Inv = {
   slots: new Array(36).fill(null), sel: 0, creative: false, cursor: null, shown: '', equip: { helm: null, chest: null, legs: null, boots: null },     // equipment slots are shown in the inventory screen; armour items come later
  

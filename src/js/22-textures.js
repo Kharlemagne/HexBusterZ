@@ -5,7 +5,8 @@
 //  bright accents like neon traces). Tile index = block id * 2 (+1 for the top face); tiles 64+ are for entities.
 // ============================================================
 const TILE = { WHITE: 0, GRAIN: 64, PLATE: 65, FLESHY: 66, BONEY: 67, GLOW: 68, CLOTH: 69 };
-const blockTile = (id, top) => id * 2 + (top ? 1 : 0);
+// ids 0..31 use tiles 0..63; the city blocks (32..47, and every slab made from them) use tiles 128..159
+const blockTile = (id, top) => id < 32 ? id * 2 + (top ? 1 : 0) : 128 + (((id - 32) & 15) * 2) + (top ? 1 : 0);
 function tn(x, y, s) { let h = (Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263) ^ Math.imul(s | 0, 1274126177)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
 // every painter returns a multiplier (number = grey, array = [r,g,b]) for pixel (x,y) of a 16x16 tile
 const PAINT = {
@@ -36,6 +37,26 @@ const PAINT = {
   21: (x, y, t, n, s) => { const b = tn(x >> 2, y >> 2, s); return b > .5 ? [1.2, .92, .72 + n * .1] : [.9, .8 + n * .1, .8]; },
   22: (x, y, t, n, s) => { const cx = (tn(x >> 2, y >> 2, s) > .55) && (x % 4 > 0 && y % 4 > 0); return cx ? [1.6, 1.0 + n * .3, 1.5] : [.42 + n * .1, .4, .44]; }
 };
+// the city: PAINT2[0..15] = block ids 32..47
+const brick = (x, y, n, a, b) => { const r = y >> 2, xo = (x + (r & 1) * 4) & 7; return (y & 3) === 3 || xo === 7 ? a : b + (n - .5) * .16; };
+const PAINT2 = [
+  (x, y, t, n) => (x === 0 || y === 0 ? .62 : (x === 8 || y === 8) ? .8 : ((x === 2 || x === 13) && (y === 2 || y === 13) ? 1.25 : .96 + (n - .5) * .12)),                       // 32 hull plate
+  (x, y, t, n) => (y === 7 || y === 15 ? .72 : n > .93 ? .78 : 1.02 + (n - .5) * .16 + ((x * 7 + y * 3) % 23 === 0 ? -.12 : 0)),                                                          // 33 concrete
+  (x, y, t, n) => brick(x, y, n, .66, .98),                                                                                                                                            // 34 dark brick
+  (x, y, t, n) => brick(x, y, n, .7, 1.0 + (((x >> 3) + (y >> 2)) & 1) * .08),                                                                                                         // 35 rust brick
+  (x, y, t, n, s) => { const a = tn(x >> 2, y >> 2, s) > .5, edge = (x & 3) === 0 && a || (y & 3) === 0 && !a; return edge ? [.95, 1.45, 1.55] : .62 + (n - .5) * .2; },                       // 36 tech wall
+  (x, y, t, n) => (n > .9 ? 1.3 : n < .12 ? .6 : t && (x === 7 || x === 8) && (y & 7) < 4 ? 1.5 : .85 + (n - .5) * .3),                                                               // 37 street
+  (x, y, t, n) => (x === 0 || y === 0 || x === 15 || y === 15 || x === 7 || y === 7 ? .5 : 1.1 + (n - .5) * .1),                                                                       // 38 amber window
+  (x, y, t, n) => (x === 0 || y === 0 || x === 15 || y === 15 || x === 7 || y === 7 ? .55 : 1.08 + (n - .5) * .08),                                                                    // 39 white window
+  (x, y, t, n) => (x === 0 || y === 0 || x === 15 || y === 15 ? .72 : (x === 7 || y === 7) ? .9 : 1.12 + (n - .5) * .04),                                                              // 40 lamp panel
+  (x, y, t, n) => ((x + y) & 3) < 2 ? 1.18 + (n - .5) * .06 : .85,                                                                                                                       // 41 neon orange
+  (x, y, t, n) => (x === 0 || x === 15 ? .7 : 1.1 + ((y & 3) ? 0 : -.18) + (n - .5) * .06),                                                                                           // 42 neon blue
+  (x, y, t, n) => (y === 0 || y === 15 ? .7 : 1.1 + ((x & 3) ? 0 : -.18) + (n - .5) * .06),                                                                                           // 43 neon green
+  (x, y, t, n) => ((((x + y) >> 2) & 1) ? .18 : 1.12) + (n - .5) * .05,                                                                                                                 // 44 hazard
+  (x, y, t, n) => (x === 0 || y === 0 ? .66 : (x === 8 ? .85 : .98 + (n - .5) * .1)),                                                                                                  // 45 teal panel
+  (x, y, t, n) => ((x & 3) === 0 ? .7 : 1.0 + (tn(x >> 2, 0, 46) - .5) * .25 + (n - .5) * .1),                                                                                          // 46 gold planks
+  (x, y, t, n) => ((y & 3) === 0 ? .66 : y % 8 < 4 ? 1.06 : .94) + (x === 2 && (y & 3) === 2 ? .3 : 0) + (n - .5) * .08                                                                  // 47 pipe
+];
 const ENT_PAINT = {
   [TILE.GRAIN]: (x, y, t, n) => .92 + (n - .5) * .2,
   [TILE.PLATE]: (x, y, t, n) => (x === 0 || y === 0 ? .72 : (x === 2 || x === 13) && (y === 2 || y === 13) ? 1.3 : .98 + (tn(0, y, 5) - .5) * .1 + (n - .5) * .05),
@@ -52,6 +73,7 @@ function makeAtlas() {
     for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
       let m = .625;                                                   // neutral
       if (ti >= 64 && ENT_PAINT[ti]) m = ENT_PAINT[ti](x, y, 0, tn(x, y, ti));
+      else if (ti >= 128 && ti < 160) m = PAINT2[(ti - 128) >> 1](x, y, top, tn(x, y, ti), ti);
       else if (ti > 0 && ti < 64 && PAINT[id]) m = PAINT[id](x, y, top, tn(x, y, id * 7 + top), id * 31 + top);
       else if (ti > 0 && ti < 64) m = .95 + (tn(x, y, ti) - .5) * .2;    // unpainted block id: plain grain
       const rgb = typeof m === 'number' ? [m, m, m] : m, i = ((oy + y) * 256 + ox + x) * 4;

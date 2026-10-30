@@ -20,6 +20,7 @@ const DayNight = {
   t: .5, phase: 'day', idle: 90, ev: null, len: (DATA.tuning.dayLengthSeconds || 600),
   sunP: [], moonP: [], sv: [1, 1], mv: [0, 0, 0, 0], die: [0, 0, 0, 0, 0, 0], gate: [0, 0, 0, 0], gk: 0, bk: 0, beams: [],
   tick(dt) {
+    if (OW.gen === 3) return;                                                  // the station hurtles through deep space: no suns, no moons, no night and day
     if (this.ev) { const was = this.ev.age; this.ev.age += dt; this.cues(was, this.ev.age); if (this.ev.age >= EV_T) this.finish(); }
     else { this.idle -= dt; if (this.idle <= 0 && Net.role !== 'client') this.start(); }
     this.pose();
@@ -68,9 +69,10 @@ const DayNight = {
   },
   load() { const c = WorldStore.cur, t = +(c && c.data.time); this.phase = (t >= .25 && t < .75) || !(t >= 0) ? 'day' : 'night'; this.ev = null; this.idle = 40 + Math.random() * 80; this.pose(); },
   collect() { const c = WorldStore.cur; if (Net.role !== 'client' && c && !c.ephemeral) c.data.time = this.phase === 'day' ? .5 : 0; },
-  clock() { return this.ev ? 'THE RIFT' : this.phase === 'day' ? 'DAY' : 'NIGHT'; },
+  clock() { return OW.gen === 3 ? 'IN TRANSIT' : this.ev ? 'THE RIFT' : this.phase === 'day' ? 'DAY' : 'NIGHT'; },
   isNight() { return this.state(0, 0).amb < .5; },
   state(x, z) {
+    if (OW.gen === 3) return SPACE_SKY;
     const t = this.t; let i = 0; while (i < SKY_KEYS.length - 2 && t >= SKY_KEYS[i + 1][0]) i++;
     const a = SKY_KEYS[i], b = SKY_KEYS[i + 1], k = sstep(clamp((t - a[0]) / (b[0] - a[0]), 0, 1));
     const zen = [0, 1, 2].map(j => lerp(a[1][j], b[1][j], k)), hor = [0, 1, 2].map(j => lerp(a[2][j], b[2][j], k));
@@ -84,6 +86,7 @@ const DayNight = {
   }
 };
 DayNight.pose();
+const SPACE_SKY = { zen: [.02, .005, .06], hor: [.1, .03, .18], fog: [.03, .012, .06], sunD: [0, 1, 0], sunC: [0, 1, 0, 0, 1, 0], moonC: new Array(12).fill(0).map((v, i) => i % 3 === 1 ? 1 : 0), sunV: [0, 0], moonV: [0, 0, 0, 0], die: [0, 0, 0, 0, 0, 0], gate: [0, 1, 0, 0], gk: 0, bk: 0, bA: new Array(12).fill(0), bB: new Array(12).fill(0), bP: new Array(8).fill(0), amb: .85, stars: 1, sunA: .3, elev: -1 };
 let skyLoc = null;
 function drawSkyDome(f, roll, fovy, asp, sk) {
   let sx = -f[2], sz = f[0]; const sl = Math.hypot(sx, sz) || 1; sx /= sl; sz /= sl; let sy = 0;
@@ -97,7 +100,7 @@ function drawSkyDome(f, roll, fovy, asp, sk) {
   gl.uniform3fv(L.fwd, f); gl.uniform3f(L.rgt, sx, sy, sz); gl.uniform3f(L.upv, ux, uy, uz);
   gl.uniform3fv(L.zen, sk.zen); gl.uniform3fv(L.hor, sk.hor); gl.uniform3fv(L.gnd, sk.fog); gl.uniform3fv(L.sunC, sk.sunC); gl.uniform3fv(L.moonC, sk.moonC);
   gl.uniform2f(L.tanf, th * asp, th); gl.uniform1f(L.stars, sk.stars); gl.uniform1f(L.sunA, sk.sunA); gl.uniform1f(L.tm, T);
-  gl.uniform1fv(L.sunV, sk.sunV); gl.uniform1fv(L.moonV, sk.moonV); gl.uniform1fv(L.dieA, sk.die); gl.uniform4fv(L.gt, sk.gate); gl.uniform1f(L.gk, sk.gk); gl.uniform1f(L.fx, OW.gen === 2 ? 1 : 0); gl.uniform1f(L.bk, sk.bk);
+  gl.uniform1fv(L.sunV, sk.sunV); gl.uniform1fv(L.moonV, sk.moonV); gl.uniform1fv(L.dieA, sk.die); gl.uniform4fv(L.gt, sk.gate); gl.uniform1f(L.gk, sk.gk); gl.uniform1f(L.fx, OW.gen === 3 ? 2 : OW.gen === 2 ? 1 : 0); gl.uniform1f(L.bk, sk.bk);
   gl.uniform3fv(L.bA, sk.bA); gl.uniform3fv(L.bB, sk.bB); gl.uniform2fv(L.bP, sk.bP);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
   gl.useProgram(prog); gl.enable(gl.DEPTH_TEST); gl.depthMask(true);
