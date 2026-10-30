@@ -48,6 +48,6 @@ console.log('saves from before worlds existed');
   check('the single v2 world shows up in the list as MY WORLD', await page.evaluate(() => /MY WORLD/.test(document.getElementById('mscreen').textContent) && /SEED 777/.test(document.getElementById('mscreen').textContent)));
   await page.click('[data-act=play]'); await page.waitForFunction(() => __g.state() === 'play');
   const r = await page.evaluate(() => ({ v: __g.SaveStore.doc.v, gems: __g.Save.gems, b: __g.get(30, 9, 50), time: __g.DayNight.t, inv: __g.Inv.slots[0] && __g.Inv.slots[0].n, backups: Object.keys(localStorage).filter(k => k.startsWith('hbz.backup')).length }));
-  check('blocks, time of day, inventory and gems all carried over; a backup was made', r.v === 3 && r.gems === 12 && r.b === 7 && Math.abs(r.time - .6) < .01 && r.inv === 5 && r.backups >= 1, JSON.stringify(r));
+  check('blocks, time of day, inventory and gems all carried over; a backup was made', r.v === 3 && r.gems === 12 && r.b === 7 && Math.abs(r.time - .5) < .01 && r.inv === 5 && r.backups >= 1, JSON.stringify(r));
   await g.close(); done(g.errors);
 }

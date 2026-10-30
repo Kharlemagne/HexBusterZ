@@ -35,6 +35,11 @@ await H.page.evaluate(() => { for (let x = 39; x < 46; x++) { __g.setBlock(x, 8,
 await step(120);
 const lv = async pg => pg.evaluate(() => [40, 41, 42, 43].map(x => __g.get(x, 9, 50)).join());
 check('lava flows the same on host and guest', (await lv(H.page)) === (await lv(G.page)) && (await lv(H.page)).split(',')[1] !== '0', await lv(H.page) + ' / ' + await lv(G.page));
+await H.page.evaluate(() => { __g.DayNight.phase = 'day'; __g.DayNight.ev = null; __g.DayNight.start(); __g.DayNight.ev.age = 5; });
+await step(60);
+const dnA = await H.page.evaluate(() => __g.DayNight.pack()), dnB = await G.page.evaluate(() => __g.DayNight.pack());
+check('the guest sees the same rift as the host (same phase and clock)', dnA[0] === dnB[0] && dnB[1] > 0 && Math.abs(dnA[1] - dnB[1]) < .8, JSON.stringify([dnA, dnB]));
+await H.page.evaluate(() => __g.DayNight.skip()); await step(30);
 
 check('guest\'s own save was not touched by the host\'s hub', await G.page.evaluate(() => __g.WorldStore.cur.data.edits.length === 0));
 

@@ -39,3 +39,6 @@ Only player changes are stored: `OW.edits` (grouped by chunk) ⇄ `doc.world.edi
 
 ## Lava
 `src/js/27-fluid.js` simulates lava (ids 4 source, 23-29 flowing strength 1-7, 30 falling) on a 0.2 s tick, only for the host/solo player. Only blocks near a *change* wake up, so baked vents and lakes stay still. Flow changes are normal edits (so they save, and receding lava leaves no trace); co-op sends them as one `fl` message per tick.
+
+## Day and night
+No continuous cycle. `DayNight` (src/js/27-daynight.js) holds `phase` (day/night) and, during a changeover, `ev = {to, age}` (16 s: rift opens 0-3.5, bodies emerge 3.5-7.5, beams 9-12, sky recolours 10-13.5, rift closes 12-14.5). The host starts events; guests follow `DayNight.pack()` in every snapshot. Saved world `time` is 0.5 (day) or 0 (night); old values map to the nearest phase.

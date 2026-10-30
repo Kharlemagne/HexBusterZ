@@ -45,6 +45,7 @@ precision highp float;
 precision mediump float;
 #endif
 varying vec2 ndc;uniform vec3 fwd,rgt,upv,zen,hor,gnd;uniform vec3 sunC[2];uniform vec3 moonC[4];uniform vec2 tanf;uniform float stars,sunA,tm;
+uniform float sunV[2];uniform float moonV[4];uniform float dieA[6];uniform vec4 gt;uniform float gk,fx,bk;uniform vec3 bA[4];uniform vec3 bB[4];uniform vec2 bP[4];
 float h3(vec3 p){return fract(sin(dot(p,vec3(12.9898,78.233,37.719)))*43758.5453);}
 float h2(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 float opn(float t,float per,float off){float ph=fract((t+off)/per);float b=smoothstep(0.93,0.955,ph)*(1.0-smoothstep(0.965,0.99,ph));return 1.0-b*0.96;}
@@ -62,7 +63,8 @@ float arms(vec2 p,float k,float spd,float len){
   float r=length(p),a=atan(p.y,p.x);float w=sin(a*k+tm*spd+sin(r*3.5-tm*1.7)*1.6+sin(a*3.0-tm*.6)*0.7)*0.5+0.5;
   return pow(w,3.0)*smoothstep(len,1.0,r)*smoothstep(0.92,1.12,r);
 }
-void body(vec3 d,vec3 c,float R,int kind,float vis,inout vec3 col){
+void body(vec3 d,vec3 c,float R,int kind,float vis,float die,inout vec3 col){
+  R*=1.0+die*0.5;vis*=1.0-smoothstep(0.5,1.0,die);
   if(vis<=0.001)return;float cd=dot(d,c);float lim=3.6*R;if(cd<1.0-0.5*lim*lim)return;
   vec3 ref=abs(c.y)>0.97?vec3(0.0,0.0,1.0):vec3(0.0,1.0,0.0);vec3 rr=normalize(cross(c,ref)),uu=cross(rr,c);
   vec2 p=vec2(dot(d,rr),dot(d,uu))/R;float r=length(p),a=atan(p.y,p.x);vec3 add=vec3(0.0);vec4 B=vec4(0.0);
@@ -91,20 +93,94 @@ void body(vec3 d,vec3 c,float R,int kind,float vis,inout vec3 col){
     add+=vec3(1.0,0.2,0.8)*arms(p,11.0,1.9,3.8)*1.1+vec3(0.9,0.2,0.7)*exp(-r*1.2)*0.25;
   }
   col+=add*vis;col=mix(col,B.rgb,B.a*vis);
+  col+=vec3(1.0,0.92,0.75)*B.a*die*(1.0-die)*4.0*vis;
 }
+// the shockwave of a body being destroyed
+void shock(vec3 d,vec3 c,float R,float die,float vis,inout vec3 col){
+  if(die<=0.0||die>=1.0)return;float ang=acos(clamp(dot(d,c),-1.0,1.0));float rr=die*R*9.0;
+  float w=R*(0.5+die);col+=vec3(1.0,0.75,0.5)*exp(-pow((ang-rr)/w,2.0))*(1.0-die)*1.3*vis;col+=vec3(1.0,0.6,0.3)*exp(-ang/(R*3.0))*(1.0-die)*(1.0-die)*0.9*vis;
+}
+// a dimensional gate ripping open: a tall jagged slit with a swirling throat and a burning rim
+void gate(vec3 d,float vis,inout vec3 col){
+  if(gt.w<=0.001||vis<=0.0)return;vec3 c=gt.xyz;if(dot(d,c)<0.6)return;
+  vec3 ref=abs(c.y)>0.97?vec3(0.0,0.0,1.0):vec3(0.0,1.0,0.0);vec3 rr=normalize(cross(c,ref)),uu=cross(rr,c);
+  vec2 p=vec2(dot(d,rr),dot(d,uu))/gt.w;p.y*=0.5;float r=length(p),a=atan(p.y,p.x);
+  float jag=1.0+0.16*sin(a*7.0+tm*2.0)+0.09*sin(a*13.0-tm*3.1)+0.05*sin(a*29.0+tm*5.0);float q=r/jag;
+  vec3 hot=gk<0.5?vec3(1.0,0.55,0.12):vec3(0.45,0.8,1.0),hot2=gk<0.5?vec3(1.0,0.2,0.1):vec3(0.9,0.2,1.0);
+  float sw=sin(a*3.0+q*9.0-tm*2.5)*0.5+0.5;vec3 th=mix(vec3(0.01,0.0,0.03),hot2*sw,smoothstep(0.1,0.95,q)*0.7);
+  float st=step(0.985,h3(floor(vec3(p*14.0,floor(tm*0.7)))));th+=vec3(1.0)*st*0.6;
+  col=mix(col,th,smoothstep(1.0,0.92,q)*vis);
+  col+=hot*exp(-pow((q-1.0)*7.0,2.0))*1.8*vis+hot2*exp(-q*1.1)*0.22*vis;
+}
+// a beam: a great-circle arc from a to b whose head races out to prog
+void beam(vec3 d,vec3 a,vec3 b,float prog,float str,inout vec3 col){
+  if(str<=0.0)return;vec3 n=cross(a,b);float nl=length(n);if(nl<0.001)return;n/=nl;float dn=dot(d,n);if(abs(dn)>0.2)return;
+  vec3 w=cross(n,a);float th=atan(dot(d,w),dot(d,a));float tot=atan(nl,dot(a,b));float head=tot*prog;if(th<-0.02||th>head+0.01)return;
+  float core=exp(-pow(dn/0.006,2.0)),glow=exp(-pow(dn/0.035,2.0));float tipf=smoothstep(head+0.01,head-0.04,th);
+  vec3 bc=bk<0.5?vec3(1.0,0.6,0.2):vec3(0.55,0.8,1.0);col+=(bc*glow*0.7+vec3(1.0)*core*1.4)*str*tipf*(0.85+0.15*sin(tm*40.0+th*60.0));
+}
+// distant floating islands (with lava falls) in hazy layers, far to near
+void isl(float az,float h,float lay,vec3 haze,inout vec3 col){
+  if(h>0.3-lay*0.065||h<-0.34)return;
+  float n=9.0+lay*3.0;float x=(az/6.2832+0.5)*n;float ci=floor(x);
+  for(int k=-1;k<=1;k++){
+    float c=ci+float(k);float cw=mod(c,n);float r1=h2(vec2(cw,lay*7.3+1.0)),r2=h2(vec2(cw+9.1,lay*3.7+2.0)),r3=h2(vec2(cw+4.4,lay+11.0));
+    if(r1<0.42)continue;
+    float cx=c+0.5+(r2-0.5)*0.5,hw=0.3+0.22*r3,u=(x-cx)/hw;if(abs(u)>1.0)continue;
+    float e0=0.2-lay*0.065+(r2-0.5)*0.09,top=0.006+0.007*h2(vec2(floor(x*12.0),cw));
+    float dep=(0.05+0.075*r3)*pow(1.0-u*u,0.65)*(0.8+0.2*h2(vec2(floor(u*9.0),cw)));float v=h-e0;
+    float far=lay/2.0;vec3 sil=mix(vec3(0.03,0.0,0.06),haze,0.3+0.5*far);
+    if(v<top&&v>-dep){
+      vec3 ic=sil;ic+=vec3(1.0,0.2,0.7)*smoothstep(top-0.007,top,v)*0.55*(1.0-far*0.6);ic+=vec3(0.1,0.7,0.9)*step(0.93,h2(vec2(floor(x*40.0),floor(v*200.0))))*0.4*(1.0-far);
+      col=mix(col,ic,0.97);
+    }
+    if(r3>0.33){
+      float uf=(r2-0.5)*0.9,fw=0.05*(1.0-0.4*far);float dd=h-(e0-(0.05+0.075*r3)*pow(1.0-uf*uf,0.65));
+      if(abs(u-uf)<fw&&dd<0.0&&dd>-0.5){
+        float m=smoothstep(fw,fw*0.3,abs(u-uf))*smoothstep(-0.5,-0.05,dd);vec3 lv=vec3(1.0,0.45+0.25*sin(h*120.0+tm*7.0+cw),0.08);
+        col=mix(col,mix(lv,haze,far*0.5),m*0.95);col+=vec3(1.0,0.3,0.05)*m*0.25;
+      }
+    }
+  }
+}
+// eldritch tentacles rising out of the miasma on the horizon
+void tent(float az,float h,vec3 haze,inout vec3 col){
+  float n=11.0;float x=(az/6.2832+0.5)*n;float ci=floor(x);
+  for(int k=-1;k<=1;k++){
+    float c=ci+float(k);float cw=mod(c,n);float r1=h2(vec2(cw,3.3)),r2=h2(vec2(cw,8.8)),r3=h2(vec2(cw,5.1));if(r1<0.28)continue;
+    float ht=0.12+0.26*r2;if(h>ht||h<-0.02)continue;float t=clamp(h/ht,0.0,1.0);
+    float sway=sin(h*9.0+tm*0.55+cw*2.0)*0.35*t+sin(h*21.0-tm*1.1+cw)*0.1*t+(r3-0.5)*1.4*t*t;
+    float cx=c+0.5+(r3-0.5)*0.6+sway,w=(0.2*(1.0-t)+0.022)*(0.8+0.4*r1),m=smoothstep(w,w*0.6,abs(x-cx));
+    float sp=smoothstep(0.9,1.0,sin(h*170.0+cw)*sin((x-cx)/w*3.0)*0.5+0.5)*(1.0-t*0.7);
+    vec3 tc=mix(vec3(0.05,0.0,0.09),haze*0.6,1.0-smoothstep(0.0,0.09,h))+vec3(1.0,0.2,0.8)*sp*0.8+vec3(0.5,0.1,0.6)*smoothstep(w*0.7,w,abs(x-cx))*0.25;
+    col=mix(col,tc,m*0.93*smoothstep(-0.02,0.03,h));
+  }
+}
+
 void main(){
   vec3 d=normalize(fwd+rgt*(ndc.x*tanf.x)+upv*(ndc.y*tanf.y));
   float h=d.y;
   vec3 col=mix(hor,zen,pow(clamp(h*1.7,0.0,1.0),0.55));
   col=mix(col,gnd,smoothstep(0.0,-0.08,h));
+  float az=atan(d.x,d.z);
+  if(fx>0.5){                                                  // the floating-island sky: abyss below, islands and tentacles on the haze
+    vec2 q=d.xz/(abs(d.y)+0.14);float rq=length(q),aq=atan(q.y,q.x);float sp=sin(aq*3.0+log(rq+0.12)*5.0-tm*0.3)*0.5+0.5;
+    vec3 ab=vec3(0.012,0.0,0.03)+vec3(0.2,0.03,0.18)*pow(sp,3.0)*exp(-rq*0.22)+vec3(0.5,0.08,0.02)*pow(sp,6.0)*exp(-rq*0.8)*0.35;
+    vec2 fq=fract(q*5.0)-0.5;float hq=h2(floor(q*5.0));ab+=vec3(1.0,0.15,0.35)*step(0.975,hq)*smoothstep(0.1,0.0,length(fq))*(0.5+0.5*sin(tm*1.6+hq*90.0))*0.7;
+    col=mix(col,ab,smoothstep(-0.03,-0.3,h)*0.96);
+    vec3 hz=hor*0.55+vec3(0.05,0.0,0.08);if(h<0.31&&h>-0.34){isl(az,h,2.0,hz,col);isl(az,h,1.0,hz,col);isl(az,h,0.0,hz,col);}if(h<0.4&&h>-0.03)tent(az,h,hz,col);
+    col+=hz*0.5*exp(-max(h,0.0)*16.0)*smoothstep(-0.1,0.0,h)*0.55;
+  }
   col+=hor*0.22*exp(-abs(h)*26.0)*(0.5+0.5*sunA);
   float vis=smoothstep(-0.004,0.012,h);                      // everything in the sky sets behind the horizon line
   vec3 sp=floor(d*330.0);float sh=h3(sp);
   if(sh>0.9975&&h>0.02){float tw=0.6+0.4*sin(tm*3.0+sh*400.0);col+=mix(vec3(0.8,0.9,1.0),vec3(1.0,0.5,0.9),step(0.9992,sh))*tw*stars*smoothstep(0.02,0.25,h);}
   col+=vec3(0.18,0.05,0.3)*stars*smoothstep(0.1,0.5,h)*(0.5+0.5*sin(d.x*5.0+tm*0.2))*0.35;
-  float nightV=smoothstep(0.0,0.7,stars);
-  body(d,sunC[0],0.075,0,vis,col);body(d,sunC[1],0.042,1,vis,col);
-  body(d,moonC[0],0.07,2,vis*nightV,col);body(d,moonC[1],0.052,3,vis*nightV,col);body(d,moonC[2],0.06,4,vis*nightV,col);body(d,moonC[3],0.045,5,vis*nightV,col);
+  gate(d,vis,col);
+  body(d,sunC[0],0.075,0,vis*sunV[0],dieA[0],col);body(d,sunC[1],0.042,1,vis*sunV[1],dieA[1],col);
+  body(d,moonC[0],0.07,2,vis*moonV[0],dieA[2],col);body(d,moonC[1],0.052,3,vis*moonV[1],dieA[3],col);body(d,moonC[2],0.06,4,vis*moonV[2],dieA[4],col);body(d,moonC[3],0.045,5,vis*moonV[3],dieA[5],col);
+  shock(d,sunC[0],0.075,dieA[0],vis,col);shock(d,sunC[1],0.042,dieA[1],vis,col);shock(d,moonC[0],0.07,dieA[2],vis,col);shock(d,moonC[1],0.052,dieA[3],vis,col);shock(d,moonC[2],0.06,dieA[4],vis,col);shock(d,moonC[3],0.045,dieA[5],vis,col);
+  for(int i=0;i<4;i++)beam(d,bA[i],bB[i],bP[i].x,bP[i].y,col);
   gl_FragColor=vec4(col,1.0);
 }`;
 let skyProg = null, skyBuf = null, texAtlas = null, texAvg = null;
