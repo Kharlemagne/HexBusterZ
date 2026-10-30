@@ -36,3 +36,6 @@ Only player changes are stored: `OW.edits` (grouped by chunk) ⇄ `doc.world.edi
 - **Lava** (block 4): the shader paints it in *world space* (drifting warped noise, floating dark crust, glowing cracks) so neighbouring lava blocks form one river; its surface sits 1/8 below the top and swells. Embers and bubble-pops rise from lava near the player (`lavaFx`).
 - **Item drops** (`79-drops.js`): breaking a block spawns a little spinning item with physics; it is pulled into your backpack when close, stacks with neighbours, vanishes after 5 minutes. Drops are local to the player who broke the block.
 - **The player** (`35-player-model.js`): black skeleton-robot, eldritch-born: cyan eye-lights, magenta third eye and heart-core, violet joints, back tendrils; shown on the character screen (a small software renderer on a 2D canvas that turns to look at your mouse), and on remote players in co-op. Equipment slots (HELM / CHEST / LEGS / BOOTS) exist but armour items come later.
+
+## Lava
+`src/js/27-fluid.js` simulates lava (ids 4 source, 23-29 flowing strength 1-7, 30 falling) on a 0.2 s tick, only for the host/solo player. Only blocks near a *change* wake up, so baked vents and lakes stay still. Flow changes are normal edits (so they save, and receding lava leaves no trace); co-op sends them as one `fl` message per tick.

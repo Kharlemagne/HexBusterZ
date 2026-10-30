@@ -30,6 +30,12 @@ await step(30);
 check('guest joined the host (role + id)', await G.page.evaluate(() => __g.Net.role === 'client' && __g.P.id === 1));
 check('host knows the guest', await H.page.evaluate(() => __g.players.length === 2 && __g.players[1].id === 1));
 check('guest rebuilt the same hub, including the host\'s build', (await hash(H.page)) === (await hash(G.page)));
+// lava: the host simulates the flow, the guest receives the same blocks
+await H.page.evaluate(() => { for (let x = 39; x < 46; x++) { __g.setBlock(x, 8, 50, 3); __g.setBlock(x, 9, 50, 0); __g.setBlock(x, 10, 50, 0); } __g.setBlock(40, 9, 50, 4); });
+await step(120);
+const lv = async pg => pg.evaluate(() => [40, 41, 42, 43].map(x => __g.get(x, 9, 50)).join());
+check('lava flows the same on host and guest', (await lv(H.page)) === (await lv(G.page)) && (await lv(H.page)).split(',')[1] !== '0', await lv(H.page) + ' / ' + await lv(G.page));
+
 check('guest\'s own save was not touched by the host\'s hub', await G.page.evaluate(() => __g.WorldStore.cur.data.edits.length === 0));
 
 // positions

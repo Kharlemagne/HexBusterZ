@@ -13,12 +13,14 @@ function buildChunk(cx, cz) {
   for (let y = 0; y < yMax; y++) for (let z = z0; z < z0 + CS; z++) for (let x = x0; x < x0 + CS; x++) {
     const li = ch ? ((x & 15) | ((z & 15) << 4) | (y << 8)) : 0;
     const id = ch ? ch.b[li] : world[idx(x, y, z)]; if (!id) continue;
-    const lav = isLava(id), lavaDrop = id === 4 ? .12 : id === 30 ? 0 : 1 - (.18 + (id - 22) * .105);   // flowing lava: level 1 is almost flat, level 7 almost a full block
+    const lav = isLava(id);
     const b = COL[id], em = EMIT.has(id), bl = ch ? (ch.blood ? ch.blood[li] : 0) : blood[idx(x, y, z)];
     const vr = .86 + hash(x * 7 + y * 13, z * 5 + y * 3) * .28;
     for (let d = 0; d < 3; d++) for (let s = -1; s <= 1; s += 2) {
       n[0] = n[1] = n[2] = 0; n[d] = s;
-      if (get(x + n[0], y + n[1], z + n[2]) !== 0) continue;
+      const nb = get(x + n[0], y + n[1], z + n[2]);
+      if (lav) { if (nb !== 0 && !(d === 1 && s > 0 && !isLava(nb))) continue; }              // lava hides against solids and lava (corners are shared, so no cracks) but its lowered top shows under a ceiling
+      else if (nb !== 0 && !isLava(nb)) continue;                                              // solids facing lava keep their wall, because the lava surface is lower than the block
       const u = (d + 1) % 3, v = (d + 2) % 3;
       p[0] = x + n[0]; p[1] = y + n[1]; p[2] = z + n[2];
       for (let k = 0; k < 4; k++) {
@@ -34,12 +36,13 @@ function buildChunk(cx, cz) {
       const flipU = (hv & 1) === 1, flipV = d === 1 ? ((hv >> 1) & 1) === 1 : false, tileV = (em ? -1 : 1) * (blockTile(id, d === 1 && s > 0) + 1);
       for (let k = 0; k < 4; k++) {
         const P = [x, y, z]; P[d] += s > 0 ? 1 : 0; P[u] += cu[k]; P[v] += cv[k];
-        if (lav && P[1] > y + .5 && !isLava(get(x, y + 1, z))) P[1] -= lavaDrop;               // lava never fills its whole block, and a thin flow is lower than a source
+        let wob = 1;
+        if (lav && P[1] > y + .5) { const ch2 = lavaCorner(P[0], y, P[2]); P[1] = y + ch2; if (ch2 < 1) wob = 2; }   // the lava surface follows its neighbours, so flows slope and never leave steps or cracks
         let m = em ? 1 : sh * AOV[ao[k]] * vr, r = b[0] * m, g = b[1] * m, bb = b[2] * m;
         if (em) { const f = .85 + hash(x + k, z + y) * .3; r *= f; g *= f; bb *= f; }
         if (bl && !em) { const t = Math.min(.85, bl * .3); r = lerp(r, .42, t); g = lerp(g, .02, t); bb = lerp(bb, .03, t); }
         const su = d === 0 ? cv[k] : cu[k], sv = d === 0 ? cu[k] : cv[k];                         // texture runs horizontally along the face, up = +y
-        verts.push(P[0], P[1], P[2], r, g, bb, 1, flipU ? 1 - su : su, flipV ? 1 - sv : sv, tileV);
+        verts.push(P[0], P[1], P[2], r, g, bb, wob, flipU ? 1 - su : su, flipV ? 1 - sv : sv, tileV);
       }
       const flip = ao[0] + ao[2] < ao[1] + ao[3];
       const tri = flip ? [1, 2, 3, 1, 3, 0] : [0, 1, 2, 0, 2, 3];
@@ -54,6 +57,19 @@ function buildChunk(cx, cz) {
   gl.bufferData(gl.ARRAY_BUFFER, arr, gl.STATIC_DRAW);
   m.count = arr.length / VF;
 }
+// ---- lava surface heights ----
+const lavaH = id => id === 30 ? 1 : id === 4 ? .88 : .18 + (id - 22) * .105;       // flowing level 1 is a low sheet, level 7 almost a full block
+// height of the lava surface at the corner point (X,Z) of layer y: the average of the four lava / air blocks around it (solids are ignored,
+// anything with lava above it counts as full), like Minecraft, so neighbouring blocks always agree and the flow reads as one sloping sheet
+function lavaCorner(X, y, Z) {
+  let sum = 0, w = 0;
+  for (let k = 0; k < 4; k++) {
+    const x = X - 1 + (k & 1), z = Z - 1 + (k >> 1), id = get(x, y, z);
+    if (isLava(id)) { if (isLava(get(x, y + 1, z))) return 1; const h = lavaH(id), wt = h >= .8 ? 10 : 1; sum += h * wt; w += wt; }
+    else if (id === 0) w += .5;
+  }
+  return w ? Math.max(.06, sum / w) : .5;
+}
 function freeMesh(key) { const m = meshes.get(key); if (m) { try { gl.deleteBuffer(m.buf); } catch (e) { } meshes.delete(key); } }
 function buildAll() {
   if (useChunks) for (const ch of OW.chunks.values()) buildChunk(ch.cx, ch.cz);
@@ -67,6 +83,7 @@ function markDirty(x, z) {
   const lx = x - cx * CS, lz = z - cz * CS;
   if (lx === 0) add(cx - 1, cz); if (lx === CS - 1) add(cx + 1, cz);
   if (lz === 0) add(cx, cz - 1); if (lz === CS - 1) add(cx, cz + 1);
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) if ((sx < 0 ? lx === 0 : lx === CS - 1) && (sz < 0 ? lz === 0 : lz === CS - 1)) add(cx + sx, cz + sz);   // lava corners read the diagonal chunk too
 }
 function setBlock(x, y, z, id) {
   if (y < 1 || y >= H) return false;

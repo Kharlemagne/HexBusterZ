@@ -1,5 +1,6 @@
 # Changelog
 ## Unreleased
+- **Lava physics** (Minecraft rules): sources spread 3 blocks and thin out, lava with air under it falls, lava fills holes you dig, flows dry up when the source is removed. Host simulates, guests get one batched message per tick. Lava meshing: smooth shared corner heights (no cracks or steps), walls keep their faces next to lava, lowered lava shows under ceilings, diagonal chunk seams, wobble only on the surface, texture projected correctly on vertical faces.
 - **The Helicarrier + floating islands** (world generation 2): new worlds are a sky of floating biome islands over an eldritch abyss, with a huge Helicarrier carrying a neon eldritch city, the Hellgate at its far front, and lava falls pouring from underside vents. Older worlds keep the old terrain and village (`meta.gen`).
 - **Gamepad**: BACK opens the backpack / character screen, START opens the game menu; D-pad or left stick navigates every menu (A select, B back, left/right on sliders) and the backpack (A pick up/drop, X half/one, Y quick-move, LB/RB weapon, RT sort).
 - **Menus**: Minecraft-style title screen with a living panorama, splash text, world list (create with name / seed / mode, rename, delete), options (volumes, render distance, FOV, sensitivity, shake, invert), pause menu, save and quit. Save schema 3: many worlds, each with its own blocks, time and inventory.

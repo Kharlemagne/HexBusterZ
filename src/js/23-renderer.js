@@ -3,7 +3,7 @@ const canvas = $('c');
 const VS = `attribute vec3 p;attribute vec4 c;attribute vec2 uv;attribute float t;uniform mat4 vp;uniform vec3 cam;uniform float tm;varying vec4 vc;varying float vd;varying vec2 vuv;varying float vt;varying vec3 vwp;
 void main(){
   vec3 q=p;float ti=abs(t)-1.0;float isl=max(step(7.5,ti)*step(ti,9.5),step(45.5,ti)*step(ti,61.5));
-  q.y+=isl*step(abs(fract(p.y)-0.88),0.02)*(sin(tm*1.7+p.x*1.3+p.z*1.1)*0.04+sin(tm*2.9-p.x*0.8+p.z*1.9)*0.025);   // the lava surface swells and sinks
+  q.y+=isl*step(1.5,c.a)*(sin(tm*1.7+p.x*1.3+p.z*1.1)*0.04+sin(tm*2.9-p.x*0.8+p.z*1.9)*0.025);   // the lava surface swells and sinks
   gl_Position=vp*vec4(q,1.0);vc=c;vd=length(q-cam);vuv=uv;vt=t;vwp=q;}`;
 // colour = vertex colour (base colour x light/AO) x texture (a multiplier map, x1.6 for headroom); emissive tiles (negative index) ignore night; fog blends to the horizon colour
 const FS = `#ifdef GL_FRAGMENT_PRECISION_HIGH
@@ -31,10 +31,10 @@ void main(){
   vec3 av=texture2D(avg,vec2((ti+0.5)/256.0,0.5)).rgb;
   tx=mix(tx,av,smoothstep(36.0,90.0,vd));
   vec3 col=vc.rgb*tx*1.6;
-  if((ti>7.5&&ti<9.5)||(ti>45.5&&ti<61.5))col=lava(vwp,tm,vd);
+  if((ti>7.5&&ti<9.5)||(ti>45.5&&ti<61.5)){float sd=step(0.5,mod(ti,2.0));col=lava(mix(vec3(vwp.x+vwp.z,0.0,vwp.y*1.3+tm*0.8),vwp,sd),tm,vd);}
   float lamp=0.62*(1.0-smoothstep(1.5,22.0,vd));
   col*=mix(max(amb,lamp),1.0,em);
-  float fg=smoothstep(fogr.x,fogr.y,vd)*vc.a;
+  float fg=smoothstep(fogr.x,fogr.y,vd)*min(vc.a,1.0);
   gl_FragColor=vec4(mix(col,fogc,fg),1.0);
 }`;
 // the sky: one full-screen triangle; every pixel works out its view direction and paints gradient, sun, moon (an eye), stars and the horizon band

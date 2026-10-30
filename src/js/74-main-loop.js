@@ -10,7 +10,7 @@ function update(dt) {
   if (Net.role !== 'client') {                       // a guest only renders what the host tells it
     for (const e of enemies) if (!e.dead) { if (e.type === 'boss') updateBoss(e, wdt); else updateEnemy(e, wdt); }
     for (let i = enemies.length - 1; i >= 0; i--) if (enemies[i].dead) enemies.splice(i, 1);
-    updateEProjs(wdt); updateBombs(wdt); updateBossSystems(wdt); updateWorld(wdt);
+    updateEProjs(wdt); updateBombs(wdt); updateBossSystems(wdt); updateWorld(wdt); Fluid.tick(wdt);
   } else { for (let i = enemies.length - 1; i >= 0; i--) if (enemies[i].dead) enemies.splice(i, 1); if (mode === 'dungeon') updateDungeonClient(wdt); else updateHub(wdt); }
   S.style = Math.max(0, S.style - (10 + S.rank * 14) * dt);
   const nr = clamp(Math.floor(S.style / 120), 0, 8);

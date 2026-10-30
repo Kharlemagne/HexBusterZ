@@ -122,6 +122,7 @@ const Net = {
     const e = enemies.find(x => x.id === id); if (!e || e.dead) return;
     const keep = P.hitT; damageEnemy(e, dmg, o || {}); P.hitT = keep;
   },
+  _on_fl(peer, list) { this.applying = true; try { for (const [x, y, z, id] of list) setBlock(x, y, z, id); } finally { this.applying = false; } },
   _on_block(peer, [x, y, z, id]) {
     this.applying = true; try { setBlock(x, y, z, id); } finally { this.applying = false; }
     this.broadcast('block', [x, y, z, id], peer.id);
@@ -207,6 +208,7 @@ Net.on = () => { };
 const r2 = v => Math.round(v * 100) / 100;
 blockListeners.push((x, y, z, id, old) => {
   if (Net.applying || Net.role === 'offline') return;
+  if (Fluid.batch) { Fluid.batch.push([x, y, z, id]); return; }                  // lava ticks go out as one message
   if (Net.role === 'host') Net.broadcast('block', [x, y, z, id]); else Net.send('block', [x, y, z, id]);
 });
 
