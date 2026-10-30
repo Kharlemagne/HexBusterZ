@@ -10,7 +10,7 @@ function nearLock(q) {
   const dc = doorCenter(b, Object.keys(b.doors)[0]); return Math.hypot(q.x - dc[0], q.z - dc[1]) < 7 && Math.abs(q.y - 5) < 4;
 }
 function tryInteract() {
-  if (mode === 'hub') { if (nearNPC()) { openShop(); return true; } return false; }
+  if (mode === 'hub') { if (nearNPC()) { openShop(); return true; } if (Rift.nearConsole()) { Rift.open(); return true; } return false; }
   const t = nearTurret();
   if (t && !t.on) {
     if (Save.gems >= t.price) { Save.gems -= t.price; if (Net.role === 'client') Net.send('turret', [Run.turrets.indexOf(t)]); else t.on = true; saveGame(); SFX.rank(); SFX.place(); feed('TURRET ONLINE', '#37f0ff'); }
@@ -21,7 +21,7 @@ function tryInteract() {
 }
 function interactPrompt() {
   const k = gp.on ? '[Y]' : '[E]';
-  if (mode === 'hub') return nearNPC() ? k + '  TRADE WITH VEX THE SMITH' : '';
+  if (mode === 'hub') return nearNPC() ? k + '  TRADE WITH VEX THE SMITH' : Rift.nearConsole() ? k + '  RIFT CONSOLE — ENTER COORDINATES' : '';
   const t = nearTurret(); if (t && !t.on) return k + '  POWER UP TURRET — ◆ ' + t.price;
   if (nearLock() && !Run.hasKey) return 'LOCKED — THE KEY IS IN THE TREASURE ROOM CHEST';
   return '';

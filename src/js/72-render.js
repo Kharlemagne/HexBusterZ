@@ -18,7 +18,7 @@ function renderFrame(dt) {
   const asp = canvas.width / canvas.height;
   let ex, ey, ez, f, roll = 0;
   if (state === 'menu') {
-    const g3 = OW.gen === 3, g2 = OW.gen === 2 || g3, a = T * .06, rr = g3 ? 50 : g2 ? 120 : 36, cx = g3 ? 0 : g2 ? 32 : N / 2, cz = g3 ? 60 : g2 ? 32 : N / 2, ty = g3 ? 90 : g2 ? 96 : 11;
+    const g3 = OW.gen === 3, g4 = OW.gen === 4, g2 = OW.gen === 2 || g3 || g4, a = T * .06, rr = g3 ? 50 : g2 ? 120 : 36, cx = g3 ? 0 : g2 ? 32 : N / 2, cz = g3 ? 60 : g2 ? 32 : N / 2, ty = g3 ? 90 : g2 ? 96 : 11;
     ex = cx + Math.cos(a) * rr; ez = cz + Math.sin(a) * rr; ey = (g3 ? 116 : g2 ? 128 : 21) + Math.sin(T * .3) * 2;
     const dx = cx - ex, dy = ty - ey, dz = cz - ez, l = Math.hypot(dx, dy, dz); f = [dx / l, dy / l, dz / l]; P.fov = 1.2;
   } else {
@@ -40,8 +40,8 @@ function renderFrame(dt) {
   const fovy = Math.min(2.0, 2 * Math.atan(Math.tan(P.fov / 2) / asp));
   const vp = mul4(perspective(fovy, asp, .05, 300), lookView(ex, ey, ez, f[0], f[1], f[2], roll));
   gl.uniformMatrix4fv(loc.vp, false, vp); gl.uniform3f(loc.cam, ex, ey, ez);
-  if (sk) drawSkyDome(f, roll, fovy, asp, sk);
   drawWorld();
+  if (sk) drawSkyDome(f, roll, fovy, asp, sk);                                       // after the terrain, only where nothing was drawn: the (expensive) sky shader skips every covered pixel
   dn = 0;
   if (mode === 'hub') { if (state === 'play') lavaFx(dt); drawEmbers(dt, T); drawHubEntities(T); drawGatePortals(T); }
   else { drawSmoke(T); drawTurrets(T); drawChests(T); drawGlyph(T); if (inBoss) { drawSky(T); drawAsh(state === 'play' ? dt : 0, T); } }

@@ -6,7 +6,7 @@
 // ============================================================
 const TILE = { WHITE: 0, GRAIN: 64, PLATE: 65, FLESHY: 66, BONEY: 67, GLOW: 68, CLOTH: 69 };
 // ids 0..31 use tiles 0..63; the city blocks (32..47, and every slab made from them) use tiles 128..159
-const blockTile = (id, top) => id < 32 ? id * 2 + (top ? 1 : 0) : 128 + (((id - 32) & 15) * 2) + (top ? 1 : 0);
+const blockTile = (id, top) => { if (id >= 80) id = baseOf(id); return id < 32 ? id * 2 + (top ? 1 : 0) : 128 + (((id - 32) & 15) * 2) + (top ? 1 : 0); };
 function tn(x, y, s) { let h = (Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263) ^ Math.imul(s | 0, 1274126177)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
 // every painter returns a multiplier (number = grey, array = [r,g,b]) for pixel (x,y) of a 16x16 tile
 const PAINT = {

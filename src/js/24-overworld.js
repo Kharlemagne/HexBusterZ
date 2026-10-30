@@ -56,7 +56,7 @@ const OW = {
   },
   // start (or restart) the open world around a spawn point; loads the first chunks synchronously so the player never spawns in the void
   begin(sx, sz, seed, villageSeed, editsList, gen) {
-    this.drop(); if (typeof Fluid !== 'undefined') Fluid.reset(); this.seed = seed >>> 0; this.villageSeed = villageSeed >>> 0; OWG.S = this.seed | 0; this.gen = gen === 3 ? 3 : gen === 2 ? 2 : 1;
+    this.drop(); if (typeof Fluid !== 'undefined') Fluid.reset(); this.seed = seed >>> 0; this.villageSeed = villageSeed >>> 0; OWG.S = this.seed | 0; this.gen = gen === 4 ? 4 : gen === 3 ? 3 : gen === 2 ? 2 : 1;
     if (this.gen === 1) this.ensureStamp(); useChunks = true; H = WORLD_H; N = 64; this.configure();
     WorldSave.load(editsList || []);
     const cx = Math.floor(sx / CS), cz = Math.floor(sz / CS);

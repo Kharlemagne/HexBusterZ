@@ -95,16 +95,16 @@ function drawSkyDome(f, roll, fovy, asp, sk) {
   let ux = sy * f[2] - sz * f[1], uy = sz * f[0] - sx * f[2], uz = sx * f[1] - sy * f[0];
   if (roll) { const c = Math.cos(roll), s = Math.sin(roll); const nsx = sx * c + ux * s, nsy = sy * c + uy * s, nsz = sz * c + uz * s; ux = -sx * s + ux * c; uy = -sy * s + uy * c; uz = -sz * s + uz * c; sx = nsx; sy = nsy; sz = nsz; }
   if (!skyLoc) { skyLoc = {}; for (const n of ['fwd', 'rgt', 'upv', 'zen', 'hor', 'gnd', 'sunC', 'moonC', 'tanf', 'stars', 'sunA', 'tm', 'sunV', 'moonV', 'dieA', 'gt', 'gk', 'fx', 'bk', 'bA', 'bB', 'bP', 'bgSpd']) skyLoc[n] = gl.getUniformLocation(skyProg, n); }
-  gl.useProgram(skyProg); gl.disable(gl.DEPTH_TEST); gl.depthMask(false);
+  gl.useProgram(skyProg); gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(false);
   for (const k of [1, 2, 3]) gl.disableVertexAttribArray(k);
   gl.bindBuffer(gl.ARRAY_BUFFER, skyBuf); gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
   const L = skyLoc, th = Math.tan(fovy / 2);
   gl.uniform3fv(L.fwd, f); gl.uniform3f(L.rgt, sx, sy, sz); gl.uniform3f(L.upv, ux, uy, uz);
   gl.uniform3fv(L.zen, sk.zen); gl.uniform3fv(L.hor, sk.hor); gl.uniform3fv(L.gnd, sk.fog); gl.uniform3fv(L.sunC, sk.sunC); gl.uniform3fv(L.moonC, sk.moonC);
   gl.uniform2f(L.tanf, th * asp, th); gl.uniform1f(L.stars, sk.stars); gl.uniform1f(L.sunA, sk.sunA); gl.uniform1f(L.tm, T);
-  gl.uniform1fv(L.sunV, sk.sunV); gl.uniform1fv(L.moonV, sk.moonV); gl.uniform1fv(L.dieA, sk.die); gl.uniform4fv(L.gt, sk.gate); gl.uniform1f(L.gk, sk.gk); gl.uniform1f(L.fx, OW.gen === 3 ? 2 : OW.gen === 2 ? 1 : 0); gl.uniform1f(L.bk, sk.bk);
+  gl.uniform1fv(L.sunV, sk.sunV); gl.uniform1fv(L.moonV, sk.moonV); gl.uniform1fv(L.dieA, sk.die); gl.uniform4fv(L.gt, sk.gate); gl.uniform1f(L.gk, sk.gk); gl.uniform1f(L.fx, OW.gen === 3 ? 2 : OW.gen >= 2 ? 1 : 0); gl.uniform1f(L.bk, sk.bk);
   gl.uniform2f(L.bgSpd, SKY_STAR_SPEED, SKY_TENT_SPEED); gl.uniform3fv(L.bA, sk.bA); gl.uniform3fv(L.bB, sk.bB); gl.uniform2fv(L.bP, sk.bP);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
-  gl.useProgram(prog); gl.enable(gl.DEPTH_TEST); gl.depthMask(true);
+  gl.useProgram(prog); gl.depthFunc(gl.LESS); gl.enable(gl.DEPTH_TEST); gl.depthMask(true);
   for (const k of [1, 2, 3]) gl.enableVertexAttribArray(k);
 }

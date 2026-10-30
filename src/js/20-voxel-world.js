@@ -12,8 +12,22 @@ function get(x, y, z) {
 }
 const isLava = i => i === 4 || (i >= 23 && i <= 30);          // 4 = source, 23..29 = flowing (level 1..7), 30 = falling
 // 32..47 = city blocks; 48..63 = their BOTTOM slabs (half blocks), 64..79 = TOP slabs. A slab keeps the look of the block it is made from.
-const slabKind = i => i >= 48 && i <= 79 ? (i < 64 ? 1 : 2) : 0;          // 0 = full block, 1 = bottom half, 2 = top half
-const slabBase = i => 32 + ((i - 32) & 15);
+const stairKind = i => i >= 80 && i <= 143, isRail = i => i >= 144 && i <= 148;                    // 80..143 = stairs (16 bases x 4 directions), 144..148 = neon rails
+const RAIL_BASE = [14, 15, 41, 42, 43];
+const slabKind = i => i >= 48 && i <= 79 ? (i < 64 ? 1 : 2) : (i >= 80 && i <= 148 ? 3 : 0);          // 0 = full block, 1 = bottom half, 2 = top half, 3 = stairs / rail (partial, own shape)
+const slabBase = i => 32 + ((i - 32) & 15), stairBase = i => 32 + ((i - 80) >> 2), stairDir = i => (i - 80) & 3;   // stair dir: 0 = rises toward +x, 1 = -x, 2 = +z, 3 = -z
+const baseOf = i => i >= 144 ? RAIL_BASE[i - 144] : i >= 80 ? stairBase(i) : i >= 48 ? slabBase(i) : i;
+// the collision boxes (absolute coordinates) of a stair or a rail inside its cell; a rail joins up with neighbouring rails and solid blocks
+function cellBoxes(id, x, y, z) {
+  if (stairKind(id)) {
+    const d = stairDir(id), B = d === 0 ? [x + .5, y + .5, z, x + 1, y + 1, z + 1] : d === 1 ? [x, y + .5, z, x + .5, y + 1, z + 1] : d === 2 ? [x, y + .5, z + .5, x + 1, y + 1, z + 1] : [x, y + .5, z, x + 1, y + 1, z + .5];
+    return [[x, y, z, x + 1, y + .5, z + 1], B];
+  }
+  const ok = i => isRail(i) || (i !== 0 && !isLava(i) && !slabKind(i)), r = [[x + .375, y, z + .375, x + .625, y + 1, z + .625]];
+  if (ok(get(x + 1, y, z))) r.push([x + .625, y, z + .375, x + 1, y + 1, z + .625]); if (ok(get(x - 1, y, z))) r.push([x, y, z + .375, x + .375, y + 1, z + .625]);
+  if (ok(get(x, y, z + 1))) r.push([x + .375, y, z + .625, x + .625, y + 1, z + 1]); if (ok(get(x, y, z - 1))) r.push([x + .375, y, z, x + .625, y + 1, z + .375]);
+  return r;
+}
 const isFull = i => i !== 0 && !isLava(i) && !slabKind(i);
 const solid = (x, y, z) => { const i = get(x, y, z); return i !== 0 && !isLava(i); };
 const blockListeners = [];     // fn(x, y, z, newId, oldId): save system now, netcode later

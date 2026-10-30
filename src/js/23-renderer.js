@@ -144,11 +144,12 @@ void isl(float az,float h,float lay,vec3 haze,inout vec3 col){
   }
 }
 // eldritch tentacles rising out of the miasma on the horizon
-void tent(float xc,float salt,float h,vec3 haze,inout vec3 col){
+void tent(float xc,float salt,float h,vec3 haze,float qa,float qb,inout vec3 col){
   float n=11.0;float x=xc;float ci=floor(x);                       // xc = position along the horizon in tentacle cells; salt separates one band of tentacles from another (0 = the old wrapping ring)
   for(int k=-1;k<=1;k++){
     float c=ci+float(k);float cw=salt<0.5?mod(c,n):c+salt*53.0;float r1=h2(vec2(cw,3.3)),r2=h2(vec2(cw,8.8)),r3=h2(vec2(cw,5.1));if(r1<0.28)continue;
-    float ht=0.12+0.26*r2;if(h>ht||h<-0.02)continue;float t=clamp(h/ht,0.0,1.0);
+    float qc=(c+0.5)*qa-qb,vis=qa>0.0?smoothstep(0.25,1.7,qc)*(1.0-smoothstep(2.0,2.95,qc)):1.0;   // out in front they rise out of the mist, behind us they sink back into it
+    float ht=(0.12+0.26*r2)*vis;if(ht<0.02||h>ht||h<-0.02)continue;float t=clamp(h/ht,0.0,1.0);
     float sway=sin(h*9.0+tm*0.55+cw*2.0)*0.35*t+sin(h*21.0-tm*1.1+cw)*0.1*t+(r3-0.5)*1.4*t*t;
     float cx=c+0.5+(r3-0.5)*0.6+sway,w=(0.2*(1.0-t)+0.022)*(0.8+0.4*r1),m=smoothstep(w,w*0.6,abs(x-cx));
     float sp=smoothstep(0.9,1.0,sin(h*170.0+cw)*sin((x-cx)/w*3.0)*0.5+0.5)*(1.0-t*0.7)*1.5;
@@ -183,8 +184,8 @@ vec3 space(vec3 d){
     col+=vec3(0.26,0.05,0.34)*pow(sp,2.0)*smoothstep(-0.8,-0.32,h)*(1.0-smoothstep(-0.3,0.0,h));        // miasma glowing behind the tentacles
     if(h>-0.65){                                                // two independent bands of tentacles slide past from the front to the back, each at its own speed (the station is moving); the waving itself is untouched
       float q=abs(az),side=az>=0.0?1.0:2.0;
-      tent((q+tm*bgSpd.y)/3.1416*6.0,side,h+0.62,hz,col);
-      tent((q+tm*bgSpd.y*1.7+1.3)/3.1416*5.0,side+2.0,h+0.42,hz*0.8,col);
+      tent((q+tm*bgSpd.y)/3.1416*6.0,side,h+0.62,hz,3.1416/6.0,tm*bgSpd.y,col);
+      tent((q+tm*bgSpd.y*1.7+1.3)/3.1416*5.0,side+2.0,h+0.42,hz*0.8,3.1416/5.0,tm*bgSpd.y*1.7+1.3,col);
     }
     col+=hz*0.5*exp(-abs(h+0.05)*9.0)*0.5;
   }
@@ -202,7 +203,7 @@ void main(){
     vec3 ab=vec3(0.012,0.0,0.03)+vec3(0.2,0.03,0.18)*pow(sp,3.0)*exp(-rq*0.22)+vec3(0.5,0.08,0.02)*pow(sp,6.0)*exp(-rq*0.8)*0.35;
     vec2 fq=fract(q*5.0)-0.5;float hq=h2(floor(q*5.0));ab+=vec3(1.0,0.15,0.35)*step(0.975,hq)*smoothstep(0.1,0.0,length(fq))*(0.5+0.5*sin(tm*1.6+hq*90.0))*0.7;
     col=mix(col,ab,smoothstep(-0.03,-0.3,h)*0.96);
-    vec3 hz=hor*0.55+vec3(0.05,0.0,0.08);if(h<0.31&&h>-0.34){isl(az,h,2.0,hz,col);isl(az,h,1.0,hz,col);isl(az,h,0.0,hz,col);}if(h<0.4&&h>-0.03)tent((az/6.2832+0.5)*11.0,0.0,h,hz,col);
+    vec3 hz=hor*0.55+vec3(0.05,0.0,0.08);if(h<0.31&&h>-0.34){isl(az,h,2.0,hz,col);isl(az,h,1.0,hz,col);isl(az,h,0.0,hz,col);}if(h<0.4&&h>-0.03)tent((az/6.2832+0.5)*11.0,0.0,h,hz,0.0,0.0,col);
     col+=hz*0.5*exp(-max(h,0.0)*16.0)*smoothstep(-0.1,0.0,h)*0.55;
   }
   col+=hor*0.22*exp(-abs(h)*26.0)*(0.5+0.5*sunA);

@@ -52,16 +52,17 @@ function baseHeight(x, z) {                                              // terr
   return { h, bi, w };
 }
 // where the hub's fixed things are: set by OW.configure() for the current generation (2 = carrier over islands, 3 = the space station)
-const HUB = { voidY: 0, deck: 0, gate: { x: 0, z: 0, y: 0, seed: 1 }, spawn: { x: 0, z: 0 }, npc: { x: 0, z: 0 }, lifts: [] };
+const HUB = { list: [], voidY: 0, deck: 0, gate: { x: 0, z: 0, y: 0, seed: 1 }, spawn: { x: 0, z: 0 }, npc: { x: 0, z: 0 }, lifts: [] };
 function hubSet(gen) {
-  if (gen === 3) Object.assign(HUB, { voidY: 24, deck: SD, gate: STN.gate, spawn: STN.spawn, npc: STN.npc, lifts: [{ x: 0, z: 0, y0: SD, y1: SD + 74 }] });
-  else if (gen === 2) Object.assign(HUB, { voidY: VOID_Y, deck: CAR.deck, gate: CAR_GATE, spawn: CAR_SPAWN, npc: CAR_NPC, lifts: LIFTS.map(l => ({ x: l.x, z: l.z, y0: 36, y1: CAR.deck + 1.5 })) });
+  if (gen === 4) { const L = realmLayout(OWG.S); Object.assign(HUB, { voidY: REALM_VOID, deck: L.tear.y, gate: null, list: L.gates, spawn: L.spawn, npc: { x: 0, z: -99999 }, lifts: [], tear: L.tear }); }
+  else if (gen === 3) Object.assign(HUB, { list: [STN.gate], tear: null, voidY: 24, deck: SD, gate: STN.gate, spawn: STN.spawn, npc: STN.npc, lifts: [{ x: 0, z: 0, y0: SD, y1: SD + 74 }] });
+  else if (gen === 2) Object.assign(HUB, { list: [CAR_GATE], tear: null, voidY: VOID_Y, deck: CAR.deck, gate: CAR_GATE, spawn: CAR_SPAWN, npc: CAR_NPC, lifts: LIFTS.map(l => ({ x: l.x, z: l.z, y0: 36, y1: CAR.deck + 1.5 })) });
 }
 // ---- Hellgates: one candidate per REGION x REGION cell, deterministic from the seed
 const gateCache = new Map();
 function gateOf(rx, rz) {
   const k = rx + ',' + rz + ',' + OWG.S + ',' + OW.gen; let g = gateCache.get(k); if (g !== undefined) return g;
-  if (OW.gen === 3) return null;                                        // the station is the only place in its map; its one gate is HUB.gate
+  if (OW.gen >= 3) return null;                                         // the station and the realms have their own gate lists (HUB.list)
   if (OW.gen === 2) { g = gateOf2(rx, rz); if (gateCache.size > 400) gateCache.clear(); gateCache.set(k, g); return g; }
   const S = OWG.S, gx = rx * OWG.REGION + 50 + Math.floor(ih(rx, 0, rz, S + 101) * 108), gz = rz * OWG.REGION + 50 + Math.floor(ih(rx, 1, rz, S + 202) * 108);
   if (Math.abs(gx - VILLAGE_C) < 110 && Math.abs(gz - VILLAGE_C) < 110) g = null;
@@ -72,14 +73,14 @@ const gateRegion = v => Math.floor(v / OWG.REGION);
 function gatesNear(x, z, r) {                                            // every gate within r blocks of (x,z)
   const out = [], x0 = gateRegion(x - r), x1 = gateRegion(x + r), z0 = gateRegion(z - r), z1 = gateRegion(z + r);
   for (let rz = z0; rz <= z1; rz++) for (let rx = x0; rx <= x1; rx++) { const g = gateOf(rx, rz); if (g && Math.hypot(g.x - x, g.z - z) <= r) out.push(g); }
-  if (OW.gen >= 2 && Math.hypot(HUB.gate.x - x, HUB.gate.z - z) <= r) out.push(HUB.gate);
+  if (OW.gen >= 2) for (const g of HUB.list) if (Math.hypot(g.x - x, g.z - z) <= r) out.push(g);
   return out;
 }
-OWG.gen = function (cx, cz) { return OW.gen === 3 ? OWG.gen3(cx, cz) : OW.gen === 2 ? OWG.gen2(cx, cz) : OWG.gen1(cx, cz); };
+OWG.gen = function (cx, cz) { return OW.gen === 4 ? OWG.gen4(cx, cz) : OW.gen === 3 ? OWG.gen3(cx, cz) : OW.gen === 2 ? OWG.gen2(cx, cz) : OWG.gen1(cx, cz); };
 function nearestGate(x, z) {
   let best = null, bd = 1e18;
   for (let rz = gateRegion(z) - 2; rz <= gateRegion(z) + 2; rz++) for (let rx = gateRegion(x) - 2; rx <= gateRegion(x) + 2; rx++) { const g = gateOf(rx, rz); if (g) { const d = Math.hypot(g.x - x, g.z - z); if (d < bd) { bd = d; best = g; } } }
-  if (OW.gen >= 2) { const d = Math.hypot(HUB.gate.x - x, HUB.gate.z - z); if (d < bd) { bd = d; best = HUB.gate; } }
+  if (OW.gen >= 2) for (const g of HUB.list) { const d = Math.hypot(g.x - x, g.z - z); if (d < bd) { bd = d; best = g; } }
   return best ? { g: best, d: bd } : null;
 }
 function gateAtPlayer(px, py, pz) {                                      // the Hellgate whose doorway the player is standing in
@@ -94,11 +95,14 @@ function colInfo(x, z) {
   return { h: clamp(Math.floor(h), 3, WORLD_H - 8), bi, w };
 }
 function stDistrict(x, z) {
+  if (x > 9 && x < 29 && z > 8 && z < 28) return 'RIFT HALL';
   if (z > 84) return 'DOCK RING'; if (z < -84) return 'GATE HALL'; if (Math.hypot(x, z) < 20) return 'CORE PLAZA'; if (Math.abs(x) > 80) return 'OUTER WALL';
   if (Math.abs(x) < 10) return 'MAIN AVENUE'; if (Math.abs(z) < 9) return 'RAIL STREET';
   return x > 0 ? (z > 0 ? 'MARKET SPRAWL' : 'NEON ROW') : (z > 0 ? 'THE STACKS' : 'HIVE BLOCKS');
 }
+function realmCoords() { const o = Net.hubOverride; if (o) return o.coords || ''; const m = WorldStore.cur && WorldStore.cur.data.map; return m ? m.coords : ''; }
 function biomeAt(x, z, y) {
+  if (OW.gen === 4) { const I = realmColumn(x, z, OWG.S), c = realmCoords(); return (I.solid ? BIOME_NAMES[I.bi] : 'THE ABYSS') + (c ? ' · RIFT ' + c.toUpperCase().slice(0, 18) : ''); }
   if (OW.gen === 3) return onStation(x, z) && (y === undefined || y > 44) ? 'THE HELICARRIER · ' + stDistrict(x, z) : 'DEEP SPACE';
   if (OW.gen === 2) { if (onCarrier(x, z) && (y === undefined || y > carrierBottom(x, z) - 6)) return 'THE HELICARRIER'; const I = islandRaw(x, z); return I.solid ? BIOME_NAMES[I.bi] : 'THE ABYSS'; }
   return villageD(x, z) <= 30 ? 'EMBER VILLAGE' : BIOME_NAMES[baseHeight(x, z).bi];

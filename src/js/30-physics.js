@@ -6,6 +6,7 @@ function boxHits(x, y, z, hw, h) {
   for (let yy = y0; yy <= y1; yy++) for (let zz = z0; zz <= z1; zz++) for (let xx = x0; xx <= x1; xx++) {
     const id = get(xx, yy, zz); if (id === 0 || isLava(id)) continue;
     const k = slabKind(id); if (!k) return true;                                  // half blocks only fill half of their cell
+    if (k === 3) { for (const q of cellBoxes(id, xx, yy, zz)) if (x + hw > q[0] + 1e-6 && x - hw < q[3] - 1e-6 && z + hw > q[2] + 1e-6 && z - hw < q[5] - 1e-6 && y + h - 1e-6 > q[1] && y + 1e-6 < q[4]) return true; continue; }       // stairs and rails have their own shape
     const lo = yy + (k === 2 ? .5 : 0); if (y + h - 1e-6 > lo && y + 1e-6 < lo + .5) return true;
   }
   return false;
@@ -13,12 +14,12 @@ function boxHits(x, y, z, hw, h) {
 // the height a body standing in this footprint rests at (top of the highest block under its feet), or -1e9
 function floorUnder(x, y, z, hw) {
   const x0 = Math.floor(x - hw + 1e-6), x1 = Math.floor(x + hw - 1e-6), z0 = Math.floor(z - hw + 1e-6), z1 = Math.floor(z + hw - 1e-6), yy = Math.floor(y + 1e-6); let best = -1e9;
-  for (let zz = z0; zz <= z1; zz++) for (let xx = x0; xx <= x1; xx++) { const id = get(xx, yy, zz); if (id === 0 || isLava(id)) continue; const k = slabKind(id); best = Math.max(best, yy + (k === 1 ? .5 : 1)); }
+  for (let zz = z0; zz <= z1; zz++) for (let xx = x0; xx <= x1; xx++) { const id = get(xx, yy, zz); if (id === 0 || isLava(id)) continue; const k = slabKind(id); if (k === 3) { for (const q of cellBoxes(id, xx, yy, zz)) if (x + hw > q[0] + 1e-6 && x - hw < q[3] - 1e-6 && z + hw > q[2] + 1e-6 && z - hw < q[5] - 1e-6 && q[4] > y + 1e-6 && q[1] < y + 1.75) best = Math.max(best, q[4]); } else best = Math.max(best, yy + (k === 1 ? .5 : 1)); }
   return best;
 }
 function ceilingOver(x, y, z, hw, h) {
   const x0 = Math.floor(x - hw + 1e-6), x1 = Math.floor(x + hw - 1e-6), z0 = Math.floor(z - hw + 1e-6), z1 = Math.floor(z + hw - 1e-6), yy = Math.floor(y + h - 1e-6); let best = 1e9;
-  for (let zz = z0; zz <= z1; zz++) for (let xx = x0; xx <= x1; xx++) { const id = get(xx, yy, zz); if (id === 0 || isLava(id)) continue; const k = slabKind(id); best = Math.min(best, yy + (k === 2 ? .5 : 0)); }
+  for (let zz = z0; zz <= z1; zz++) for (let xx = x0; xx <= x1; xx++) { const id = get(xx, yy, zz); if (id === 0 || isLava(id)) continue; const k = slabKind(id); if (k === 3) { for (const q of cellBoxes(id, xx, yy, zz)) if (x + hw > q[0] + 1e-6 && x - hw < q[3] - 1e-6 && z + hw > q[2] + 1e-6 && z - hw < q[5] - 1e-6 && q[4] > y + h - 1e-6 && q[1] < y + h + 1e-6) best = Math.min(best, q[1]); } else best = Math.min(best, yy + (k === 2 ? .5 : 0)); }
   return best;
 }
 function moveBody(b, dt, hw, h) {

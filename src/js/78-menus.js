@@ -3,6 +3,7 @@
 //  One container (#mscreen) is re-rendered per screen; clicks are handled by data-act delegation.
 // ============================================================
 const SPLASHES = ['Also try HELLGATES!', 'Hurtling through the deep!', 'The Helicarrier is always home!', 'Don\'t look at the sun!', 'Skeleton robot, black!', 'Bullet time!', '100% voxel!', 'Now with half blocks!', 'Eldritch-approved!', 'Mind the lava.', 'Seeds are forever!', 'Press I for your backpack!', 'Slide into the shield!', 'The moon blinks.', 'Cyberpunk, but worse!', 'Made with Claude!'];
+const SAVE_SLOTS = 4;
 const Menu = {
   stack: ['title'], sel: '', hostMode: false, msg: '', busy: false,
   go(name, arg) { this.stack.push(name); this.arg = arg; this.render(); },
@@ -38,21 +39,20 @@ const SCREENS = {
   worlds() {
     const ws = WorldStore.list(), host = Menu.hostMode;
     if (!ws.some(w => w.id === Menu.sel)) Menu.sel = ws.length ? ws[0].id : '';
-    let h = '<div class="mh">' + (host ? 'SELECT A WORLD TO HOST' : 'SELECT WORLD') + '</div><div class="wlist">';
-    if (!ws.length) h += '<div class="wl empty">NO WORLDS YET — CREATE ONE!</div>';
+    let h = '<div class="mh">' + (host ? 'SELECT A SAVE TO HOST' : 'SELECT SAVE SLOT') + '</div><div class="wlist">';
     for (const w of ws) {
       const hue = w.seed % 360;
       h += '<div class="wl' + (w.id === Menu.sel ? ' sel' : '') + '" data-act="pick" data-id="' + w.id + '"><i style="background:linear-gradient(135deg,hsl(' + hue + ',70%,32%),hsl(' + ((hue + 60) % 360) + ',80%,18%))"></i><div><b>' + esc(w.name) + '</b><span>' + (w.mode === 'creative' ? 'CREATIVE' : 'SURVIVAL') + ' · ' + (w.gen === 3 ? 'SPACE STATION' : (w.gen === 2 ? 'FLOATING ISLANDS' : 'CLASSIC')) + ' · SEED ' + w.seed + '</span><span>CREATED ' + fmtDate(w.created) + ' · LAST PLAYED ' + fmtDate(w.played) + '</span></div></div>';
     }
-    h += '</div>' + btn('play', host ? 'HOST SELECTED WORLD' : 'PLAY SELECTED WORLD', '', ws.length ? '' : 'disabled') + btn('create', 'CREATE NEW WORLD', 'h') + btn('rename', 'RENAME', 'h', ws.length ? '' : 'disabled') + btn('delete', 'DELETE', 'h', ws.length ? '' : 'disabled') + btn('back', 'CANCEL', 'h') + '<div id="mmsg" class="mmsg">' + esc(Menu.msg) + '</div>';
+    for (let i = ws.length; i < SAVE_SLOTS; i++) h += '<div class="wl empty" data-act="create"><i style="background:#120a22"></i><div><b>SLOT ' + (i + 1) + ' · EMPTY</b><span>CLICK TO START A NEW GAME</span></div></div>';
+    h += '</div>' + btn('play', host ? 'HOST SELECTED SAVE' : 'PLAY SELECTED SAVE', '', ws.length ? '' : 'disabled') + btn('create', 'NEW GAME', 'h', ws.length >= SAVE_SLOTS ? 'disabled' : '') + btn('rename', 'RENAME', 'h', ws.length ? '' : 'disabled') + btn('delete', 'DELETE', 'h', ws.length ? '' : 'disabled') + btn('back', 'CANCEL', 'h') + '<div id="mmsg" class="mmsg">' + esc(Menu.msg) + '</div>';
     return h;
   },
   create() {
     const mode = Menu.newMode || 'survival';
-    return '<div class="mh">CREATE NEW WORLD</div><div class="fld"><label>WORLD NAME</label><input id="f-name" data-focus maxlength="32" value="' + esc(Menu.newName || 'NEW WORLD') + '"></div>'
-      + '<div class="fld"><label>SEED FOR THE WORLD GENERATOR</label><input id="f-seed" maxlength="24" placeholder="LEAVE BLANK FOR A RANDOM SEED" value="' + esc(Menu.newSeed || '') + '"></div>'
-      + btn('mode', 'GAME MODE: ' + (mode === 'creative' ? 'CREATIVE (INFINITE BLOCKS)' : 'SURVIVAL')) + '<div class="mnote">THE HELICARRIER STATION IS THE SAME IN EVERY WORLD. THE SEED SHAPES THE REALMS YOU TRAVEL TO.</div>'
-      + btn('docreate', 'CREATE NEW WORLD') + btn('back', 'CANCEL') + '<div id="mmsg" class="mmsg">' + esc(Menu.msg) + '</div>';
+    return '<div class="mh">NEW GAME</div><div class="fld"><label>SAVE NAME</label><input id="f-name" data-focus maxlength="32" value="' + esc(Menu.newName || 'NEW WORLD') + '"></div>'
+      + btn('mode', 'GAME MODE: ' + (mode === 'creative' ? 'CREATIVE (INFINITE BLOCKS)' : 'SURVIVAL')) + '<div class="mnote">YOUR SAVE LIVES ON THE HELICARRIER. ENTER COORDINATES AT THE RIFT CONSOLE TO TRAVEL TO REALMS. THE SAME COORDINATES ALWAYS LEAD TO THE SAME REALM.</div>'
+      + btn('docreate', 'START NEW GAME') + btn('back', 'CANCEL') + '<div id="mmsg" class="mmsg">' + esc(Menu.msg) + '</div>';
   },
   rename() {
     const w = WorldStore.find(Menu.sel); return '<div class="mh">RENAME WORLD</div><div class="fld"><label>WORLD NAME</label><input id="f-name" data-focus maxlength="32" value="' + esc(w ? w.name : '') + '"></div>' + btn('dorename', 'SAVE') + btn('back', 'CANCEL');
@@ -90,10 +90,10 @@ const ACT = {
   savedata() { openSaveBox(); }, coopadv() { openCoopBox(); },
   pick(t) { Menu.sel = t.dataset.id; document.querySelectorAll('.wl').forEach(e => e.classList.toggle('sel', e.dataset.id === Menu.sel)); },
   play() { if (Menu.sel) startWorld(Menu.sel, Menu.hostMode); },
-  create() { Menu.newName = ''; Menu.newSeed = ''; Menu.newMode = 'survival'; Menu.msg = ''; Menu.go('create'); },
-  mode() { Menu.newName = $('f-name').value; Menu.newSeed = $('f-seed').value; Menu.newMode = Menu.newMode === 'creative' ? 'survival' : 'creative'; Menu.render(); },
+  create() { if (WorldStore.list().length >= SAVE_SLOTS) { Menu.msg = 'ALL 4 SAVE SLOTS ARE FULL — DELETE ONE FIRST'; Menu.render && Menu.render(); return; } Menu.newName = ''; Menu.newSeed = ''; Menu.newMode = 'survival'; Menu.msg = ''; Menu.go('create'); },
+  mode() { Menu.newName = $('f-name').value; Menu.newMode = Menu.newMode === 'creative' ? 'survival' : 'creative'; Menu.render(); },
   docreate() {
-    const w = WorldStore.create({ name: $('f-name').value, seed: seedFromText($('f-seed').value), mode: Menu.newMode });
+    const w = WorldStore.create({ name: $('f-name').value, seed: seedFromText(''), mode: Menu.newMode });
     Menu.stack.pop(); Menu.sel = w.id; startWorld(w.id, Menu.hostMode);
   },
   rename() { if (Menu.sel) Menu.go('rename'); }, dorename() { WorldStore.rename(Menu.sel, $('f-name').value); Menu.back(); },

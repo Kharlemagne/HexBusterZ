@@ -5,6 +5,39 @@ for (let i = 48; i <= 79; i++) {                                                
   const b = slabBase(i); COL[i] = COL[b]; DATA.blocks.colors[i] = DATA.blocks.colors[b]; DATA.blocks.names[i] = DATA.blocks.names[b] + ' SLAB'; if (EMIT.has(b)) EMIT.add(i);
   if (i < 64) DATA.blocks.build.push([i, DATA.blocks.names[i]]);
 }
+for (let i = 80; i <= 148; i++) {                                                  // stairs (4 directions each; the one in the palette is placed facing the way you look) and neon rails
+  const b = baseOf(i); COL[i] = COL[b]; DATA.blocks.colors[i] = DATA.blocks.colors[b]; if (EMIT.has(b) || i >= 144) EMIT.add(i);
+  if (i >= 144) { DATA.blocks.names[i] = 'NEON RAIL ' + ['CYAN', 'MAGENTA', 'ORANGE', 'BLUE', 'GREEN'][i - 144]; DATA.blocks.build.push([i, DATA.blocks.names[i]]); }
+  else { DATA.blocks.names[i] = DATA.blocks.names[b] + ' STAIRS'; if (((i - 80) & 3) === 0) DATA.blocks.build.push([i, DATA.blocks.names[i]]); }
+}
+// a box inside a cell (stairs and rails are built from these); faces on the cell boundary hide against full neighbours
+const cu2 = [0, 1, 1, 0], cv2 = [0, 0, 1, 1];
+function emitBox(out, x, y, z, a, b, id, skip) {
+  const em = EMIT.has(id), col = COL[id], vr = .9 + hash(x * 7 + y * 13, z * 5 + y * 3) * .2, O = [x, y, z];
+  for (let d = 0; d < 3; d++) for (let s = -1; s <= 1; s += 2) {
+    const plane = s > 0 ? b[d] : a[d]; if (skip && skip(d, s)) continue;
+    if (plane === 0 || plane === 1) { const nb = get(x + (d === 0 ? s : 0), y + (d === 1 ? s : 0), z + (d === 2 ? s : 0)); if (isFull(nb) || (isRail(id) && isRail(nb) && d !== 1)) continue; }
+    const u = (d + 1) % 3, v = (d + 2) % 3, m = em ? 1 : SHADE[d][s > 0 ? 1 : 0] * vr, tileV = (em ? -1 : 1) * (blockTile(id, d === 1 && s > 0) + 1), vs = [];
+    for (let k = 0; k < 4; k++) {
+      const P = [0, 0, 0]; P[d] = plane; P[u] = cu2[k] ? b[u] : a[u]; P[v] = cv2[k] ? b[v] : a[v];
+      const su = d === 0 ? P[2] : P[0], sv = d === 1 ? P[2] : P[1];
+      vs.push(O[0] + P[0], O[1] + P[1], O[2] + P[2], col[0] * m, col[1] * m, col[2] * m, 1, su, sv, tileV);
+    }
+    for (const k of [0, 1, 2, 0, 2, 3]) for (let j = 0; j < VF; j++) out.push(vs[k * VF + j]);
+  }
+}
+function meshPartial(out, id, x, y, z) {
+  if (stairKind(id)) {
+    const d = stairDir(id), cb = cellBoxes(id, 0, 0, 0), A = cb[0], B = cb[1];
+    emitBox(out, x, y, z, A.slice(0, 3), A.slice(3), id); emitBox(out, x, y, z, B.slice(0, 3), B.slice(3), id, (dd, ss) => dd === 1 && ss < 0);       // (the underside of the upper step is inside the stair)
+  } else {                                                                            // neon rail: a post with two bars toward each neighbouring rail or wall
+    emitBox(out, x, y, z, [.375, 0, .375], [.625, 1, .625], id);
+    const ok = i => isRail(i) || isFull(i);
+    for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (ok(get(x + dx, y, z + dz))) for (const [y0, y1] of [[.3, .42], [.7, .82]]) {
+      const a = [dx > 0 ? .625 : dx < 0 ? 0 : .44, y0, dz > 0 ? .625 : dz < 0 ? 0 : .44], b = [dx > 0 ? 1 : dx < 0 ? .375 : .56, y1, dz > 0 ? 1 : dz < 0 ? .375 : .56]; emitBox(out, x, y, z, a, b, id);
+    }
+  }
+}
 const SHADE = [[.74, .74], [.46, 1], [.86, .86]];
 const AOV = [.42, .64, .84, 1];
 const meshes = new Map(), dirty = new Set();             // chunk key -> { buf, count }
@@ -18,6 +51,7 @@ function buildChunk(cx, cz) {
     const li = ch ? ((x & 15) | ((z & 15) << 4) | (y << 8)) : 0;
     const id = ch ? ch.b[li] : world[idx(x, y, z)]; if (!id) continue;
     const lav = isLava(id), sk = slabKind(id);
+    if (sk === 3) { meshPartial(out, id, x, y, z); continue; }
     const b = COL[id], em = EMIT.has(id), bl = ch ? (ch.blood ? ch.blood[li] : 0) : blood[idx(x, y, z)];
     const vr = .86 + hash(x * 7 + y * 13, z * 5 + y * 3) * .28;
     for (let d = 0; d < 3; d++) for (let s = -1; s <= 1; s += 2) {

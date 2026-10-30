@@ -20,3 +20,5 @@ Hub terrain is saved as seed + sparse block edits. Run `tests/save-migration.mjs
 Each world meta carries `gen` (1 = heightfield + Ember Village, 2 = floating islands + Helicarrier). Missing `gen` normalizes to 1 so existing builds never move; new and demo worlds use 2. The co-op `world` message carries `gen`.
 
 `gen` is now 1 (village), 2 (floating islands + carrier) or 3 (the space station); new worlds are 3.
+
+Saves are 4 slots (`SAVE_SLOTS`). A slot may hold `data.realms` and `data.map` (see docs/WORLD.md); older saves simply do not have them.

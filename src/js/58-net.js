@@ -58,7 +58,7 @@ const Net = {
   announceWorld() { if (this.role === 'host') for (const p of this.peers.values()) this._sendWorld(p); },
   _sendWorld(peer) {
     const w = { mode, wave: Wv.n };
-    if (mode === 'hub') { w.worldSeed = OW.seed; w.villageSeed = OW.villageSeed; w.gen = OW.gen; w.edits = WorldSave.list(); }
+    if (mode === 'hub') { w.worldSeed = OW.seed; w.villageSeed = OW.villageSeed; w.gen = OW.gen; w.coords = realmCoords(); w.edits = WorldSave.list(); }
     else { w.runSeed = Run.seed; w.seals = Run.rooms.map((r, i) => r.state === 'active' ? i : -1).filter(i => i >= 0); const b = bossRoom(); w.unl = b && !b.locked ? 1 : 0; }
     this._put(peer, 'world', w);
   },
@@ -67,7 +67,7 @@ const Net = {
     try {
       enemies.length = 0; eprojs.length = 0; haz.length = 0; bombs.length = 0; this.proxies.clear();
       Wv.n = w.wave || 1;
-      if (w.mode === 'hub') { this.hubOverride = { seed: w.worldSeed, villageSeed: w.villageSeed, edits: w.edits || [], gen: w.gen || 1 }; OW.returnTo = null; enterHub(false, false); }
+      if (w.mode === 'hub') { this.hubOverride = { seed: w.worldSeed, villageSeed: w.villageSeed, edits: w.edits || [], gen: w.gen || 1, coords: w.coords || '' }; OW.returnTo = null; enterHub(false, false); }
       else {
         this.hubOverride = null; enterDungeon(w.runSeed);
         for (const i of w.seals || []) setSeal(Run.rooms[i], true);
@@ -122,6 +122,7 @@ const Net = {
     const e = enemies.find(x => x.id === id); if (!e || e.dead) return;
     const keep = P.hitT; damageEnemy(e, dmg, o || {}); P.hitT = keep;
   },
+  _on_rift(peer, [text]) { if (this.role === 'client') Rift.begin(text, true); },
   _on_fl(peer, list) { this.applying = true; try { for (const [x, y, z, id] of list) setBlock(x, y, z, id); } finally { this.applying = false; } },
   _on_block(peer, [x, y, z, id]) {
     this.applying = true; try { setBlock(x, y, z, id); } finally { this.applying = false; }

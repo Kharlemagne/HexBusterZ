@@ -10,7 +10,7 @@ function drawHubEntities(t) {
   // smith
   drawParts(SMITH, NPC.x, NPC.y + Math.sin(NPC.t * 2) * .02, NPC.z, rotY(NPC.yaw), 1, t, false, 0);
   if (nearNPC()) pushBox(NPC.x, NPC.y + 2.8 + Math.sin(t * 4) * .1, NPC.z, .22, .22, .22, 1, .85, .2, rotY(t * 3), false);
-  if (OW.gen >= 2) { drawLifts(t); return; }
+  if (OW.gen >= 2) { drawLifts(t); drawRift(t); return; }
   // hellgate swirl
   for (let iy = 0; iy < 10; iy++) for (let ix = 0; ix < 7; ix++) {
     const x = 29.5 + ix, y = 9.5 + iy, a = Math.sin(t * 2.2 + ix * .7 + iy * .5) * .5 + .5, b = Math.sin(t * 3.1 - iy * .8 + ix * .4) * .5 + .5;

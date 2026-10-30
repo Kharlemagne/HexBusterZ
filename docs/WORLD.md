@@ -45,3 +45,6 @@ No continuous cycle. `DayNight` (src/js/27-daynight.js) holds `phase` (day/night
 
 ## Generation 3: the station
 `src/js/25-station-gen3.js` paints the whole station once into a dense voxel grid (identical in every world, independent of the seed) and chunks copy their slice. Everything off the hull is empty: stepping off is death. `HUB` (25-overworld-gen.js) holds the fixed points (spawn, gate, smith, lifts) for gen 2 and 3. Sky: `fx = 2` in the sky shader (`space()`); `DayNight` is bypassed. Half blocks: ids 48-63 bottom slabs and 64-79 top slabs of base blocks 32-47 (`slabKind`, `slabBase`); the mesher scales them, culls shared faces, and physics (`boxHits`, `floorUnder`, `ceilingOver`, auto step-up) treats them as half-height.
+
+## Realms (generation 4) and the Rift
+`src/js/25-realm-gen4.js`: layout from the seed (`realmLayout`), bounded islands (`realmColumn`), the tear (`buildTear`). `src/js/55-rift.js`: console UI, the zap sequence, `enterRealm` / `leaveRealm`, drawing. A save has `data.map` = `{seed, coords}` while the player is in a realm (null on the station) and `data.realms[seed] = {coords, edits}`. `WorldSave` writes block edits to the realm you are in. Gen 4 is never stored in `meta.gen`: the save stays generation 3 (or older) and the realm is entered through the rift.

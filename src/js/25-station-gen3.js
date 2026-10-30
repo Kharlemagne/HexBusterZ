@@ -95,6 +95,30 @@ function stDoor(L, side, y0) {                                                  
   const mx = (L.x1 + L.x2) >> 1, mz = (L.z1 + L.z2) >> 1;
   for (let k = -1; k <= 1; k++) for (let h = 1; h <= 3; h++) { if (side === 'n') stPut(mx + k, y0 + h, L.z1, 0); else if (side === 's') stPut(mx + k, y0 + h, L.z2, 0); else if (side === 'w') stPut(L.x1, y0 + h, mz + k, 0); else stPut(L.x2, y0 + h, mz + k, 0); }
 }
+// the Rift Navigation Hall: a console, a tear in the dimension between two Tesla coils (animated in 55-rift.js), a door onto the main avenue
+const RIFT = { x: 22.5, y: SD + 7, z: 18.5, coils: [[22.5, SD + 17.5, 12.5], [22.5, SD + 17.5, 24.5]], console: { x: 16.5, z: 18.5 }, arrive: { x: 14.5, z: 18.5 } };
+function stCoil(cx, cz) {
+  stBox(cx - 2, SD + 1, cz - 2, cx + 2, SD + 2, cz + 2, B.HULL); for (const [dx, dz] of [[-2, -2], [2, -2], [-2, 2], [2, 2]]) stPut(cx + dx, SD + 2, cz + dz, B.NORA);
+  for (let y = SD + 3; y <= SD + 15; y++) { stBox(cx - 1, y, cz - 1, cx + 1, y, cz + 1, (y % 3 === 0) ? B.NORA : B.TECH); if (y % 3 === 0) { stRing(cx - 2, y, cz - 2, cx + 2, y, cz + 2, slabB(B.HULL)); } }
+  stBox(cx - 1, SD + 16, cz - 1, cx + 1, SD + 18, cz + 1, B.NCYA); stBox(cx, SD + 19, cz, cx, SD + 20, cz, B.HULL);
+}
+function stRiftHall() {
+  const x1 = 10, x2 = 28, z1 = 9, z2 = 27, H = 22, rx = 22, rz = 18;
+  stTower(x1, z1, x2, z2, SD, SD + H, { fl: 60, wall: B.TECH, wall2: B.HULL, corner: B.HULL, win: [B.NBLU, B.NMAG], lit: .55, seed: 77, mode: 'strip', band: B.NCYA, bandEvery: 11, roof: B.HULL });
+  for (let z = z1 + 1; z < z2; z++) for (let x = x1 + 1; x < x2; x++) {                                    // the floor: cyan rings around the rift, a lamp grid in the ceiling
+    const d = Math.hypot(x - rx, z - rz); stPut(x, SD, z, (d > 3.2 && d < 4.4) ? B.NCYA : (d > 6 && d < 6.7) ? B.NORA : ((x + z) & 1 ? B.TECH : B.HULL)); if ((x + z) % 4 === 0) stPut(x, SD + H, z, B.LAMP);
+  }
+  for (let z = 15; z <= 21; z++) for (let y = SD + 1; y <= SD + 6; y++) stPut(x1, y, z, 0);               // the door
+  for (let z = 14; z <= 22; z++) stPut(x1, SD + 7, z, B.NORA); for (const z of [14, 22]) stBox(x1, SD + 1, z, x1, SD + 6, z, B.NORA);
+  stText('NAV', x1, SD + 10, 15, 'z', 1, B.NCYA, 1);
+  stBoardV('RIFT', x1 + 1, SD + 31, z1 - 1, 'x', 1, B.NMAG, B.NCYA);
+  stCoil(rx, 12); stCoil(rx, 24);
+  const cx = 16;                                                                                           // the console: a base, a sloped keyboard (stairs), a screen
+  stBox(cx, SD + 1, 17, cx + 1, SD + 1, 19, B.HULL); stBox(cx + 1, SD + 2, 17, cx + 1, SD + 2, 19, B.TECH);
+  for (let z = 17; z <= 19; z++) { stPut(cx, SD + 2, z, 80); stPut(cx + 1, SD + 3, z, B.NBLU); stPut(cx + 1, SD + 4, z, B.NBLU); }
+  stPut(cx, SD + 3, 18, slabB(B.NGRN)); stPut(cx, SD + 3, 17, slabB(B.NORA)); stPut(cx, SD + 3, 19, B.NMAG);
+  for (const z of [10, 26]) stBox(x1 + 1, SD + 1, z, x1 + 1, SD + 3, z, B.NCYA);
+}
 const NAMES = ['NEON GRAVE', 'BITJACK', 'VOID CAFE', 'RIFT ROAD', 'HEXBUSTER', 'MALLWARE', 'CLOUD LOOP', 'DEAD DROP', 'CHROME BAR', 'GHOST SHELL', 'ASH 24', 'FLESH LAB', 'NULL POINT', 'GATE 9'];
 // ---- building styles ----
 function bApt(L, r, side) {                                                      // pale concrete block, warm windows, balconies, outside stairs
@@ -260,6 +284,7 @@ function stLots() {
   for (const sx of [1, -1]) for (const sz of [1, -1]) for (let ix = 0; ix < 3; ix++) for (let iz = 0; iz < 4; iz++) {
     const [a, b] = LOTX[ix], [c, d] = LOTZ[iz], x1 = sx > 0 ? a : -b, x2 = sx > 0 ? b : -a, z1 = sz > 0 ? c : -d, z2 = sz > 0 ? d : -c;
     if (ix === 2 && iz === 2) continue;                                                        // those four corners are the big towers
+    if (sx === 1 && sz === 1 && ix === 0 && iz === 0) continue;                                // the lot next to the plaza is the Rift Navigation Hall
     if (Math.max(stOct(x1, z1), stOct(x1, z2), stOct(x2, z1), stOct(x2, z2)) > STN.R - 5) continue;
     if (iz === 3 && ix === 0) continue;                                                        // keep the dock open at the ends of the avenue
     out.push({ x1, x2, z1, z2, ix, iz, sx, sz, q: r() });
@@ -301,7 +326,7 @@ function stDockAndGate() {
 }
 function stBuildAll() {
   ST = new Uint8Array(GW * GD * (GY1 - GY0));
-  stHullAndDeck(); stBuildCity(); stLampPosts(); stPlazaAndCore(); stSmith(); stDockAndGate();
+  stHullAndDeck(); stBuildCity(); stRiftHall(); stLampPosts(); stPlazaAndCore(); stSmith(); stDockAndGate();
   stText('HELLGATE', -22, SD + 24, -92, 'x', 1, B.NORA, 1);
 }
 OWG.gen3 = function (cx, cz) {

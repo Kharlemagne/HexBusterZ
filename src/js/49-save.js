@@ -104,6 +104,7 @@ const WorldStore = {
   list() { return SaveStore.doc.worlds.slice().sort((a, b) => b.played - a.played); },
   find(id) { return SaveStore.doc.worlds.find(w => w.id === id) || null; },
   create({ name, seed, mode }) {
+    if (SaveStore.doc.worlds.length >= 4 && !this.allowMore) { const o = this.list()[SaveStore.doc.worlds.length - 1]; this.remove(o.id); }       // (the menus stop this earlier; this only keeps the 4-slot rule if something else creates a save)
     const base = (name || 'NEW WORLD').trim().slice(0, 32) || 'NEW WORLD'; let nm = base, n = 2;
     while (SaveStore.doc.worlds.some(w => w.name === nm)) nm = base + ' (' + n++ + ')';
     const meta = { id: 'w' + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36), name: nm, seed: seed || ((Math.random() * 4294967295) >>> 0) || 1, villageSeed: VILLAGE_SEED_DEFAULT, gen: 3, created: Date.now(), played: Date.now(), mode: mode === 'creative' ? 'creative' : 'survival' };
@@ -186,8 +187,12 @@ const WorldSave = {
     for (const [key, m] of OW.edits) { const cx = ckx(key), cz = ckz(key); for (const [li, e] of m) out.push([cx * 16 + (li & 15), li >> 8, cz * 16 + ((li >> 4) & 15), e.id]); }
     return out;
   },
-  collect() { if (!this.dirty) return; if (WorldStore.cur && !WorldStore.cur.ephemeral) WorldStore.cur.data.edits = this.list(); this.dirty = false; },
-  reset() { OW.edits.clear(); this.count = 0; if (WorldStore.cur) WorldStore.cur.data.edits = []; this.dirty = false; SaveStore.dirty = true; }
+  collect() {
+    if (!this.dirty) return; const c = WorldStore.cur;
+    if (c && !c.ephemeral) { if (c.data.map && c.data.realms && c.data.realms[String(c.data.map.seed)]) c.data.realms[String(c.data.map.seed)].edits = this.list(); else c.data.edits = this.list(); }       // a realm keeps its own edits, the station keeps its own
+    this.dirty = false;
+  },
+  reset() { OW.edits.clear(); this.count = 0; const c = WorldStore.cur; if (c) { if (c.data.map && c.data.realms && c.data.realms[String(c.data.map.seed)]) c.data.realms[String(c.data.map.seed)].edits = []; else c.data.edits = []; } this.dirty = false; SaveStore.dirty = true; }
 };
 blockListeners.push((x, y, z, id, old) => { if (useChunks) WorldSave.record(x, y, z, old, id); });
 

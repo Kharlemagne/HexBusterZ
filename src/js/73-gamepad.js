@@ -105,7 +105,8 @@ function pollGamepad() {
   const any = anyRaw || Math.abs(gp.lx) + Math.abs(gp.ly) + Math.abs(gp.rx) + Math.abs(gp.ry) > .2;
   if (any) { gp.active = true; fallback = true; if (AC && AC.state === 'suspended') AC.resume(); }
   const nav = padNav(bi, state === 'play');
-  if (state === 'shop') {
+  if (state === 'rift') { if (pr('jump')) Rift.random(); if (pr('xcross') || pr('start') || pr('interact')) Rift.close(); }
+  else if (state === 'shop') {
     if (pr('next')) { shopSel = (shopSel + SHOP.length - 1) % SHOP.length; renderShop(); }
     if (pr('prev')) { shopSel = (shopSel + 1) % SHOP.length; renderShop(); }
     if (pr('jump')) buyItem(shopSel);
