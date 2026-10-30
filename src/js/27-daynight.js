@@ -87,12 +87,14 @@ const DayNight = {
 };
 DayNight.pose();
 const SPACE_SKY = { zen: [.02, .005, .06], hor: [.1, .03, .18], fog: [.03, .012, .06], sunD: [0, 1, 0], sunC: [0, 1, 0, 0, 1, 0], moonC: new Array(12).fill(0).map((v, i) => i % 3 === 1 ? 1 : 0), sunV: [0, 0], moonV: [0, 0, 0, 0], die: [0, 0, 0, 0, 0, 0], gate: [0, 1, 0, 0], gk: 0, bk: 0, bA: new Array(12).fill(0), bB: new Array(12).fill(0), bP: new Array(8).fill(0), amb: .85, stars: 1, sunA: .3, elev: -1 };
+// the deep-space background loops (the station is moving): how fast each layer slides past, in radians of sky per second
+const SKY_STAR_SPEED = .22, SKY_TENT_SPEED = .03;
 let skyLoc = null;
 function drawSkyDome(f, roll, fovy, asp, sk) {
   let sx = -f[2], sz = f[0]; const sl = Math.hypot(sx, sz) || 1; sx /= sl; sz /= sl; let sy = 0;
   let ux = sy * f[2] - sz * f[1], uy = sz * f[0] - sx * f[2], uz = sx * f[1] - sy * f[0];
   if (roll) { const c = Math.cos(roll), s = Math.sin(roll); const nsx = sx * c + ux * s, nsy = sy * c + uy * s, nsz = sz * c + uz * s; ux = -sx * s + ux * c; uy = -sy * s + uy * c; uz = -sz * s + uz * c; sx = nsx; sy = nsy; sz = nsz; }
-  if (!skyLoc) { skyLoc = {}; for (const n of ['fwd', 'rgt', 'upv', 'zen', 'hor', 'gnd', 'sunC', 'moonC', 'tanf', 'stars', 'sunA', 'tm', 'sunV', 'moonV', 'dieA', 'gt', 'gk', 'fx', 'bk', 'bA', 'bB', 'bP']) skyLoc[n] = gl.getUniformLocation(skyProg, n); }
+  if (!skyLoc) { skyLoc = {}; for (const n of ['fwd', 'rgt', 'upv', 'zen', 'hor', 'gnd', 'sunC', 'moonC', 'tanf', 'stars', 'sunA', 'tm', 'sunV', 'moonV', 'dieA', 'gt', 'gk', 'fx', 'bk', 'bA', 'bB', 'bP', 'bgSpd']) skyLoc[n] = gl.getUniformLocation(skyProg, n); }
   gl.useProgram(skyProg); gl.disable(gl.DEPTH_TEST); gl.depthMask(false);
   for (const k of [1, 2, 3]) gl.disableVertexAttribArray(k);
   gl.bindBuffer(gl.ARRAY_BUFFER, skyBuf); gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
@@ -101,7 +103,7 @@ function drawSkyDome(f, roll, fovy, asp, sk) {
   gl.uniform3fv(L.zen, sk.zen); gl.uniform3fv(L.hor, sk.hor); gl.uniform3fv(L.gnd, sk.fog); gl.uniform3fv(L.sunC, sk.sunC); gl.uniform3fv(L.moonC, sk.moonC);
   gl.uniform2f(L.tanf, th * asp, th); gl.uniform1f(L.stars, sk.stars); gl.uniform1f(L.sunA, sk.sunA); gl.uniform1f(L.tm, T);
   gl.uniform1fv(L.sunV, sk.sunV); gl.uniform1fv(L.moonV, sk.moonV); gl.uniform1fv(L.dieA, sk.die); gl.uniform4fv(L.gt, sk.gate); gl.uniform1f(L.gk, sk.gk); gl.uniform1f(L.fx, OW.gen === 3 ? 2 : OW.gen === 2 ? 1 : 0); gl.uniform1f(L.bk, sk.bk);
-  gl.uniform3fv(L.bA, sk.bA); gl.uniform3fv(L.bB, sk.bB); gl.uniform2fv(L.bP, sk.bP);
+  gl.uniform2f(L.bgSpd, SKY_STAR_SPEED, SKY_TENT_SPEED); gl.uniform3fv(L.bA, sk.bA); gl.uniform3fv(L.bB, sk.bB); gl.uniform2fv(L.bP, sk.bP);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
   gl.useProgram(prog); gl.enable(gl.DEPTH_TEST); gl.depthMask(true);
   for (const k of [1, 2, 3]) gl.enableVertexAttribArray(k);
