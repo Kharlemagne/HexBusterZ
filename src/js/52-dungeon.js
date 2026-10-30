@@ -123,7 +123,7 @@ function enterDungeon(forceSeed) {
     Run.smoke.push({ xAxis, c: k === 'E' ? cx0 + 32 : k === 'W' ? cx0 : k === 'S' ? cz0 + 32 : cz0, u: xAxis ? cz0 + 13 : cx0 + 13, ra: r, rb: n });
   }
   const s = L.list[0], sx = s.ox + 16.5, sz = s.oz + 16.5;
-  enemies.length = 0; eprojs.length = 0; bombs.length = 0; beams.length = 0; PL.fill(0);
+  enemies.length = 0; eprojs.length = 0; bombs.length = 0; beams.length = 0; drops.length = 0; PL.fill(0);
   Object.assign(P, { x: sx, y: 5.01, z: sz, vx: 0, vy: 0, vz: 0, yaw: Math.random() * TAU, pitch: 0, hp: Math.max(P.hp, 100), alive: true, sliding: false, slamming: false, slamT: null, lock: null, dashT: 0, dashF: 3, inv: .5, h: 1.75, eye: 1.6 });
   Object.assign(S, { style: 0, rank: 0, combo: 0, lastKill: -99, wHist: {}, kills: 0, score: 0 });
   if (P.weapon === 4) { P.weapon = -1; switchWeapon(0); }

@@ -74,7 +74,7 @@ function enterHub(first, fromRun) {
   mode = 'hub';
   const rt = fromRun && OW.returnTo, sx = rt ? rt.x : 32.5, sz = rt ? rt.z : (fromRun ? 15.5 : 44.5);
   genHub(undefined, sx, sz); flushSave();
-  enemies.length = 0; eprojs.length = 0; bombs.length = 0; beams.length = 0; PL.fill(0);
+  enemies.length = 0; eprojs.length = 0; bombs.length = 0; beams.length = 0; drops.length = 0; PL.fill(0);
   Run.chests = []; Run.turrets = []; Run.smoke = []; Run.hasKey = false; Run.glyph = null; Run.cur = null; resetBossSystems(); sky = null;
   Object.assign(P, { x: sx, y: topY(Math.floor(sx), Math.floor(sz)) + 1.01, z: sz, vx: 0, vy: 0, vz: 0, yaw: rt ? 0 : fromRun ? Math.PI : 0, pitch: 0, hp: 100, alive: true, sliding: false, slamming: false, slamT: null, lock: null, dashT: 0, dashF: 3, inv: 0, shake: 0, hurtFlash: 0, charge: 0, h: 1.75, eye: 1.6, airT: 0 });
   Object.assign(S, { style: 0, rank: 0, combo: 0, lastKill: -99, wHist: {}, time: 0 });

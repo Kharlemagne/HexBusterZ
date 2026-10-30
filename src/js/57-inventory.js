@@ -9,14 +9,15 @@ const itemName = k => typeof k === 'number' ? (DATA.blocks.names[k] || 'BLOCK ' 
 const itemColor = k => typeof k === 'number' ? (DATA.blocks.colors[k] || '#888') : (ITEMS[k] ? ITEMS[k].color : '#888');
 const dropOf = id => id === 22 ? ['shard', 1 + ((Math.random() * 2) | 0)] : [id, 1];     // ore drops shards, everything else drops itself
 const Inv = {
-  slots: new Array(36).fill(null), sel: 0, creative: false, cursor: null, shown: '',
+  slots: new Array(36).fill(null), sel: 0, creative: false, cursor: null, shown: '', equip: { helm: null, chest: null, legs: null, boots: null },     // equipment slots are shown in the inventory screen; armour items come later
+ 
   load() {
     const c = WorldStore.cur, d = c && c.data.inv;
     this.slots = new Array(36).fill(null); this.sel = 0; this.creative = false; this.cursor = null;
-    if (d && Array.isArray(d.slots)) { d.slots.slice(0, 36).forEach((s, i) => { if (Array.isArray(s) && s[1] > 0) this.slots[i] = { k: s[0], n: Math.min(STACK_MAX, s[1] | 0) }; }); this.sel = clamp(d.sel | 0, 0, 8); this.creative = !!d.creative; }
+    if (d && Array.isArray(d.slots)) { d.slots.slice(0, 36).forEach((s, i) => { if (Array.isArray(s) && s[1] > 0) this.slots[i] = { k: s[0], n: Math.min(STACK_MAX, s[1] | 0) }; }); this.sel = clamp(d.sel | 0, 0, 8); this.creative = !!d.creative; this.equip = Object.assign({ helm: null, chest: null, legs: null, boots: null }, d.equip || {}); }
     else { [2, 1, 3, 5, 7, 8, 6, 12, 13].forEach((id, i) => { this.slots[i] = { k: id, n: 64 }; }); if (c && c.meta.mode === 'creative') this.creative = true; this.collect(); }          // a starter kit for new (and upgraded) profiles
   },
-  collect() { const c = WorldStore.cur; if (!c || c.ephemeral) return; c.data.inv = { slots: this.slots.map(s => s ? [s.k, s.n] : 0), sel: this.sel, creative: this.creative }; },
+  collect() { const c = WorldStore.cur; if (!c || c.ephemeral) return; c.data.inv = { slots: this.slots.map(s => s ? [s.k, s.n] : 0), sel: this.sel, creative: this.creative, equip: this.equip }; },
   changed() { SaveStore.dirty = true; this.shown = ''; },
   add(k, n) {                                                                       // returns how many did not fit
     for (let pass = 0; pass < 2 && n > 0; pass++) for (let i = 0; i < 36 && n > 0; i++) {
@@ -26,6 +27,7 @@ const Inv = {
     }
     this.changed(); return n;
   },
+  canTake(k) { for (const s of this.slots) if (!s || (s.k === k && s.n < STACK_MAX)) return true; return false; },
   count(k) { let c = 0; for (const s of this.slots) if (s && s.k === k) c += s.n; return c; },
   remove(k, n) { for (let i = 0; i < 36 && n > 0; i++) { const s = this.slots[i]; if (s && s.k === k) { const m = Math.min(n, s.n); s.n -= m; n -= m; if (!s.n) this.slots[i] = null; } } this.changed(); },
   useSel() { const s = this.slots[this.sel]; if (!s) return false; if (!this.creative) { s.n--; if (s.n <= 0) this.slots[this.sel] = null; this.changed(); } return true; },
@@ -65,14 +67,26 @@ function closeInv() {
 }
 const invCell = (s, i, extra) => '<div class="ic' + (i < 9 ? ' hb' : '') + (i === Inv.sel ? ' sel' : '') + (extra || '') + '" onclick="Inv.click(' + i + ',false,event.shiftKey)" oncontextmenu="Inv.click(' + i + ',true,event.shiftKey);return false">'
   + (s ? '<u style="background:' + itemColor(s.k) + '"></u><em>' + itemName(s.k) + '</em><b>' + s.n + '</b>' : '') + (i < 9 ? '<small>' + (i + 1) + '</small>' : '') + '</div>';
+function invWeapon(i) { if (weaponOK(i)) { switchWeapon(i); renderInv(); } }
 function renderInv() {
-  let h = '<div class="sh-t">INVENTORY</div><div class="sh-g">◆ ' + Save.gems + ' GEMS · ' + Inv.count('shard') + ' SHARDS</div><div class="ig">';
-  for (let i = 9; i < 36; i++) h += invCell(Inv.slots[i], i);
+  const st = Save.stats;
+  let h = '<div class="sh-t">INVENTORY</div><div class="sh-g">◆ ' + Save.gems + ' GEMS · ' + Inv.count('shard') + ' SHARDS</div>';
+  h += '<div class="charrow"><div class="eqcol">' + ['HELM', 'CHEST', 'LEGS', 'BOOTS'].map(n => '<div class="eq"><em>' + n + '</em></div>').join('') + '</div><canvas id="charcv" width="190" height="300"></canvas>'
+    + '<div class="wcol"><div class="wh">LOADOUT</div>' + WNAMES.map((nm, i) => '<div class="wrow' + (P.weapon === i ? ' sel' : '') + (Save.unlocked[i] ? '' : ' lock') + '" onclick="invWeapon(' + i + ')"><b>' + (i + 1) + '</b> ' + nm + (Save.unlocked[i] ? '' : ' 🔒') + '</div>').join('')
+    + '<div class="stats">HP ' + Math.max(0, Math.round(P.hp)) + ' · RUNS ' + Save.runs + ' · WINS ' + Save.wins + '<br>KILLS ' + st.kills + ' · BOSSES ' + st.bosses + '</div></div></div>';
+  h += '<div class="ig">'; for (let i = 9; i < 36; i++) h += invCell(Inv.slots[i], i);
   h += '</div><div class="ig hbrow">'; for (let i = 0; i < 9; i++) h += invCell(Inv.slots[i], i); h += '</div>';
   if (Inv.creative) { h += '<div class="sb-l">CREATIVE — click a block to grab a full stack</div><div class="ig cat">'; for (const [id, nm] of DATA.blocks.build) h += '<div class="ic" onclick="Inv.cursor={k:' + id + ',n:99};renderInv()"><u style="background:' + itemColor(id) + '"></u><em>' + nm + '</em></div>'; h += '</div>'; }
   h += '<div class="invbtn"><button onclick="Inv.sort();renderInv()">SORT BAG</button><button onclick="Inv.cursor=null;Inv.changed();renderInv()">TRASH HELD</button><button onclick="Inv.creative=!Inv.creative;Inv.changed();renderInv()">CREATIVE: ' + (Inv.creative ? 'ON' : 'OFF') + '</button><button onclick="closeInv()">CLOSE (I)</button></div>';
-  h += '<div class="sh-f">CLICK pick up / drop / swap · RIGHT-CLICK half or one · SHIFT-CLICK bag ⇄ hotbar · wheel cycles the hotbar with the dig kit</div>';
+  h += '<div class="sh-f">CLICK pick up / drop / swap · RIGHT-CLICK half or one · SHIFT-CLICK bag ⇄ hotbar · 1-9 pick a hotbar slot · the dig kit places from the selected slot</div>';
   el.inv.innerHTML = h; updateInvCursor();
+}
+// the doll turns to look at your mouse; called every frame while the screen is open
+function animateCharPreview() {
+  const cv = $('charcv'); if (!cv) return; const r = cv.getBoundingClientRect();
+  const yaw = clamp((mpos.x - (r.left + r.width / 2)) / (innerWidth * .28), -1, 1) * .85 + Math.sin(T * .5) * .08;
+  const pitch = clamp(-(mpos.y - (r.top + r.height * .25)) / (innerHeight * .6), -.25, .3) + .12;
+  drawCharPreview(cv, yaw, pitch, T, P.weapon, Math.sin(T * .9) * .3);
 }
 function updateInvCursor() {
   const c = Inv.cursor, e = el.invcur; if (!invOpen || !c) { e.style.display = 'none'; return; }

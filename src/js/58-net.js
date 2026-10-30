@@ -210,21 +210,12 @@ blockListeners.push((x, y, z, id, old) => {
   if (Net.role === 'host') Net.broadcast('block', [x, y, z, id]); else Net.send('block', [x, y, z, id]);
 });
 
-// other players, drawn as little scrap-built robots (the final character model comes later)
-function drawRemotePlayers(t) {
+// other players: the black skeleton-robot, walking when they move, holding whatever weapon they have out
+function drawRemotePlayers(t, dt) {
   for (const q of players) {
     if (!q.remote || !q.alive) continue;
-    const R = rotY(q.yaw), body = [.25, .85, .3], hot = q.shieldT ? 1 : 0;
-    pushBox(q.x, q.y + .55, q.z, .6, .9, .36, .22 + hot * .2, .24 + hot * .5, .3 + hot * .6, R, false);
-    pushBox(q.x, q.y + 1.28, q.z, .46, .46, .46, .75, .76, .8, R, false);
-    pushBox(q.x + R[2] * .2, q.y + 1.3, q.z + R[8] * .2, .3, .09, .06, .2, 1, 1, R, true);   // visor
-    pushBox(q.x + R[0] * .42 + R[2] * .3, q.y + .85, q.z + R[6] * .42 + R[8] * .3, .16, .16, .55, 1, .5, .15, R, false);   // buster arm
+    q.walk = (q.walk || 0) + Math.hypot(q.vx || 0, q.vz || 0) * (dt || .016) * 1.5;
+    drawParts(playerParts(q.weapon), q.x, q.y, q.z, rotY(q.yaw), 1, t, false, q.walk);
+    if (q.shieldT) { const R = rotY(t * 3); for (let i = 0; i < 6; i++) { const a = i / 6 * TAU + t * 5; pushBox(q.x + Math.cos(a) * .8, q.y + .9, q.z + Math.sin(a) * .8, .12, .9, .12, .3, 1, 1, R, false); } }
   }
-}
-
-// sounds other players should hear (own shots, slashes, big booms); the raw versions are what plays when the sound arrives from the network
-const SFX_RAW = {};
-for (const name of ['revolver', 'charged', 'shotgun', 'blast', 'rivet', 'bomb', 'rail', 'boom', 'shink', 'slam', 'reflect']) {
-  const f = SFX[name]; if (!f) continue; SFX_RAW[name] = f;
-  SFX[name] = function (...a) { f.apply(SFX, a); if (Net.role !== 'offline') Net.fx('snd', [name, r2(P.x), r2(P.y), r2(P.z)]); };
 }

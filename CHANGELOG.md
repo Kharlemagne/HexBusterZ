@@ -1,5 +1,8 @@
 # Changelog
 ## Unreleased
+- **Menus**: Minecraft-style title screen with a living panorama, splash text, world list (create with name / seed / mode, rename, delete), options (volumes, render distance, FOV, sensitivity, shake, invert), pause menu, save and quit. Save schema 3: many worlds, each with its own blocks, time and inventory.
+- **Sky**: sun and moons now set behind the horizon; two eldritch suns and four eldritch moons; fog only hides the render-distance edge.
+- **Lava** flows (world-space animated shader, swelling surface, embers). **Item drops** from broken blocks. **Player model** (black skeleton-robot) and a character screen with loadout, equipment slots and backpack.
 - **Textures** on every block, entity and weapon (procedural 16x16 atlas). **Day/night cycle** with a real sky (sun, eye-moon, stars), a clear horizon, night lighting and a clock in the HUD.
 - **Open world**: endless streamed chunks, four eldritch-cyberpunk biomes, caves, ore, wild Hellgates into dungeon runs, fixed Ember Village at spawn. Save schema 2 (migrates old village builds). See docs/WORLD.md.
 - **Inventory**: 36 slots, pick up what you dig, place from the hotbar, shards from demon ore sell to Vex, creative toggle.

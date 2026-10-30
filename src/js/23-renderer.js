@@ -1,14 +1,29 @@
 // ---------------- tiny WebGL renderer ----------------
 const canvas = $('c');
-const VS = `attribute vec3 p;attribute vec4 c;attribute vec2 uv;attribute float t;uniform mat4 vp;uniform vec3 cam;varying vec4 vc;varying float vd;varying vec2 vuv;varying float vt;
-void main(){gl_Position=vp*vec4(p,1.0);vc=c;vd=length(p-cam);vuv=uv;vt=t;}`;
+const VS = `attribute vec3 p;attribute vec4 c;attribute vec2 uv;attribute float t;uniform mat4 vp;uniform vec3 cam;uniform float tm;varying vec4 vc;varying float vd;varying vec2 vuv;varying float vt;varying vec3 vwp;
+void main(){
+  vec3 q=p;float ti=abs(t)-1.0;float isl=step(7.5,ti)*step(ti,9.5);
+  q.y+=isl*step(abs(fract(p.y)-0.88),0.02)*(sin(tm*1.7+p.x*1.3+p.z*1.1)*0.04+sin(tm*2.9-p.x*0.8+p.z*1.9)*0.025);   // the lava surface swells and sinks
+  gl_Position=vp*vec4(q,1.0);vc=c;vd=length(q-cam);vuv=uv;vt=t;vwp=q;}`;
 // colour = vertex colour (base colour x light/AO) x texture (a multiplier map, x1.6 for headroom); emissive tiles (negative index) ignore night; fog blends to the horizon colour
 const FS = `#ifdef GL_FRAGMENT_PRECISION_HIGH
 precision highp float;
 #else
 precision mediump float;
 #endif
-varying vec4 vc;varying float vd;varying vec2 vuv;varying float vt;uniform sampler2D tex;uniform sampler2D avg;uniform vec3 fogc;uniform vec2 fogr;uniform float amb;
+varying vec4 vc;varying float vd;varying vec2 vuv;varying float vt;varying vec3 vwp;uniform sampler2D tex;uniform sampler2D avg;uniform vec3 fogc;uniform vec2 fogr;uniform float amb;uniform float tm;
+float lh(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float lv(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(lh(i),lh(i+vec2(1.0,0.0)),f.x),mix(lh(i+vec2(0.0,1.0)),lh(i+vec2(1.0,1.0)),f.x),f.y);}
+// flowing lava in WORLD space, so neighbouring lava blocks form one continuous river: warped noise drifts, a dark crust floats on glowing orange, bright cracks open and close
+vec3 lava(vec3 w,float t,float dist){
+  vec2 p=w.xz*0.42+vec2(t*0.055,t*0.032);float n=0.0,a=0.5;
+  for(int i=0;i<4;i++){n+=a*lv(p+vec2(sin(p.y*1.6+t*0.35),cos(p.x*1.4-t*0.3))*0.7);p=p*2.03+vec2(1.7,9.2);a*=0.5;}
+  float crust=smoothstep(0.5,0.64,n);float crack=smoothstep(0.035,0.0,abs(n-0.5))*0.9;
+  vec3 hot=mix(vec3(1.0,0.28,0.04),vec3(1.0,0.82,0.25),smoothstep(0.22,0.46,n));
+  vec3 c=mix(hot,vec3(0.16,0.035,0.02),crust*0.9)+vec3(1.0,0.6,0.1)*crack;
+  c*=0.88+0.12*sin(t*2.2+w.x*0.9+w.z*0.7);
+  return mix(c,vec3(0.95,0.33,0.07),smoothstep(55.0,115.0,dist));
+}
 void main(){
   float em=step(vt,-0.5);float ti=floor(abs(vt)+0.5)-1.0;
   vec2 tc=vec2(mod(ti,16.0),floor(ti/16.0));vec2 f=fract(vuv);
@@ -16,6 +31,7 @@ void main(){
   vec3 av=texture2D(avg,vec2((ti+0.5)/256.0,0.5)).rgb;
   tx=mix(tx,av,smoothstep(36.0,90.0,vd));
   vec3 col=vc.rgb*tx*1.6;
+  if(ti>7.5&&ti<9.5)col=lava(vwp,tm,vd);
   float lamp=0.62*(1.0-smoothstep(1.5,22.0,vd));
   col*=mix(max(amb,lamp),1.0,em);
   float fg=smoothstep(fogr.x,fogr.y,vd)*vc.a;
@@ -106,7 +122,7 @@ function initGL() {
   gl.useProgram(prog);
   loc.p = 0; loc.c = 1; loc.uv = 2; loc.t = 3;
   loc.vp = gl.getUniformLocation(prog, 'vp'); loc.cam = gl.getUniformLocation(prog, 'cam');
-  loc.fogc = gl.getUniformLocation(prog, 'fogc'); loc.fogr = gl.getUniformLocation(prog, 'fogr'); loc.amb = gl.getUniformLocation(prog, 'amb');
+  loc.fogc = gl.getUniformLocation(prog, 'fogc'); loc.fogr = gl.getUniformLocation(prog, 'fogr'); loc.amb = gl.getUniformLocation(prog, 'amb'); loc.tm = gl.getUniformLocation(prog, 'tm');
   gl.uniform1i(gl.getUniformLocation(prog, 'tex'), 0); gl.uniform1i(gl.getUniformLocation(prog, 'avg'), 1); gl.uniform1f(loc.amb, 1);
   for (const k of [loc.p, loc.c, loc.uv, loc.t]) gl.enableVertexAttribArray(k);
   { const A = makeAtlas(); texAtlas = gl.createTexture(); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, texAtlas);

@@ -32,7 +32,7 @@ function renderFrame(dt) {
   { const k = P.btFade, fb = useChunks ? fogCur : FOG, fc = [lerp(fb[0], .03, k), lerp(fb[1], .12, k), lerp(fb[2], .34, k)]; gl.clearColor(fc[0], fc[1], fc[2], 1); gl.uniform3fv(loc.fogc, fc); }
   gl.viewport(0, 0, canvas.width, canvas.height);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-  gl.uniform1f(loc.amb, sk ? sk.amb : 1);
+  gl.uniform1f(loc.amb, sk ? sk.amb : 1); gl.uniform1f(loc.tm, T);
   const inBoss = mode === 'dungeon' && Run.cur && Run.cur.type === 'boss';
   if (inBoss) { gl.uniform2f(loc.fogr, 45, 170); cullR = 135; } else if (mode === 'dungeon') { gl.uniform2f(loc.fogr, 14, 70); cullR = 78; } else { const rd = OW.LOAD * 16 - 2; gl.uniform2f(loc.fogr, rd * .5, rd); cullR = rd + 22; }
   camX = ex; camY = ey; camZ = ez; camFX = f[0]; camFZ = f[2];
@@ -42,11 +42,11 @@ function renderFrame(dt) {
   if (sk) drawSkyDome(f, roll, fovy, asp, sk);
   drawWorld();
   dn = 0;
-  if (mode === 'hub') { drawEmbers(dt, T); drawHubEntities(T); drawGatePortals(T); }
+  if (mode === 'hub') { if (state === 'play') lavaFx(dt); drawEmbers(dt, T); drawHubEntities(T); drawGatePortals(T); }
   else { drawSmoke(T); drawTurrets(T); drawChests(T); drawGlyph(T); if (inBoss) { drawSky(T); drawAsh(state === 'play' ? dt : 0, T); } }
   drawHaz(T);
   drawLockOn(); drawSlashes(); drawLatchFx();
-  drawEnemies(); drawRemotePlayers(T); drawParticles(); drawEProjs(); drawBeams(state === 'play' ? dt : 0); drawBombs();
+  drawEnemies(); drawRemotePlayers(T, dt); drawDrops(); drawParticles(); drawEProjs(); drawBeams(state === 'play' ? dt : 0); drawBombs();
   if (state === 'play' && P.weapon === 4) { const h = targetBlock(); if (h) pushOutline(h.x, h.y, h.z); }
   flushDyn();
   if (state === 'play' || state === 'paused') {

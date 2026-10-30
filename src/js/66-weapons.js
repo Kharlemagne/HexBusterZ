@@ -58,7 +58,7 @@ function updateWeapons(dt) {
     if (L && digCd <= 0 && h) {
       const id = get(h.x, h.y, h.z);
       if (h.y >= 1 && id !== 9 && id !== 10 && id !== 11 && setBlock(h.x, h.y, h.z, 0)) {
-        { const [dk, dn] = dropOf(id); const left = Inv.add(dk, dn); if (typeof dk === 'string') feed('+' + dn + ' ' + itemName(dk), '#ff6ad0'); if (left) feed('INVENTORY FULL', '#ff8a3a'); }
+        if (!Inv.creative) { const [dk, dn] = dropOf(id); spawnDrop(h.x + .5, h.y + .4, h.z + .5, dk, dn); }          // the block pops out as a little item you walk over to collect
         for (let i = 0; i < 7; i++) emit(h.x + .5, h.y + .5, h.z + .5, rnd(-3, 3), rnd(1, 5), rnd(-3, 3), rnd(.08, .2), COL[id] || [1, 1, 1], rnd(1, 3), 0);
         SFX.dig(); digCd = .12; P.swing = 1;
       }

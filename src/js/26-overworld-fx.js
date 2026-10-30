@@ -15,3 +15,15 @@ function drawGatePortals(t) {
     if (Math.random() < .6) emit(g.x + rnd(-2.5, 2.5), g.y + rnd(1, 8), g.z + .5, rnd(-.3, .3), rnd(1, 4), rnd(-.3, .3), rnd(.08, .16), Math.random() < .5 ? [.7, .2, 1] : [1, .2, .3], rnd(.5, 1.2), 2);
   }
 }
+
+// glowing sparks and the odd bubble-pop rising from lava near the player (lava surface = 7/8 of a block up)
+function lavaFx(dt) {
+  if (!useChunks) return; const n = Math.min(10, dt * 240 | 0) + (Math.random() < dt * 240 % 1 ? 1 : 0);
+  for (let i = 0; i < n; i++) {
+    const x = Math.floor(P.x + rnd(-26, 26)), z = Math.floor(P.z + rnd(-26, 26)); let y = -1;
+    for (let yy = 12; yy >= 2; yy--) if (get(x, yy, z) === 4) { y = yy; break; }
+    if (y < 0 || get(x, y + 1, z) !== 0) continue;
+    const sy = y + .88; if (Math.random() < .6) emit(x + Math.random(), sy + .05, z + Math.random(), rnd(-.4, .4), rnd(1.5, 4), rnd(-.4, .4), rnd(.05, .12), [1, rnd(.3, .65), .08], rnd(.6, 1.6), 2);
+    else { sparkBurst(x + .5, sy + .15, z + .5, 3, [1, .55, .1], 3); }                  // a bubble pops
+  }
+}
