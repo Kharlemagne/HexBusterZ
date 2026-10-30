@@ -148,11 +148,13 @@ void tent(float az,float h,vec3 haze,inout vec3 col){
   float n=11.0;float x=(az/6.2832+0.5)*n;float ci=floor(x);
   for(int k=-1;k<=1;k++){
     float c=ci+float(k);float cw=mod(c,n);float r1=h2(vec2(cw,3.3)),r2=h2(vec2(cw,8.8)),r3=h2(vec2(cw,5.1));if(r1<0.28)continue;
-    float ht=0.12+0.26*r2;if(h>ht||h<-0.02)continue;float t=clamp(h/ht,0.0,1.0);
+    float per=16.0+r1*22.0,u=tm/per+r3*7.0,cyc=floor(u),ph2=fract(u);                     // each tentacle sinks back into the abyss and rises again, sometimes skipping a turn and coming back somewhere else
+    float up=smoothstep(0.0,0.22,ph2)*(1.0-smoothstep(0.6,0.84,ph2))*step(0.3,h2(vec2(cw+cyc*1.7,cyc)));
+    float ht=(0.12+0.26*r2)*up;if(ht<0.02||h>ht||h<-0.02)continue;float t=clamp(h/ht,0.0,1.0);
     float sway=sin(h*9.0+tm*0.55+cw*2.0)*0.35*t+sin(h*21.0-tm*1.1+cw)*0.1*t+(r3-0.5)*1.4*t*t;
-    float cx=c+0.5+(r3-0.5)*0.6+sway,w=(0.2*(1.0-t)+0.022)*(0.8+0.4*r1),m=smoothstep(w,w*0.6,abs(x-cx));
-    float sp=smoothstep(0.9,1.0,sin(h*170.0+cw)*sin((x-cx)/w*3.0)*0.5+0.5)*(1.0-t*0.7);
-    vec3 tc=mix(vec3(0.05,0.0,0.09),haze*0.6,1.0-smoothstep(0.0,0.09,h))+vec3(1.0,0.2,0.8)*sp*0.8+vec3(0.5,0.1,0.6)*smoothstep(w*0.7,w,abs(x-cx))*0.25;
+    float cx=c+0.5+(r3-0.5)*0.6+(h2(vec2(cw,cyc+3.0))-0.5)*0.7+sway,w=(0.2*(1.0-t)+0.022)*(0.8+0.4*r1),m=smoothstep(w,w*0.6,abs(x-cx));
+    float sp=smoothstep(0.9,1.0,sin(h*170.0+cw)*sin((x-cx)/w*3.0)*0.5+0.5)*(1.0-t*0.7)*1.5;
+    vec3 tc=mix(vec3(0.05,0.0,0.09),haze*0.6,1.0-smoothstep(0.0,0.09,h))+vec3(1.0,0.2,0.8)*sp*0.8+vec3(0.6,0.15,0.8)*smoothstep(w*0.55,w,abs(x-cx))*0.55;
     col=mix(col,tc,m*0.93*smoothstep(-0.02,0.03,h));
   }
 }
@@ -163,7 +165,14 @@ vec3 space(vec3 d){
   float sp=sin(ph*3.0+log(th+0.06)*4.5-tm*0.22)*0.5+0.5,sp2=sin(ph*5.0-log(th+0.1)*7.0+tm*0.15+2.0)*0.5+0.5;
   vec3 col=vec3(0.012,0.004,0.035)+vec3(0.16,0.03,0.2)*pow(sp,3.0)*smoothstep(2.6,0.2,th)+vec3(0.02,0.14,0.2)*pow(sp2,4.0)*smoothstep(2.4,0.6,th)*0.8;
   col+=vec3(0.7,0.35,1.0)*exp(-th*10.0)*(0.7+0.3*sin(tm*1.3))+vec3(1.0,0.5,0.9)*exp(-pow((th-0.16-0.02*sin(tm*0.8))*18.0,2.0))*0.55;
-  float sh=h3(floor(d*380.0));if(sh>0.9978)col+=vec3(0.8,0.9,1.0)*(0.5+0.5*sin(tm*2.0+sh*300.0))*0.8;
+  for(int S=0;S<2;S++){                                         // stars are short streaks pointing away from the rift ahead (mild warp motion), each twinkling on its own clock
+    float fs=float(S),nP=170.0+fs*110.0,nT=24.0+fs*14.0,cp=floor((ph/6.2832+0.5)*nP),ct=floor(th/3.1416*nT);
+    vec2 id=vec2(cp,ct+fs*57.0);if(h2(id)<0.62)continue;
+    float phc=(cp+0.1+0.8*h2(id+3.3))/nP*6.2832-3.1416,thc=(ct+0.15+0.55*h2(id+8.1))/nT*3.1416,dp=abs(ph-phc)*sin(th),w=0.0013+0.0006*h2(id+1.7);
+    float len=0.008+0.02*sin(thc)+0.012*fs;if(dp>w||th<thc||th>thc+len)continue;
+    float spd=0.25+1.6*h2(id+5.9),f=fract(tm*spd*0.35+h2(id+2.2)*7.0),tw=smoothstep(0.0,0.62,f)*(1.0-smoothstep(0.62,1.0,f));tw=0.15+0.85*pow(tw,1.5);   // slow rise, quick fade, different for every star
+    float along=1.0-(th-thc)/len;col+=mix(vec3(0.75,0.85,1.0),vec3(1.0,0.6,0.95),step(0.85,h2(id+6.6)))*tw*(0.35+0.65*along)*(1.0-dp/w*0.4)*(0.8+0.3*fs);
+  }
   for(int L=0;L<3;L++){
     float fl=float(L),nP=70.0+fl*55.0,cell=floor((ph/6.2832+0.5)*nP),r1=h2(vec2(cell,fl*3.1)),r2=h2(vec2(cell+7.0,fl));if(r1<0.5)continue;
     float phc=(cell+0.5)/nP*6.2832-3.1416,dp=abs(ph-phc)*sin(th),wdt=0.0011*(1.0+fl*0.6);if(dp>wdt)continue;
@@ -173,6 +182,7 @@ vec3 space(vec3 d){
   float az=atan(d.x,d.z);vec3 hz=vec3(0.16,0.03,0.22);
   if(h<0.2){
     col=mix(col,vec3(0.01,0.0,0.025)+vec3(0.14,0.02,0.12)*pow(sp,4.0)+vec3(0.02,0.1,0.16)*pow(sp2,5.0)*0.6,smoothstep(0.08,-0.2,h)*0.9);
+    col+=vec3(0.26,0.05,0.34)*pow(sp,2.0)*smoothstep(-0.8,-0.32,h)*(1.0-smoothstep(-0.3,0.0,h));        // miasma glowing behind the tentacles
     if(h>-0.65){tent(az,h+0.62,hz,col);tent(az+2.1,h+0.42,hz*0.8,col);}
     col+=hz*0.5*exp(-abs(h+0.05)*9.0)*0.5;
   }
