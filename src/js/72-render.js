@@ -18,8 +18,9 @@ function renderFrame(dt) {
   const asp = canvas.width / canvas.height;
   let ex, ey, ez, f, roll = 0;
   if (state === 'menu') {
-    const a = T * .06, rr = 36; ex = N / 2 + Math.cos(a) * rr; ez = N / 2 + Math.sin(a) * rr; ey = 21 + Math.sin(T * .3) * 2;
-    const dx = N / 2 - ex, dy = 11 - ey, dz = N / 2 - ez, l = Math.hypot(dx, dy, dz); f = [dx / l, dy / l, dz / l]; P.fov = 1.2;
+    const g2 = OW.gen === 2, a = T * .06, rr = g2 ? 120 : 36, cx = g2 ? 32 : N / 2, cz = g2 ? 32 : N / 2, ty = g2 ? 96 : 11;
+    ex = cx + Math.cos(a) * rr; ez = cz + Math.sin(a) * rr; ey = (g2 ? 128 : 21) + Math.sin(T * .3) * 2;
+    const dx = cx - ex, dy = ty - ey, dz = cz - ez, l = Math.hypot(dx, dy, dz); f = [dx / l, dy / l, dz / l]; P.fov = 1.2;
   } else {
     const spd = Math.hypot(P.vx, P.vz), tf = (P.zoom ? 38 : optV('fov') + Math.min(14, spd * .45) + (P.dashT > 0 ? 12 : 0) + (P.slamming ? 10 : 0) + P.btFade * 6 + P.fovPunch * 30) * Math.PI / 180;
     P.fov = lerp(P.fov, tf, Math.min(1, 14 * dt));

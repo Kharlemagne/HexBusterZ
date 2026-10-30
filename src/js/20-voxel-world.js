@@ -1,5 +1,5 @@
 // ---------------- world ----------------
-let N = 64, NC = 4, H = 36; const CS = 16, MAXN = 224, FIXED_H = 36, WORLD_H = 96;
+let N = 64, NC = 4, H = 36; const CS = 16, MAXN = 224, FIXED_H = 36, WORLD_H = 160;
 let useChunks = false;            // true in the open world (streamed chunks, see 24-overworld.js); false in dungeons (fixed arrays below)
 const world = new Uint8Array(MAXN * MAXN * FIXED_H), blood = new Uint8Array(MAXN * MAXN * FIXED_H);
 const ckey = (cx, cz) => (cx + 32768) * 65536 + (cz + 32768), ckx = k => Math.floor(k / 65536) - 32768, ckz = k => (k % 65536) - 32768;
@@ -10,7 +10,8 @@ function get(x, y, z) {
   if (y >= H) return 0;
   return world[idx(x, y, z)];
 }
-const solid = (x, y, z) => { const i = get(x, y, z); return i !== 0 && i !== 4; };
+const isLava = i => i === 4 || (i >= 23 && i <= 30);          // 4 = source, 23..29 = flowing (level 1..7), 30 = falling
+const solid = (x, y, z) => { const i = get(x, y, z); return i !== 0 && !isLava(i); };
 const blockListeners = [];     // fn(x, y, z, newId, oldId): save system now, netcode later
 let seed = 1337;
 function hash(x, z) { let h = (Math.imul(x, 374761393) + Math.imul(z, 668265263) + seed) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }

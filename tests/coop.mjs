@@ -6,9 +6,9 @@ console.log('co-op (host + guest)');
 const slow = () => { const raf = window.requestAnimationFrame.bind(window); window.requestAnimationFrame = f => setTimeout(() => raf(f), 700); };
 const browser = await chromium.launch({ args: GL_ARGS });       // one browser, two contexts: shares the (memory-hungry) software GPU process
 const H = await openGame({ width: 320, height: 200, init: slow, browser });
-await startPlaying(H.page);
+await startPlaying(H.page, 1);
 const G = await openGame({ width: 320, height: 200, init: slow, browser });
-await startPlaying(G.page);
+await startPlaying(G.page, 1);
 // relay
 const bridge = async (from, to) => {
   await from.page.exposeFunction('__out', async s => { try { await to.page.evaluate(s => window.__tr && window.__tr.onmessage && window.__tr.onmessage(s), s); } catch { } });

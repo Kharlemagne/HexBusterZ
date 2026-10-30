@@ -2,7 +2,7 @@
 const BIOME_FOG = [[.02, .06, .11], [.13, .02, .07], [.07, .02, .17], [.16, .05, .02]];
 let fogCur = FOG.slice();
 function owFogTarget(x, z) {                                  // biome tint (dark colours); the day/night cycle (27-daynight.js) decides how bright the haze is
-  const w = biomeWeights(x, z), vs = 1 - sstep(clamp((villageD(x, z) - 30) / 50, 0, 1)); const c = [0, 0, 0];
+  const w = biomeWeights(x, z), vs = OW.gen === 2 ? 0 : 1 - sstep(clamp((villageD(x, z) - 30) / 50, 0, 1)); const c = [0, 0, 0];
   for (let i = 0; i < 4; i++) for (let k = 0; k < 3; k++) c[k] += BIOME_FOG[i][k] * w[i];
   return c.map((v, k) => lerp(v, FOG[k], vs));
 }
@@ -21,7 +21,7 @@ function lavaFx(dt) {
   if (!useChunks) return; const n = Math.min(10, dt * 240 | 0) + (Math.random() < dt * 240 % 1 ? 1 : 0);
   for (let i = 0; i < n; i++) {
     const x = Math.floor(P.x + rnd(-26, 26)), z = Math.floor(P.z + rnd(-26, 26)); let y = -1;
-    for (let yy = 12; yy >= 2; yy--) if (get(x, yy, z) === 4) { y = yy; break; }
+    for (let yy = Math.floor(P.y) + 14; yy >= Math.max(1, Math.floor(P.y) - 40); yy--) if (isLava(get(x, yy, z))) { y = yy; break; }
     if (y < 0 || get(x, y + 1, z) !== 0) continue;
     const sy = y + .88; if (Math.random() < .6) emit(x + Math.random(), sy + .05, z + Math.random(), rnd(-.4, .4), rnd(1.5, 4), rnd(-.4, .4), rnd(.05, .12), [1, rnd(.3, .65), .08], rnd(.6, 1.6), 2);
     else { sparkBurst(x + .5, sy + .15, z + .5, 3, [1, .55, .1], 3); }                  // a bubble pops

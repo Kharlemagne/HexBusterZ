@@ -13,7 +13,7 @@ console.log('menus and worlds');
   const w = await page.evaluate(() => ({ name: __g.WorldStore.cur.meta.name, seed: __g.WorldStore.cur.meta.seed, want: __g.seedFromText('cthulhu'), mode: __g.WorldStore.cur.meta.mode, creative: __g.Inv.creative, oseed: __g.OW.seed, village: __g.biomeAt(__g.P.x, __g.P.z) }));
   check('world created with its name, hashed seed and mode, and the game uses that seed', w.name === 'Void Walkers' && w.seed === w.want && w.oseed === w.seed && w.mode === 'creative' && w.creative, JSON.stringify(w));
   check('numeric seeds are used as they are; blank seeds are random and different', await page.evaluate(() => __g.seedFromText('12345') === 12345 && __g.seedFromText('') !== __g.seedFromText('')));
-  await page.evaluate(() => { __g.setBlock(30, 12, 30, 7); __g.flushSave(); });
+  await page.evaluate(() => { __g.setBlock(30, 110, 60, 7); __g.flushSave(); });
   await page.evaluate(() => __g.openPause());
   check('Esc opens the game menu and the game stops', await page.evaluate(() => __g.state() === 'paused' && __g.Menu.top() === 'pause' && /GAME MENU/.test(document.getElementById('mscreen').textContent)));
   await page.click('[data-act=opt]');
@@ -29,7 +29,7 @@ console.log('menus and worlds');
   check('the world is listed with its seed after a reload', await page.evaluate(() => /Void Walkers/.test(document.getElementById('mscreen').textContent) && /SEED \d+/.test(document.getElementById('mscreen').textContent)));
   await page.dblclick('.wl');                                  // double-click plays it
   await page.waitForFunction(() => __g.state() === 'play');
-  check('double-click plays the world and the build is still there', await page.evaluate(() => __g.get(30, 12, 30) === 7 && __g.WorldStore.cur.meta.name === 'Void Walkers'));
+  check('double-click plays the world and the build is still there', await page.evaluate(() => __g.get(30, 110, 60) === 7 && __g.WorldStore.cur.meta.name === 'Void Walkers'));
   await page.evaluate(() => __g.quitToTitle()); await page.click('[data-act=sp]'); await page.click('[data-act=rename]'); await page.fill('#f-name', 'Renamed'); await page.click('[data-act=dorename]');
   check('rename works', await page.evaluate(() => /Renamed/.test(document.getElementById('mscreen').textContent)));
   await page.click('[data-act=create]'); await page.fill('#f-name', 'Second'); await page.press('#f-seed', 'Enter'); await page.waitForFunction(() => __g.state() === 'play');

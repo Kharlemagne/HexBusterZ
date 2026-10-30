@@ -1,6 +1,8 @@
 # The open world
 
-Ember Village sits at the origin of an endless sandbox; Hellgates scattered in the wild lead into the (unchanged) dungeon runs.
+**Generation 2 (new worlds):** everything floats. Biomes are kept, but each is a floating island over an eldritch abyss (falling below y=8 is death). The spawn hub is **the Helicarrier**: a huge hull with a neon eldritch-cyberpunk city on its deck (`src/js/25-overworld-gen2.js`), spawn at the rear, the Hellgate at the far front, and lava vents on the underside pouring lava falls (block 30) toward the abyss. The city layout is seed-flavoured but the deck/avenue/spawn are fixed. Worlds record `meta.gen`; old worlds default to gen 1 and are never changed.
+
+**Generation 1 (older worlds):** Ember Village sits at the origin of an endless sandbox; Hellgates scattered in the wild lead into the (unchanged) dungeon runs.
 
 ## How it works
 - **Chunks** (`src/js/24-overworld.js`): 16×16 columns, 96 blocks tall (`WORLD_H`), generated around every player (`OW.LOAD` = 7 chunks), dropped beyond `OW.KEEP` = 9. Generation is time-budgeted per frame; `OW.get()` returns *solid* for chunks that are not loaded yet, so nothing walks off the edge of the loaded map.

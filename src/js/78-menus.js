@@ -2,7 +2,7 @@
 //  MENUS — Minecraft-style title screen, world list / create world, options, pause menu.
 //  One container (#mscreen) is re-rendered per screen; clicks are handled by data-act delegation.
 // ============================================================
-const SPLASHES = ['Also try HELLGATES!', 'Two suns. Four moons. Zero mercy.', 'Ember Village is always home!', 'Don\'t look at the sun!', 'Skeleton robot, black!', 'Bullet time!', '100% voxel!', 'Now with day AND night!', 'Eldritch-approved!', 'Mind the lava.', 'Seeds are forever!', 'Press I for your backpack!', 'Slide into the shield!', 'The moon blinks.', 'Cyberpunk, but worse!', 'Made with Claude!'];
+const SPLASHES = ['Also try HELLGATES!', 'Two suns. Four moons. Zero mercy.', 'The Helicarrier is always home!', 'Don\'t look at the sun!', 'Skeleton robot, black!', 'Bullet time!', '100% voxel!', 'Now with day AND night!', 'Eldritch-approved!', 'Mind the lava.', 'Seeds are forever!', 'Press I for your backpack!', 'Slide into the shield!', 'The moon blinks.', 'Cyberpunk, but worse!', 'Made with Claude!'];
 const Menu = {
   stack: ['title'], sel: '', hostMode: false, msg: '', busy: false,
   go(name, arg) { this.stack.push(name); this.arg = arg; this.render(); },
@@ -42,7 +42,7 @@ const SCREENS = {
     if (!ws.length) h += '<div class="wl empty">NO WORLDS YET — CREATE ONE!</div>';
     for (const w of ws) {
       const hue = w.seed % 360;
-      h += '<div class="wl' + (w.id === Menu.sel ? ' sel' : '') + '" data-act="pick" data-id="' + w.id + '"><i style="background:linear-gradient(135deg,hsl(' + hue + ',70%,32%),hsl(' + ((hue + 60) % 360) + ',80%,18%))"></i><div><b>' + esc(w.name) + '</b><span>' + (w.mode === 'creative' ? 'CREATIVE' : 'SURVIVAL') + ' · SEED ' + w.seed + '</span><span>CREATED ' + fmtDate(w.created) + ' · LAST PLAYED ' + fmtDate(w.played) + '</span></div></div>';
+      h += '<div class="wl' + (w.id === Menu.sel ? ' sel' : '') + '" data-act="pick" data-id="' + w.id + '"><i style="background:linear-gradient(135deg,hsl(' + hue + ',70%,32%),hsl(' + ((hue + 60) % 360) + ',80%,18%))"></i><div><b>' + esc(w.name) + '</b><span>' + (w.mode === 'creative' ? 'CREATIVE' : 'SURVIVAL') + ' · ' + (w.gen === 2 ? 'FLOATING ISLANDS' : 'CLASSIC') + ' · SEED ' + w.seed + '</span><span>CREATED ' + fmtDate(w.created) + ' · LAST PLAYED ' + fmtDate(w.played) + '</span></div></div>';
     }
     h += '</div>' + btn('play', host ? 'HOST SELECTED WORLD' : 'PLAY SELECTED WORLD', '', ws.length ? '' : 'disabled') + btn('create', 'CREATE NEW WORLD', 'h') + btn('rename', 'RENAME', 'h', ws.length ? '' : 'disabled') + btn('delete', 'DELETE', 'h', ws.length ? '' : 'disabled') + btn('back', 'CANCEL', 'h') + '<div id="mmsg" class="mmsg">' + esc(Menu.msg) + '</div>';
     return h;
@@ -51,7 +51,7 @@ const SCREENS = {
     const mode = Menu.newMode || 'survival';
     return '<div class="mh">CREATE NEW WORLD</div><div class="fld"><label>WORLD NAME</label><input id="f-name" data-focus maxlength="32" value="' + esc(Menu.newName || 'NEW WORLD') + '"></div>'
       + '<div class="fld"><label>SEED FOR THE WORLD GENERATOR</label><input id="f-seed" maxlength="24" placeholder="LEAVE BLANK FOR A RANDOM SEED" value="' + esc(Menu.newSeed || '') + '"></div>'
-      + btn('mode', 'GAME MODE: ' + (mode === 'creative' ? 'CREATIVE (INFINITE BLOCKS)' : 'SURVIVAL')) + '<div class="mnote">EMBER VILLAGE IS THE SAME IN EVERY WORLD. THE SEED SHAPES THE LAND AROUND IT.</div>'
+      + btn('mode', 'GAME MODE: ' + (mode === 'creative' ? 'CREATIVE (INFINITE BLOCKS)' : 'SURVIVAL')) + '<div class="mnote">THE HELICARRIER IS THE SAME IN EVERY WORLD. THE SEED SHAPES THE FLOATING ISLANDS BELOW IT.</div>'
       + btn('docreate', 'CREATE NEW WORLD') + btn('back', 'CANCEL') + '<div id="mmsg" class="mmsg">' + esc(Menu.msg) + '</div>';
   },
   rename() {

@@ -1,7 +1,7 @@
 // Inventory: starter kit, breaking gives items, placing uses them up, stacks/limits, saving, ore shards, shop selling, creative mode.
 import { openGame, startPlaying, check, done } from './lib.mjs';
 console.log('inventory');
-const g = await openGame({ width: 320, height: 200 }); const { page } = g; await startPlaying(page);
+const g = await openGame({ width: 320, height: 200 }); const { page } = g; await startPlaying(page, 1);
 const I = f => page.evaluate(f);
 check('new profiles get a starter kit in the hotbar', await I(() => __g.Inv.slots[0].n === 64 && __g.Inv.slots.filter(Boolean).length === 9));
 // dig kit: break and place via the real weapon code path
@@ -48,7 +48,7 @@ const doll = await I(() => { __g.openInv(); __g.renderFrame(.016); const cv = do
 check('the character screen draws the skeleton-robot model', doll.n > 1500 && doll.parts > 40, JSON.stringify(doll));
 const saved = await I(() => { const I = __g.Inv; I.slots[3] = { k: 12, n: 33 }; I.creative = true; __g.flushSave(); return JSON.parse(localStorage.getItem('hbz.w.' + __g.WorldStore.cur.meta.id)).inv; });
 check('inventory is written to the save', saved && saved.slots[3][1] === 33 && saved.creative === true);
-await page.reload(); await page.waitForFunction(() => window.__g && /CLICK TO PLAY/.test(document.getElementById('msub').textContent)); await startPlaying(page);
+await page.reload(); await page.waitForFunction(() => window.__g && /CLICK TO PLAY/.test(document.getElementById('msub').textContent)); await startPlaying(page, 1);
 check('inventory survives a reload', await I(() => __g.Inv.slots[3] && __g.Inv.slots[3].n === 33 && __g.Inv.creative === true));
 const cre = await I(() => { const I = __g.Inv; I.slots[3].n = 5; const sel = 3; I.sel = sel; const left = I.slots[3].n; I.useSel(); return { left: I.slots[3].n, creative: I.creative }; });
 check('creative mode places without using blocks up', cre.left === 5 && cre.creative);

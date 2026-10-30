@@ -30,7 +30,7 @@ export async function openGame({ width = 960, height = 540, init, url = GAME_URL
   return { browser, ctx, page, errors, async close() { if (shared) await ctx.close(); else await browser.close(); } };
 }
 // starts the player's last world (creating one if the profile has none) the way the menu does, without clicking through it
-export async function startPlaying(page) { await page.evaluate(() => __g.startWorldQuick()); await page.waitForFunction(() => __g.state() === 'play'); }
+export async function startPlaying(page, gen = 2) { await page.evaluate(g => __g.startWorldQuick(g), gen); await page.waitForFunction(() => __g.state() === 'play'); }
 
 // Minimal assertion/reporting
 let failed = 0;

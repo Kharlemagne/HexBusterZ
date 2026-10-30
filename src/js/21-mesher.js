@@ -13,6 +13,7 @@ function buildChunk(cx, cz) {
   for (let y = 0; y < yMax; y++) for (let z = z0; z < z0 + CS; z++) for (let x = x0; x < x0 + CS; x++) {
     const li = ch ? ((x & 15) | ((z & 15) << 4) | (y << 8)) : 0;
     const id = ch ? ch.b[li] : world[idx(x, y, z)]; if (!id) continue;
+    const lav = isLava(id), lavaDrop = id === 4 ? .12 : id === 30 ? 0 : 1 - (.18 + (id - 22) * .105);   // flowing lava: level 1 is almost flat, level 7 almost a full block
     const b = COL[id], em = EMIT.has(id), bl = ch ? (ch.blood ? ch.blood[li] : 0) : blood[idx(x, y, z)];
     const vr = .86 + hash(x * 7 + y * 13, z * 5 + y * 3) * .28;
     for (let d = 0; d < 3; d++) for (let s = -1; s <= 1; s += 2) {
@@ -33,7 +34,7 @@ function buildChunk(cx, cz) {
       const flipU = (hv & 1) === 1, flipV = d === 1 ? ((hv >> 1) & 1) === 1 : false, tileV = (em ? -1 : 1) * (blockTile(id, d === 1 && s > 0) + 1);
       for (let k = 0; k < 4; k++) {
         const P = [x, y, z]; P[d] += s > 0 ? 1 : 0; P[u] += cu[k]; P[v] += cv[k];
-        if (id === 4 && P[1] > y + .5 && get(x, y + 1, z) !== 4) P[1] -= .12;               // lava never fills its whole block (like the real thing)
+        if (lav && P[1] > y + .5 && !isLava(get(x, y + 1, z))) P[1] -= lavaDrop;               // lava never fills its whole block, and a thin flow is lower than a source
         let m = em ? 1 : sh * AOV[ao[k]] * vr, r = b[0] * m, g = b[1] * m, bb = b[2] * m;
         if (em) { const f = .85 + hash(x + k, z + y) * .3; r *= f; g *= f; bb *= f; }
         if (bl && !em) { const t = Math.min(.85, bl * .3); r = lerp(r, .42, t); g = lerp(g, .02, t); bb = lerp(bb, .03, t); }

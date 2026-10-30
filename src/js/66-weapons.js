@@ -65,7 +65,7 @@ function updateWeapons(dt) {
     }
     if (R && digCd <= 0 && h) {
       const px = h.x + h.nx, py = h.y + h.ny, pz = h.z + h.nz;
-      if (get(px, py, pz) === 0 || get(px, py, pz) === 4) {
+      if (get(px, py, pz) === 0 || isLava(get(px, py, pz))) {
         const bid = Inv.selBlock();
         if (!bid) { if (digCd <= 0) { feed('NO BLOCK SELECTED — OPEN INVENTORY (I)', '#ff8a3a'); SFX.empty(); digCd = .5; } }
         else if (!playerOverlaps(px, py, pz) && setBlock(px, py, pz, bid)) { Inv.useSel(); SFX.place(); digCd = .15; P.swing = .6; }

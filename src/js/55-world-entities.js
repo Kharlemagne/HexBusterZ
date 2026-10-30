@@ -10,6 +10,7 @@ function drawHubEntities(t) {
   // smith
   drawParts(SMITH, NPC.x, NPC.y + Math.sin(NPC.t * 2) * .02, NPC.z, rotY(NPC.yaw), 1, t, false, 0);
   if (nearNPC()) pushBox(NPC.x, NPC.y + 2.8 + Math.sin(t * 4) * .1, NPC.z, .22, .22, .22, 1, .85, .2, rotY(t * 3), false);
+  if (OW.gen === 2) { drawLifts(t); return; }
   // hellgate swirl
   for (let iy = 0; iy < 10; iy++) for (let ix = 0; ix < 7; ix++) {
     const x = 29.5 + ix, y = 9.5 + iy, a = Math.sin(t * 2.2 + ix * .7 + iy * .5) * .5 + .5, b = Math.sin(t * 3.1 - iy * .8 + ix * .4) * .5 + .5;
@@ -44,3 +45,13 @@ function drawLockOn() {
   pushBox(e.x, e.y + e.h + .35 + Math.sin(t) * .12, e.z, .18, .3, .18, 1, .4, .3, rotY(-t), false);
 }
 
+
+function drawLifts(t) {                                               // tractor beams: rings of light rising from the island up into the hull
+  for (const L of LIFTS) {
+    if (Math.hypot(L.x - camX, L.z - camZ) > 150) continue;
+    for (let k = 0; k < 14; k++) {
+      const y = 36 + ((t * 13 + k * (CAR.deck - 36) / 14) % (CAR.deck - 36)), R = 2.4;
+      for (const [dx, dz, sx, sz] of [[R, 0, .14, 4.8], [-R, 0, .14, 4.8], [0, R, 4.8, .14], [0, -R, 4.8, .14]]) pushBox(L.x + dx, y, L.z + dz, sx, .1, sz, .25, .95, 1, null, false, 1, TILE.GLOW);
+    }
+  }
+}

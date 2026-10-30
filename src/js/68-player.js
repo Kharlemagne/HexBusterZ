@@ -87,7 +87,7 @@ function updatePlayer(dt) {
   }
   if (gp.on) { const zs = P.zoom ? .4 : 1; P.yaw -= gp.rx * Math.abs(gp.rx) * 3.6 * zs * ld; P.pitch = clamp(P.pitch - gp.ry * Math.abs(gp.ry) * 2.6 * zs * ld, -1.55, 1.55); }
   if (P.snap) { const sn = P.snap, kk = Math.min(1, 14 * ld); sn.t += ld; P.yaw += (sn.y - P.yaw) * kk; P.pitch += (sn.p - P.pitch) * kk; if ((Math.abs(sn.y - P.yaw) < .006 && Math.abs(sn.p - P.pitch) < .006) || sn.t > .5) P.snap = null; }
-  const w = wishVec(), inLava = get(Math.floor(P.x), Math.floor(P.y + .3), Math.floor(P.z)) === 4;
+  const w = wishVec(), inLava = isLava(get(Math.floor(P.x), Math.floor(P.y + .3), Math.floor(P.z)));
   const maxSp = inLava ? 5 : 10.5, want = !!(k.ShiftLeft || k.ShiftRight || gp.slide), edge = P.cEdge; P.cEdge = false;
   P.inv = Math.max(0, P.inv - dt); P.shieldT = Math.max(0, P.shieldT - dt); P.shieldFlash = Math.max(0, P.shieldFlash - dt);
   const spd0 = Math.hypot(P.vx, P.vz);

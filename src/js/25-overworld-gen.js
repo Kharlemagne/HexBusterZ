@@ -54,7 +54,8 @@ function baseHeight(x, z) {                                              // terr
 // ---- Hellgates: one candidate per REGION x REGION cell, deterministic from the seed
 const gateCache = new Map();
 function gateOf(rx, rz) {
-  const k = rx + ',' + rz + ',' + OWG.S; let g = gateCache.get(k); if (g !== undefined) return g;
+  const k = rx + ',' + rz + ',' + OWG.S + ',' + OW.gen; let g = gateCache.get(k); if (g !== undefined) return g;
+  if (OW.gen === 2) { g = gateOf2(rx, rz); if (gateCache.size > 400) gateCache.clear(); gateCache.set(k, g); return g; }
   const S = OWG.S, gx = rx * OWG.REGION + 50 + Math.floor(ih(rx, 0, rz, S + 101) * 108), gz = rz * OWG.REGION + 50 + Math.floor(ih(rx, 1, rz, S + 202) * 108);
   if (Math.abs(gx - VILLAGE_C) < 110 && Math.abs(gz - VILLAGE_C) < 110) g = null;
   else { const bh = baseHeight(gx, gz).h; g = { x: gx, z: gz, y: clamp(Math.round(bh), 11, 58), seed: ((ih(rx, 2, rz, S + 777) * 4294967295) >>> 0) || 1, rx, rz }; }
@@ -64,11 +65,14 @@ const gateRegion = v => Math.floor(v / OWG.REGION);
 function gatesNear(x, z, r) {                                            // every gate within r blocks of (x,z)
   const out = [], x0 = gateRegion(x - r), x1 = gateRegion(x + r), z0 = gateRegion(z - r), z1 = gateRegion(z + r);
   for (let rz = z0; rz <= z1; rz++) for (let rx = x0; rx <= x1; rx++) { const g = gateOf(rx, rz); if (g && Math.hypot(g.x - x, g.z - z) <= r) out.push(g); }
+  if (OW.gen === 2 && Math.hypot(CAR_GATE.x - x, CAR_GATE.z - z) <= r) out.push(CAR_GATE);
   return out;
 }
+OWG.gen = function (cx, cz) { return OW.gen === 2 ? OWG.gen2(cx, cz) : OWG.gen1(cx, cz); };
 function nearestGate(x, z) {
   let best = null, bd = 1e18;
   for (let rz = gateRegion(z) - 2; rz <= gateRegion(z) + 2; rz++) for (let rx = gateRegion(x) - 2; rx <= gateRegion(x) + 2; rx++) { const g = gateOf(rx, rz); if (g) { const d = Math.hypot(g.x - x, g.z - z); if (d < bd) { bd = d; best = g; } } }
+  if (OW.gen === 2) { const d = Math.hypot(CAR_GATE.x - x, CAR_GATE.z - z); if (d < bd) { bd = d; best = CAR_GATE; } }
   return best ? { g: best, d: bd } : null;
 }
 function gateAtPlayer(px, py, pz) {                                      // the Hellgate whose doorway the player is standing in
@@ -82,10 +86,13 @@ function colInfo(x, z) {
   for (const g of gatesNear(x, z, 17)) { const dd = Math.hypot(x - g.x, z - g.z); h += (g.y - h) * (1 - sstep(clamp((dd - 9) / 7, 0, 1))); }
   return { h: clamp(Math.floor(h), 3, WORLD_H - 8), bi, w };
 }
-function biomeAt(x, z) { return villageD(x, z) <= 30 ? 'EMBER VILLAGE' : BIOME_NAMES[baseHeight(x, z).bi]; }
+function biomeAt(x, z, y) {
+  if (OW.gen === 2) { if (onCarrier(x, z) && (y === undefined || y > carrierBottom(x, z) - 6)) return 'THE HELICARRIER'; const I = islandRaw(x, z); return I.solid ? BIOME_NAMES[I.bi] : 'THE ABYSS'; }
+  return villageD(x, z) <= 30 ? 'EMBER VILLAGE' : BIOME_NAMES[baseHeight(x, z).bi];
+}
 
 // ---- chunk generation
-OWG.gen = function (cx, cz) {
+OWG.gen1 = function (cx, cz) {
   const S = OWG.S, b = new Uint8Array(256 * WORLD_H), x0 = cx * CS, z0 = cz * CS, M = 5, W = CS + 2 * M;
   const hts = new Int16Array(W * W), bio = new Uint8Array(W * W);
   for (let zz = 0; zz < W; zz++) for (let xx = 0; xx < W; xx++) { const c = colInfo(x0 - M + xx, z0 - M + zz); hts[zz * W + xx] = c.h; bio[zz * W + xx] = c.bi; }
