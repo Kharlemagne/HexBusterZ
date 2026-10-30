@@ -3,7 +3,7 @@ function updateSaveStatus() {
   const e = el.savestat; if (!e) return; const d = SaveStore.doc;
   let s;
   if (!SaveStore.persistent) s = '⚠ SAVING IS BLOCKED IN THIS VIEW — use SAVE · EXPORT to keep your progress, or play the hosted / downloaded version';
-  else s = '💾 SAVED · ◆ ' + Save.gems + ' · ' + Save.unlocked.filter(Boolean).length + '/5 weapons · ' + Save.runs + ' runs · world: ' + d.world.edits.length + ' blocks changed' + (SaveStore.lastSaved ? ' · ' + new Date(SaveStore.lastSaved).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '');
+  else s = '💾 SAVED · ◆ ' + Save.gems + ' · ' + Save.unlocked.filter(Boolean).length + '/5 weapons · ' + Save.runs + ' runs · world: ' + (WorldStore.cur ? WorldSave.count : 0) + ' blocks changed' + (SaveStore.lastSaved ? ' · ' + new Date(SaveStore.lastSaved).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '');
   if (SaveStore.newer) s += '  ·  ⚠ made by a NEWER version — kept untouched';
   if (SaveStore.notes.length) s += '  ·  ' + SaveStore.notes[SaveStore.notes.length - 1];
   if (e._v !== s) { e.textContent = s; e._v = s; }

@@ -1,10 +1,11 @@
 // ---------------- audio ----------------
-let AC = null, master = null, noiseBuf = null, muted = false;
+let AC = null, master = null, sfxGain = null, musicGain = null, noiseBuf = null, muted = false;
 function initAudio() {
   if (AC) return;
   try {
     AC = new (window.AudioContext || window.webkitAudioContext)();
     master = AC.createGain(); master.gain.value = 0.42; master.connect(AC.destination);
+    sfxGain = AC.createGain(); sfxGain.connect(master); musicGain = AC.createGain(); musicGain.connect(master); applyVolumes();
     const len = AC.sampleRate; noiseBuf = AC.createBuffer(1, len, AC.sampleRate);
     const d = noiseBuf.getChannelData(0); for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
     startMusic();
@@ -16,7 +17,7 @@ function tone(f, dur, type = 'square', vol = .3, f2 = null, delay = 0) {
   o.type = type; o.frequency.setValueAtTime(f, t);
   if (f2) o.frequency.exponentialRampToValueAtTime(Math.max(1, f2), t + dur);
   g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + dur);
-  o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + .02);
+  o.connect(g); g.connect(sfxGain); o.start(t); o.stop(t + dur + .02);
 }
 function noise(dur, vol = .4, ft = 'lowpass', ff = 2000, delay = 0, f2 = null) {
   if (!AC || muted) return;
@@ -24,7 +25,7 @@ function noise(dur, vol = .4, ft = 'lowpass', ff = 2000, delay = 0, f2 = null) {
   s.buffer = noiseBuf; f.type = ft; f.frequency.setValueAtTime(ff, t);
   if (f2) f.frequency.exponentialRampToValueAtTime(f2, t + dur);
   g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + dur);
-  s.connect(f); f.connect(g); g.connect(master); s.start(t, Math.random() * .5); s.stop(t + dur + .02);
+  s.connect(f); f.connect(g); g.connect(sfxGain); s.start(t, Math.random() * .5); s.stop(t + dur + .02);
 }
 const SFX = {
   revolver() { noise(.1, .5, 'bandpass', 2600); tone(240, .12, 'sawtooth', .3, 50); },
@@ -55,3 +56,5 @@ const SFX = {
   rank() { tone(440, .1, 'square', .2); tone(660, .12, 'square', .2, null, .08); },
   empty() { tone(120, .05, 'square', .1); }
 };
+
+function applyVolumes() { if (!AC) return; sfxGain.gain.value = optV('sfx'); musicGain.gain.value = optV('music'); }

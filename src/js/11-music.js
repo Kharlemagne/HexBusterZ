@@ -12,7 +12,7 @@ function pulseNote(f, dur, vol, duty, d, f2) {
   if (!PULSE[duty]) PULSE[duty] = mkPulse(duty);
   o.setPeriodicWave(PULSE[duty]); o.frequency.setValueAtTime(f, t); if (f2) o.frequency.linearRampToValueAtTime(f2, t + dur);
   g.gain.setValueAtTime(vol, t); g.gain.setValueAtTime(vol, t + dur * .65); g.gain.linearRampToValueAtTime(.0001, t + dur);   // blocky NES-style envelope
-  o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + .02);
+  o.connect(g); g.connect(musicGain); o.start(t); o.stop(t + dur + .02);
 }
 const dKick = d => { tone(175, .085, 'triangle', .55, 38, d); noise(.012, .3, 'lowpass', 1200, d); };
 const dSnare = d => { noise(.1, .32, 'bandpass', 2800, d); tone(240, .06, 'square', .12, 110, d); };

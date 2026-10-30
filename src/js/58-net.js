@@ -73,7 +73,7 @@ const Net = {
         for (const i of w.seals || []) setSeal(Run.rooms[i], true);
         const b = bossRoom(); if (w.unl && b && b.locked) { b.locked = false; const bx = doorBox(b, Object.keys(b.doors)[0]); fillSeal(bx[0], bx[1], bx[2], bx[3], bx[4], bx[5], 0); }
       }
-      if (state === 'menu') startGame();
+      if (state === 'menu') beginPlay();
     } finally { this.applying = false; }
   },
 

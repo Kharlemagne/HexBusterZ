@@ -59,9 +59,9 @@ console.log('the world remembers what you build');
 {
   const g = await openGame(); const { page } = g;
   await startPlaying(page);
-  const pos = await page.evaluate(() => { const x = 30, z = 50, y = 9; __g.setBlock(x, y, z, 7); __g.setBlock(x + 1, y, z, 8); __g.setBlock(x, y + 1, z, 3); __g.setBlock(32, 8, 50, 0); __g.flushSave(); return { n: __g.SaveStore.doc.world.edits.length }; });
+  const pos = await page.evaluate(() => { const x = 30, z = 50, y = 9; __g.setBlock(x, y, z, 7); __g.setBlock(x + 1, y, z, 8); __g.setBlock(x, y + 1, z, 3); __g.setBlock(32, 8, 50, 0); __g.flushSave(); return { n: __g.WorldStore.cur.data.edits.length }; });
   check('edits recorded (4 blocks)', pos.n === 4, 'got ' + pos.n);
-  await page.reload(); await page.waitForFunction(() => window.__g && /CLICK TO PLAY/.test(document.getElementById('msub').textContent));
+  await page.reload(); await page.waitForFunction(() => window.__g && /CLICK TO PLAY/.test(document.getElementById('msub').textContent)); await startPlaying(page);
   const after = await page.evaluate(() => ({ a: __g.get(30, 9, 50), b: __g.get(31, 9, 50), c: __g.get(30, 10, 50), d: __g.get(32, 8, 50) }));
   check('built blocks are still there after a reload', after.a === 7 && after.b === 8 && after.c === 3); check('a dug-out block stays dug out', after.d === 0);
   await page.evaluate(() => { __g.setBlock(30, 9, 50, 0); });          // build then remove again -> back to the generated terrain

@@ -28,28 +28,67 @@ precision highp float;
 #else
 precision mediump float;
 #endif
-varying vec2 ndc;uniform vec3 fwd,rgt,upv,zen,hor,gnd,sunD,moonD,moonR,moonU;uniform vec2 tanf;uniform float stars,sunA,tm;
+varying vec2 ndc;uniform vec3 fwd,rgt,upv,zen,hor,gnd;uniform vec3 sunC[2];uniform vec3 moonC[4];uniform vec2 tanf;uniform float stars,sunA,tm;
 float h3(vec3 p){return fract(sin(dot(p,vec3(12.9898,78.233,37.719)))*43758.5453);}
+float h2(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float opn(float t,float per,float off){float ph=fract((t+off)/per);float b=smoothstep(0.93,0.955,ph)*(1.0-smoothstep(0.965,0.99,ph));return 1.0-b*0.96;}
+// an eye in unit-disc space: sclera, streaky iris, slit pupil, eyelid squash
+vec4 eye(vec2 p,float open,vec3 scl,vec3 iri,float pw){
+  vec2 q=vec2(p.x,p.y/max(open,0.04));float r=length(q);if(r>1.0)return vec4(0.0);
+  float a=atan(q.y,q.x);vec3 c=scl*(0.78+0.22*h2(floor(q*7.0)));
+  c=mix(c,vec3(0.7,0.05,0.1),smoothstep(0.02,0.0,abs(sin(a*7.0+r*4.0))-0.97)*0.8*smoothstep(0.55,0.9,r));
+  float ir=smoothstep(0.62,0.56,r);c=mix(c,iri*(0.65+0.35*sin(a*20.0)),ir);
+  float pup=smoothstep(pw,pw*0.45,abs(q.x))*smoothstep(0.58,0.44,abs(q.y));c=mix(c,vec3(0.02,0.0,0.03),pup);
+  c*=1.0-smoothstep(0.8,1.0,r)*0.55;return vec4(c,smoothstep(1.0,0.93,r));
+}
+// writhing tentacle halo around a body; k = number of arms
+float arms(vec2 p,float k,float spd,float len){
+  float r=length(p),a=atan(p.y,p.x);float w=sin(a*k+tm*spd+sin(r*3.5-tm*1.7)*1.6+sin(a*3.0-tm*.6)*0.7)*0.5+0.5;
+  return pow(w,3.0)*smoothstep(len,1.0,r)*smoothstep(0.92,1.12,r);
+}
+void body(vec3 d,vec3 c,float R,int kind,float vis,inout vec3 col){
+  if(vis<=0.001)return;float cd=dot(d,c);float lim=3.6*R;if(cd<1.0-0.5*lim*lim)return;
+  vec3 ref=abs(c.y)>0.97?vec3(0.0,0.0,1.0):vec3(0.0,1.0,0.0);vec3 rr=normalize(cross(c,ref)),uu=cross(rr,c);
+  vec2 p=vec2(dot(d,rr),dot(d,uu))/R;float r=length(p),a=atan(p.y,p.x);vec3 add=vec3(0.0);vec4 B=vec4(0.0);
+  if(kind==0){                       // THE WATCHER: blazing eye, white-hot rim, fire-tendril corona
+    float op=opn(tm,11.0,0.0);B=eye(p,op,vec3(1.0,0.93,0.7),vec3(1.0,0.45,0.1),0.16+0.05*sin(tm*0.8));
+    B.rgb+=vec3(1.0,0.6,0.2)*smoothstep(0.7,1.0,r)*0.8;
+    add+=vec3(1.0,0.45,0.12)*arms(p,9.0,1.3,3.4)*1.2+vec3(1.0,0.5,0.2)*exp(-r*1.1)*0.45;
+  }else if(kind==1){                 // THE LESSER: a crimson maw turning slowly, ringed with teeth
+    float tooth=smoothstep(0.46,0.5,abs(fract(a*6.0/6.2832+tm*0.05)-0.5));float ring=smoothstep(1.0,0.96,r)*smoothstep(0.55,0.62,r);
+    vec3 cc=mix(vec3(1.0,0.12,0.1)*(0.7+0.4*sin(tm*3.0+r*8.0)),vec3(1.0,0.85,0.7),tooth*ring);
+    cc=mix(cc,vec3(1.0,0.5,0.15)*1.3,smoothstep(0.5,0.0,r));B=vec4(cc,smoothstep(1.0,0.94,r));
+    add+=vec3(1.0,0.15,0.1)*arms(p,6.0,-1.0,2.6)*0.9+vec3(1.0,0.2,0.1)*exp(-r*1.4)*0.3;
+  }else if(kind==2){                 // THE PALE EYE: a cold eyeball with a cyan iris
+    B=eye(p,opn(tm,13.0,3.0),vec3(0.85,0.93,1.0),vec3(0.15,0.8,1.0),0.12);add+=vec3(0.3,0.6,1.0)*exp(-r*1.2)*0.35;
+  }else if(kind==3){                 // THE MAW: dark moon, magenta throat, rotating fangs
+    float open=0.35+0.25*sin(tm*0.9);float tooth=smoothstep(0.45,0.5,abs(fract(a*12.0/6.2832-tm*0.08)-0.5));
+    float inner=smoothstep(open,open-0.12,r);vec3 cc=mix(vec3(0.16,0.06,0.28),vec3(0.95,0.95,0.9),tooth*smoothstep(open-0.02,open+0.25,r)*step(r,0.95));
+    cc=mix(cc,vec3(1.0,0.2,0.85)*(0.8+0.3*sin(tm*4.0+a*4.0)),inner);B=vec4(cc,smoothstep(1.0,0.94,r));add+=vec3(0.8,0.2,0.9)*exp(-r*1.3)*0.4;
+  }else if(kind==4){                 // THE HIVE: a cluster of seven eyes, blinking out of step
+    B=vec4(vec3(0.1,0.04,0.2),smoothstep(1.0,0.94,r));
+    for(int i=0;i<7;i++){vec2 o=i==0?vec2(0.0):vec2(cos(float(i)*1.0472),sin(float(i)*1.0472))*0.62;float sz=i==0?0.46:0.3;
+      vec4 e=eye((p-o)/sz,opn(tm,7.0+float(i),float(i)*1.7),vec3(0.9,0.85,1.0),vec3(0.8,0.2,1.0),0.15);B.rgb=mix(B.rgb,e.rgb,e.a);}
+    add+=vec3(0.6,0.2,1.0)*exp(-r*1.3)*0.3;
+  }else{                             // THE WRITHING: a black disc crawling with magenta tentacles around one green eye
+    B=vec4(vec3(0.02,0.0,0.05),smoothstep(1.0,0.94,r));vec4 e=eye(p/0.32,opn(tm,9.0,5.0),vec3(0.4,1.0,0.5),vec3(0.1,0.9,0.3),0.2);B.rgb=mix(B.rgb,e.rgb,e.a*smoothstep(0.35,0.3,r));
+    add+=vec3(1.0,0.2,0.8)*arms(p,11.0,1.9,3.8)*1.1+vec3(0.9,0.2,0.7)*exp(-r*1.2)*0.25;
+  }
+  col+=add*vis;col=mix(col,B.rgb,B.a*vis);
+}
 void main(){
   vec3 d=normalize(fwd+rgt*(ndc.x*tanf.x)+upv*(ndc.y*tanf.y));
   float h=d.y;
   vec3 col=mix(hor,zen,pow(clamp(h*1.7,0.0,1.0),0.55));
   col=mix(col,gnd,smoothstep(0.0,-0.08,h));
   col+=hor*0.22*exp(-abs(h)*26.0)*(0.5+0.5*sunA);
-  float sd=dot(d,sunD);
-  col+=vec3(1.0,0.78,0.5)*(smoothstep(0.9993,0.9998,sd)*1.6+pow(max(sd,0.0),180.0)*0.55+pow(max(sd,0.0),12.0)*0.18*sunA);
-  float md=dot(d,moonD);
-  if(md>0.9985){
-    vec3 o=d-moonD*md;vec2 lc=vec2(dot(o,moonR),dot(o,moonU))*21.0;float r=length(lc);
-    vec3 mc=vec3(0.78,0.9,1.0)*(0.75+0.25*h3(vec3(floor(lc*6.0),3.0)));
-    float iris=smoothstep(0.55,0.5,r)*smoothstep(0.2,0.25,r);float slit=smoothstep(0.1,0.04,abs(lc.x))*smoothstep(0.5,0.35,abs(lc.y));
-    mc=mix(mc,vec3(0.15,0.8,1.0)*1.2,iris*0.5);mc=mix(mc,vec3(0.7,0.02,0.1),slit);
-    col=mix(col,mc,smoothstep(1.0,0.92,r)*(1.0-smoothstep(0.0,-0.05,h)));
-  }
-  col+=vec3(0.35,0.5,1.0)*0.12*pow(max(md,0.0),30.0)*stars;
+  float vis=smoothstep(-0.004,0.012,h);                      // everything in the sky sets behind the horizon line
   vec3 sp=floor(d*330.0);float sh=h3(sp);
   if(sh>0.9975&&h>0.02){float tw=0.6+0.4*sin(tm*3.0+sh*400.0);col+=mix(vec3(0.8,0.9,1.0),vec3(1.0,0.5,0.9),step(0.9992,sh))*tw*stars*smoothstep(0.02,0.25,h);}
   col+=vec3(0.18,0.05,0.3)*stars*smoothstep(0.1,0.5,h)*(0.5+0.5*sin(d.x*5.0+tm*0.2))*0.35;
+  float nightV=smoothstep(0.0,0.7,stars);
+  body(d,sunC[0],0.075,0,vis,col);body(d,sunC[1],0.042,1,vis,col);
+  body(d,moonC[0],0.07,2,vis*nightV,col);body(d,moonC[1],0.052,3,vis*nightV,col);body(d,moonC[2],0.06,4,vis*nightV,col);body(d,moonC[3],0.045,5,vis*nightV,col);
   gl_FragColor=vec4(col,1.0);
 }`;
 let skyProg = null, skyBuf = null, texAtlas = null, texAvg = null;

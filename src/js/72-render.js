@@ -18,12 +18,12 @@ function renderFrame(dt) {
   const asp = canvas.width / canvas.height;
   let ex, ey, ez, f, roll = 0;
   if (state === 'menu') {
-    const a = T * .12, rr = 52; ex = N / 2 + Math.cos(a) * rr; ez = N / 2 + Math.sin(a) * rr; ey = 30 + Math.sin(T * .3) * 3;
-    const dx = N / 2 - ex, dy = 10 - ey, dz = N / 2 - ez, l = Math.hypot(dx, dy, dz); f = [dx / l, dy / l, dz / l]; P.fov = 1.2;
+    const a = T * .06, rr = 36; ex = N / 2 + Math.cos(a) * rr; ez = N / 2 + Math.sin(a) * rr; ey = 21 + Math.sin(T * .3) * 2;
+    const dx = N / 2 - ex, dy = 11 - ey, dz = N / 2 - ez, l = Math.hypot(dx, dy, dz); f = [dx / l, dy / l, dz / l]; P.fov = 1.2;
   } else {
-    const spd = Math.hypot(P.vx, P.vz), tf = (P.zoom ? 38 : 93 + Math.min(14, spd * .45) + (P.dashT > 0 ? 12 : 0) + (P.slamming ? 10 : 0) + P.btFade * 6 + P.fovPunch * 30) * Math.PI / 180;
+    const spd = Math.hypot(P.vx, P.vz), tf = (P.zoom ? 38 : optV('fov') + Math.min(14, spd * .45) + (P.dashT > 0 ? 12 : 0) + (P.slamming ? 10 : 0) + P.btFade * 6 + P.fovPunch * 30) * Math.PI / 180;
     P.fov = lerp(P.fov, tf, Math.min(1, 14 * dt));
-    const sh = P.shake * .09;
+    const sh = P.shake * .09 * optV('shake');
     ex = P.x + rnd(-sh, sh); ey = P.y + P.eye - P.landDip + rnd(-sh, sh); ez = P.z + rnd(-sh, sh);
     f = fwdV(); roll = P.sliding ? .06 : (keys.KeyD ? .012 : keys.KeyA ? -.012 : 0) + rnd(-sh, sh) * .05;
   }
@@ -34,7 +34,7 @@ function renderFrame(dt) {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   gl.uniform1f(loc.amb, sk ? sk.amb : 1);
   const inBoss = mode === 'dungeon' && Run.cur && Run.cur.type === 'boss';
-  if (inBoss) { gl.uniform2f(loc.fogr, 45, 170); cullR = 135; } else if (mode === 'dungeon') { gl.uniform2f(loc.fogr, 14, 70); cullR = 78; } else { gl.uniform2f(loc.fogr, 48, 118); cullR = 128; }
+  if (inBoss) { gl.uniform2f(loc.fogr, 45, 170); cullR = 135; } else if (mode === 'dungeon') { gl.uniform2f(loc.fogr, 14, 70); cullR = 78; } else { const rd = OW.LOAD * 16 - 2; gl.uniform2f(loc.fogr, rd * .5, rd); cullR = rd + 22; }
   camX = ex; camY = ey; camZ = ez; camFX = f[0]; camFZ = f[2];
   const fovy = Math.min(2.0, 2 * Math.atan(Math.tan(P.fov / 2) / asp));
   const vp = mul4(perspective(fovy, asp, .05, 300), lookView(ex, ey, ez, f[0], f[1], f[2], roll));

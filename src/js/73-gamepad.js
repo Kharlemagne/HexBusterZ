@@ -109,7 +109,7 @@ function pollGamepad() {
     if (pr('prev')) { shopSel = (shopSel + 1) % SHOP.length; renderShop(); }
     if (pr('jump')) buyItem(shopSel);
     if (pr('xcross') || pr('start') || pr('interact')) closeShop();
-  } else if (state !== 'play') { if (rawRise && (state === 'menu' || state === 'paused' || state === 'dead')) startGame(); }
+  } else if (state !== 'play') { if (rawRise && state === 'paused') resumeGame(); else if (rawRise && state === 'dead') startGame(); }
   else {
     if (pr('start')) { /* reserved */ }
     if (pr('xcross')) P.cEdge = true;

@@ -65,9 +65,9 @@ function genVillage(hubSeed) {                   // Ember Village, built into th
 }
 // Build (or rebuild) the open world around a spawn point. Seeds come from the player's save, or from the host when joining co-op.
 function genHub(hubSeed, sx, sz) {
-  const o = Net.hubOverride, doc = SaveStore.doc.world;
-  const wseed = hubSeed !== undefined ? hubSeed : o ? o.seed : doc.seed, vseed = o ? o.villageSeed : doc.villageSeed;
-  OW.begin(sx === undefined ? 32.5 : sx, sz === undefined ? 44.5 : sz, wseed, vseed, o ? o.edits : doc.edits);
+  const o = Net.hubOverride, c = WorldStore.cur;
+  const wseed = hubSeed !== undefined ? hubSeed : o ? o.seed : c.meta.seed, vseed = o ? o.villageSeed : c.meta.villageSeed;
+  OW.begin(sx === undefined ? 32.5 : sx, sz === undefined ? 44.5 : sz, wseed, vseed, o ? o.edits : c.data.edits);
 }
 function nearNPC() { return mode === 'hub' && Math.hypot(P.x - NPC.x, P.z - NPC.z) < 4.6 && Math.abs(P.y - NPC.y) < 3; }
 function enterHub(first, fromRun) {

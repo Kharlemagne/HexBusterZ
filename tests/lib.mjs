@@ -29,7 +29,8 @@ export async function openGame({ width = 960, height = 540, init, url = GAME_URL
   await page.waitForFunction(() => window.__g && document.getElementById('msub') && /CLICK TO PLAY/.test(document.getElementById('msub').textContent), null, { timeout: 20000 });
   return { browser, ctx, page, errors, async close() { if (shared) await ctx.close(); else await browser.close(); } };
 }
-export async function startPlaying(page) { await page.click('#menu'); await page.waitForFunction(() => __g.state() === 'play'); }
+// starts the player's last world (creating one if the profile has none) the way the menu does, without clicking through it
+export async function startPlaying(page) { await page.evaluate(() => __g.startWorldQuick()); await page.waitForFunction(() => __g.state() === 'play'); }
 
 // Minimal assertion/reporting
 let failed = 0;

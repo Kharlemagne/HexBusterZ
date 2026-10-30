@@ -4,6 +4,8 @@ addEventListener('keydown', e => {
   if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.code)) e.preventDefault();
   const first = !keys[e.code]; keys[e.code] = true;
   if (!first) return;
+  if (e.code === 'Escape' && state === 'play' && fallback) { openPause(); return; }
+  if (e.code === 'Escape' && state === 'paused') { Menu.back(); return; }
   if (state === 'padsetup') { if (e.code === 'Escape') closePadSetup(); return; }
   if (state === 'dead' && e.code === 'KeyR') { startGame(); return; }
   if (state === 'inv') { if (e.code === 'Escape' || e.code === 'KeyI' || e.code === 'Tab') closeInv(); else if (e.code.startsWith('Digit')) { const n = +e.code.slice(5) - 1; if (n >= 0 && n < 9) { Inv.sel = n; Inv.changed(); renderInv(); } } return; }
@@ -35,8 +37,8 @@ const mpos = { x: innerWidth / 2, y: innerHeight / 2 };
 addEventListener('mousemove', e => {
   mpos.x = e.clientX; mpos.y = e.clientY; if (invOpen) updateInvCursor();
   if (state !== 'play') return;
-  const s = P.zoom ? .0009 : .0022;
-  P.yaw -= e.movementX * s; P.pitch = clamp(P.pitch - e.movementY * s, -1.55, 1.55); P.swayX = clamp(P.swayX - e.movementX * .0002, -.05, .05);
+  const s = (P.zoom ? .0009 : .0022) * optV('sens'), iv = SaveStore.doc.settings.invertY ? -1 : 1;
+  P.yaw -= e.movementX * s; P.pitch = clamp(P.pitch - e.movementY * s * iv, -1.55, 1.55); P.swayX = clamp(P.swayX - e.movementX * .0002, -.05, .05);
 });
 addEventListener('wheel', e => {
   if (state !== 'play') return;
@@ -44,13 +46,9 @@ addEventListener('wheel', e => {
   if (P.weapon === 4) Inv.cycle(dir); else nextWeapon(dir);
 }, { passive: true });
 document.addEventListener('pointerlockchange', () => {
-  if (document.pointerLockElement !== canvas && state === 'play' && !fallback) {
-    state = 'paused'; mouse.l = mouse.r = false; el.menu.classList.remove('hide'); txt(el.mtitle, 'PAUSED'); txt(el.msub, 'CLICK TO RESUME');
-  }
+  if (document.pointerLockElement !== canvas && state === 'play' && !fallback) openPause();
 });
 document.addEventListener('pointerlockerror', () => { fallback = true; });
-el.menu.addEventListener('click', ev => {
-  if (ev.target && ev.target.id === 'padbtn') { openPadSetup(); return; }
-  if (ev.target && ev.target.id === 'savebtn') { openSaveBox(); return; } if (ev.target && ev.target.id === 'coopbtn') { openCoopBox(); return; } if (state === 'paused') { state = 'play'; el.menu.classList.add('hide'); try { const p = canvas.requestPointerLock(); if (p && p.catch) p.catch(() => { fallback = true; }); } catch (e) { } } else startGame(); });
 el.dead.addEventListener('click', () => startGame());
+el.menu.addEventListener('click', ev => { if (state === 'paused' && ev.target === el.menu) resumeGame(); });
 

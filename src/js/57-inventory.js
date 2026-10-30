@@ -11,12 +11,12 @@ const dropOf = id => id === 22 ? ['shard', 1 + ((Math.random() * 2) | 0)] : [id,
 const Inv = {
   slots: new Array(36).fill(null), sel: 0, creative: false, cursor: null, shown: '',
   load() {
-    const d = SaveStore.doc.inv;
+    const c = WorldStore.cur, d = c && c.data.inv;
     this.slots = new Array(36).fill(null); this.sel = 0; this.creative = false; this.cursor = null;
     if (d && Array.isArray(d.slots)) { d.slots.slice(0, 36).forEach((s, i) => { if (Array.isArray(s) && s[1] > 0) this.slots[i] = { k: s[0], n: Math.min(STACK_MAX, s[1] | 0) }; }); this.sel = clamp(d.sel | 0, 0, 8); this.creative = !!d.creative; }
-    else { [2, 1, 3, 5, 7, 8, 6, 12, 13].forEach((id, i) => { this.slots[i] = { k: id, n: 64 }; }); this.collect(); }          // a starter kit for new (and upgraded) profiles
+    else { [2, 1, 3, 5, 7, 8, 6, 12, 13].forEach((id, i) => { this.slots[i] = { k: id, n: 64 }; }); if (c && c.meta.mode === 'creative') this.creative = true; this.collect(); }          // a starter kit for new (and upgraded) profiles
   },
-  collect() { SaveStore.doc.inv = { slots: this.slots.map(s => s ? [s.k, s.n] : 0), sel: this.sel, creative: this.creative }; },
+  collect() { const c = WorldStore.cur; if (!c || c.ephemeral) return; c.data.inv = { slots: this.slots.map(s => s ? [s.k, s.n] : 0), sel: this.sel, creative: this.creative }; },
   changed() { SaveStore.dirty = true; this.shown = ''; },
   add(k, n) {                                                                       // returns how many did not fit
     for (let pass = 0; pass < 2 && n > 0; pass++) for (let i = 0; i < 36 && n > 0; i++) {
@@ -50,7 +50,6 @@ const Inv = {
     this.changed(); renderInv();
   }
 };
-Inv.load();
 let invOpen = false;
 function openInv() {
   if (state !== 'play') return;

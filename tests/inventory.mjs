@@ -35,9 +35,9 @@ const ui = await I(() => {
   __g.closeInv(); return { open, held, moved, half, merged, quick, closed: __g.state() === 'play' };
 });
 check('inventory screen: open, pick up, move, split, merge, shift-click, close', Object.values(ui).every(Boolean), JSON.stringify(ui));
-const saved = await I(() => { const I = __g.Inv; I.slots[3] = { k: 12, n: 33 }; I.creative = true; __g.flushSave(); return JSON.parse(localStorage.getItem('hbz.save')).inv; });
+const saved = await I(() => { const I = __g.Inv; I.slots[3] = { k: 12, n: 33 }; I.creative = true; __g.flushSave(); return JSON.parse(localStorage.getItem('hbz.w.' + __g.WorldStore.cur.meta.id)).inv; });
 check('inventory is written to the save', saved && saved.slots[3][1] === 33 && saved.creative === true);
-await page.reload(); await page.waitForFunction(() => window.__g && /CLICK TO PLAY/.test(document.getElementById('msub').textContent));
+await page.reload(); await page.waitForFunction(() => window.__g && /CLICK TO PLAY/.test(document.getElementById('msub').textContent)); await startPlaying(page);
 check('inventory survives a reload', await I(() => __g.Inv.slots[3] && __g.Inv.slots[3].n === 33 && __g.Inv.creative === true));
 const cre = await I(() => { const I = __g.Inv; I.slots[3].n = 5; const sel = 3; I.sel = sel; const left = I.slots[3].n; I.useSel(); return { left: I.slots[3].n, creative: I.creative }; });
 check('creative mode places without using blocks up', cre.left === 5 && cre.creative);

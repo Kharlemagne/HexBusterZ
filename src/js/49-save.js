@@ -17,10 +17,10 @@ function saveDefaults() {
   return {
     game: SAVE_ID, v: SAVE_SCHEMA, created: Date.now(), updated: Date.now(),
     profile: { gems: 0, unlocked: [true, false, false, false, true], runs: 0, wins: 0, stats: { kills: 0, deaths: 0, bosses: 0, bestRank: 0 } },
-    settings: { padMap: null, muted: false },
-    hub: { seed: 0, genVersion: 1, edits: [] },          // (schema 1) the old village save; kept untouched for safety, no longer used after migrating to `world`
-    world: { seed: 0, villageSeed: 0, genVersion: 1, edits: [], time: .3 },    // the open world (time = time of day): seed + village seed + only the blocks players changed
-    inv: null,                                           // inventory (see 57-inventory.js), created on first use
+    settings: { padMap: null, muted: false, music: .7, sfx: .8, renderDist: 7, fov: 93, sens: 1, invertY: false, shake: 1, clock: true, turn: null },
+    hub: { seed: 0, genVersion: 1, edits: [] },          // (schema 1) the old village save; kept untouched for safety, no longer used
+    worlds: [],                                          // one entry per world: { id, name, seed, villageSeed, created, played, mode }; each world's blocks/time/inventory live under localStorage key hbz.w.<id>
+    lastWorld: '',
     extras: {}                                           // room for future systems (base machines, quests, ...)
   };
 }
@@ -37,6 +37,11 @@ const MIGRATIONS = {
     const h = s.hub || {};
     if (Array.isArray(h.edits) && h.edits.length) { s.world.edits = h.edits.map(e => e.slice()); s.world.villageSeed = h.seed | 0; }   // keep an existing village build exactly where it was
     s.v = 2; return s;
+  },
+  2: s => {                                              // v2 -> v3: several worlds; the single v2 world becomes the first one, with its inventory
+    const w = s.world || {}, id = 'w' + Date.now().toString(36);
+    s.worlds = [{ id, name: 'MY WORLD', seed: w.seed || 0, villageSeed: w.villageSeed || 0, created: s.created || Date.now(), played: Date.now(), mode: 'survival', data: { edits: w.edits || [], time: w.time || .3, inv: s.inv || null } }];
+    s.lastWorld = id; delete s.world; delete s.inv; s.v = 3; return s;
   }
 };
 
@@ -62,10 +67,14 @@ function normalize(doc) {
   p.unlocked = p.unlocked.map(Boolean); p.unlocked[0] = true; p.unlocked[4] = true;
   if (!Array.isArray(doc.hub.edits)) doc.hub.edits = [];
   doc.hub.edits = doc.hub.edits.filter(e => Array.isArray(e) && e.length === 4 && e.every(Number.isFinite));
-  if (!Array.isArray(doc.world.edits)) doc.world.edits = [];
-  doc.world.edits = doc.world.edits.filter(e => Array.isArray(e) && e.length === 4 && e.every(Number.isFinite));
-  if (!doc.world.seed) doc.world.seed = ((Math.random() * 4294967295) >>> 0) || 1;
-  if (!doc.world.villageSeed) doc.world.villageSeed = VILLAGE_SEED_DEFAULT;
+  if (!Array.isArray(doc.worlds)) doc.worlds = [];
+  doc.worlds = doc.worlds.filter(w => w && typeof w === 'object' && typeof w.id === 'string' && w.id);
+  for (const w of doc.worlds) {
+    w.name = String(w.name || 'NEW WORLD').slice(0, 32); if (!w.seed) w.seed = ((Math.random() * 4294967295) >>> 0) || 1; if (!w.villageSeed) w.villageSeed = VILLAGE_SEED_DEFAULT;
+    w.created = +w.created || Date.now(); w.played = +w.played || w.created; w.mode = w.mode === 'creative' ? 'creative' : 'survival';
+    if (w.data && Array.isArray(w.data.edits)) w.data.edits = w.data.edits.filter(e => Array.isArray(e) && e.length === 4 && e.every(Number.isFinite));
+  }
+  if (!doc.worlds.some(w => w.id === doc.lastWorld)) doc.lastWorld = doc.worlds.length ? doc.worlds.slice().sort((a, b) => b.played - a.played)[0].id : '';
   return doc;
 }
 
@@ -80,6 +89,45 @@ function backupSave(label, raw) {                        // timestamped copy; ke
   const ks = lsKeys('hbz.backup.').sort((a, b) => +b.split('.').pop() - +a.split('.').pop()); ks.slice(5).forEach(lsDel);
 }
 
+// ---- worlds: the list lives in the main save, each world's payload (blocks changed, time of day, inventory) in its own key so big builds don't slow every save ----
+const VILLAGE_SEED_DEFAULT = 0x00E3B3F1;                 // every world gets the same Ember Village, whatever its seed
+const WorldStore = {
+  mem: {}, cur: null,                                    // cur = { meta, data, ephemeral }
+  key: id => 'hbz.w.' + id,
+  newData() { return { edits: [], time: .3, inv: null }; },
+  readData(meta) {
+    if (meta.data) { const d = meta.data; delete meta.data; this.writeRaw(meta.id, d); SaveStore.dirty = true; return d; }      // inline payload from a migration / import
+    let d = null; const raw = lsGet(this.key(meta.id)); if (raw) { try { d = JSON.parse(raw); } catch (e) { SaveStore.notes.push('World "' + meta.name + '" had damaged data.'); } }
+    return d || this.mem[meta.id] || this.newData();
+  },
+  writeRaw(id, d) { this.mem[id] = d; if (SaveStore.persistent) lsSet(this.key(id), JSON.stringify(d)); },
+  list() { return SaveStore.doc.worlds.slice().sort((a, b) => b.played - a.played); },
+  find(id) { return SaveStore.doc.worlds.find(w => w.id === id) || null; },
+  create({ name, seed, mode }) {
+    const base = (name || 'NEW WORLD').trim().slice(0, 32) || 'NEW WORLD'; let nm = base, n = 2;
+    while (SaveStore.doc.worlds.some(w => w.name === nm)) nm = base + ' (' + n++ + ')';
+    const meta = { id: 'w' + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36), name: nm, seed: seed || ((Math.random() * 4294967295) >>> 0) || 1, villageSeed: VILLAGE_SEED_DEFAULT, created: Date.now(), played: Date.now(), mode: mode === 'creative' ? 'creative' : 'survival' };
+    SaveStore.doc.worlds.push(meta); const d = this.newData(); this.writeRaw(meta.id, d); SaveStore.doc.lastWorld = meta.id; saveGame(); return meta;
+  },
+  open(id) {                                             // make this the active world (call before building the terrain)
+    const meta = this.find(id); if (!meta) return null;
+    if (this.cur && !this.cur.ephemeral) { try { flushSave(); } catch (e) { } }
+    const d = this.readData(meta); if (!Array.isArray(d.edits)) d.edits = []; if (!d.inv && meta.mode === 'creative') d.inv = { slots: [], sel: 0, creative: true };
+    meta.played = Date.now(); SaveStore.doc.lastWorld = id; this.cur = { meta, data: d, ephemeral: false }; SaveStore.dirty = true;
+    try { Inv.load(); } catch (e) { } try { DayNight.load(); } catch (e) { }
+    return this.cur;
+  },
+  openDemo() {                                           // the title-screen backdrop: a throwaway world that is never saved
+    if (this.cur && !this.cur.ephemeral) { try { flushSave(); } catch (e) { } }
+    this.cur = { meta: { id: '', name: 'DEMO', seed: 20261029, villageSeed: VILLAGE_SEED_DEFAULT, mode: 'survival' }, data: this.newData(), ephemeral: true };
+    try { Inv.load(); } catch (e) { } try { DayNight.load(); } catch (e) { }
+  },
+  ensureReal() { if (this.cur && !this.cur.ephemeral) return; const w = this.find(SaveStore.doc.lastWorld) || this.list()[0]; if (w) this.open(w.id); else this.open(this.create({ name: 'MY WORLD' }).id); },
+  saveCur() { if (this.cur && !this.cur.ephemeral) this.writeRaw(this.cur.meta.id, this.cur.data); },
+  remove(id) { SaveStore.doc.worlds = SaveStore.doc.worlds.filter(w => w.id !== id); delete this.mem[id]; lsDel(this.key(id)); if (SaveStore.doc.lastWorld === id) SaveStore.doc.lastWorld = ''; normalize(SaveStore.doc); saveGame(); },
+  rename(id, name) { const w = this.find(id); if (w) { w.name = (name || w.name).trim().slice(0, 32) || w.name; saveGame(); } },
+  dataFor(id) { return this.cur && !this.cur.ephemeral && this.cur.meta.id === id ? this.cur.data : this.readData(Object.assign({}, this.find(id))); }
+};
 const SaveStore = { doc: null, persistent: true, loadedFrom: 'new', newer: false, notes: [], lastSaved: 0, dirty: false };
 function loadSave() {
   SaveStore.persistent = storageOK(); SaveStore.notes = [];
@@ -107,14 +155,13 @@ function loadSave() {
 }
 function flushSave() {
   if (!SaveStore.doc) return false;
-  WorldSave.collect(); try { Inv.collect(); } catch (e) { } try { DayNight.collect(); } catch (e) { } SaveStore.doc.updated = Date.now();
+  WorldSave.collect(); try { Inv.collect(); } catch (e) { } try { DayNight.collect(); } catch (e) { } WorldStore.saveCur(); SaveStore.doc.updated = Date.now();
   if (!SaveStore.persistent) { SaveStore.dirty = false; return false; }
   const ok = lsSet(SAVE_KEY, JSON.stringify(SaveStore.doc));
   if (ok) { SaveStore.lastSaved = Date.now(); SaveStore.dirty = false; } else SaveStore.notes.push('Could not write the save (storage full or blocked).');
   return ok;
 }
 // ---- the open world: only the player's changes are stored (a few numbers per block); OW.edits holds them, grouped by chunk ----
-const VILLAGE_SEED_DEFAULT = 0x00E3B3F1;                 // every new profile gets the same Ember Village, whatever its world seed
 const WorldSave = {
   dirty: false, cap: 100000, count: 0, capped: false,
   record(x, y, z, old, id) {                              // called for every block change in the open world
@@ -139,8 +186,8 @@ const WorldSave = {
     for (const [key, m] of OW.edits) { const cx = ckx(key), cz = ckz(key); for (const [li, e] of m) out.push([cx * 16 + (li & 15), li >> 8, cz * 16 + ((li >> 4) & 15), e.id]); }
     return out;
   },
-  collect() { if (!this.dirty) return; SaveStore.doc.world.edits = this.list(); this.dirty = false; },
-  reset() { OW.edits.clear(); this.count = 0; SaveStore.doc.world.edits = []; this.dirty = false; SaveStore.dirty = true; }
+  collect() { if (!this.dirty) return; if (WorldStore.cur && !WorldStore.cur.ephemeral) WorldStore.cur.data.edits = this.list(); this.dirty = false; },
+  reset() { OW.edits.clear(); this.count = 0; if (WorldStore.cur) WorldStore.cur.data.edits = []; this.dirty = false; SaveStore.dirty = true; }
 };
 blockListeners.push((x, y, z, id, old) => { if (useChunks) WorldSave.record(x, y, z, old, id); });
 
@@ -157,7 +204,7 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 // ---- export / import (progress can travel between browsers, devices and hosts) ----
 function fnv(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(16); }
 function exportSaveCode() {
-  flushSave(); const json = JSON.stringify(SaveStore.doc);
+  flushSave(); const out = JSON.parse(JSON.stringify(SaveStore.doc)); for (const w of out.worlds) w.data = WorldStore.dataFor(w.id); const json = JSON.stringify(out);
   return 'HBZ1.' + btoa(unescape(encodeURIComponent(json))) + '.' + fnv(json);
 }
 function importSaveCode(code) {
@@ -171,9 +218,10 @@ function importSaveCode(code) {
   backupSave('before-import', JSON.stringify(SaveStore.doc));          // never lose what is here either
   if ((Number.isInteger(doc.v) ? doc.v : 0) < SAVE_SCHEMA) doc = migrate(doc);
   doc = normalize(doc);
+  for (const w of doc.worlds) if (w.data) { WorldStore.writeRaw(w.id, w.data); delete w.data; }          // each world's payload goes back to its own key
   Object.assign(Save, doc.profile); doc.profile = Save;                // keep the same object the game code points at
   SaveStore.doc = doc; SaveStore.newer = doc.v > SAVE_SCHEMA;
-  muted = !!doc.settings.muted; WorldSave.dirty = false;
+  muted = !!doc.settings.muted; WorldSave.dirty = false; WorldStore.cur = null; WorldStore.openDemo();
   if (!doc.hub.seed) doc.hub.seed = ((Math.random() * 4294967295) >>> 0) || 1;
   flushSave();
   return { ok: true, msg: 'Save imported: ' + Save.gems + ' gems, ' + Save.unlocked.filter(Boolean).length + '/5 weapons.' };

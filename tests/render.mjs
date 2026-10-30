@@ -27,7 +27,7 @@ check('stars only at night; clock reads 12:00 at noon', r.stars && r.clock === '
 check('the sky is a gradient with a visible horizon (zenith differs from horizon)', r.skyBrighter, JSON.stringify([r.noon.top, r.noon.hor]));
 check('night sky is darker than the day sky', (r.night.top[0] + r.night.top[1] + r.night.top[2]) < (r.noon.top[0] + r.noon.top[1] + r.noon.top[2]), JSON.stringify([r.night.top, r.noon.top]));
 // the clock keeps running and is saved
-const t = await page.evaluate(() => { __g.enterHub(false, false); const DN = __g.DayNight; DN.len = 600; DN.t = .5; DN.tick(60); const moved = DN.t; __g.flushSave(); return { moved, saved: JSON.parse(localStorage.getItem('hbz.save')).world.time }; });
+const t = await page.evaluate(() => { __g.enterHub(false, false); const DN = __g.DayNight; DN.len = 600; DN.t = .5; DN.tick(60); const moved = DN.t; __g.flushSave(); return { moved, saved: JSON.parse(localStorage.getItem('hbz.w.' + __g.WorldStore.cur.meta.id)).time }; });
 check('time advances (60s of a 600s day = +0.1)', Math.abs(t.moved - .6) < .001, String(t.moved));
 check('time of day is saved', Math.abs(t.saved - .6) < .001, String(t.saved));
 await g.close(); done(g.errors);

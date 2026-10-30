@@ -48,8 +48,9 @@ console.log('old village builds carry into the open world');
 {
   const save = JSON.stringify({ game: 'hexbusterz', v: 1, profile: { gems: 9, unlocked: [true, false, false, false, true], runs: 1, wins: 0 }, settings: {}, hub: { seed: 4242, genVersion: 1, edits: [[30, 9, 50, 7], [31, 9, 50, 8]] } });
   const g = await openGame({ width: 320, height: 200, init: `(() => { if (localStorage.getItem('__seeded')) return; localStorage.setItem('hbz.save', ${JSON.stringify(save)}); localStorage.setItem('__seeded', '1'); })();` }); const { page } = g;
-  const r = await page.evaluate(() => ({ v: __g.SaveStore.doc.v, vs: __g.SaveStore.doc.world.villageSeed, b1: __g.get(30, 9, 50), b2: __g.get(31, 9, 50), gems: __g.Save.gems, backups: Object.keys(localStorage).filter(k => k.startsWith('hbz.backup')).length }));
-  check('save upgraded to v2 and the old village seed is kept (so the build still fits)', r.v === 2 && r.vs === 4242, JSON.stringify(r));
+  await startPlaying(page);
+  const r = await page.evaluate(() => ({ v: __g.SaveStore.doc.v, vs: __g.WorldStore.cur.meta.villageSeed, b1: __g.get(30, 9, 50), b2: __g.get(31, 9, 50), gems: __g.Save.gems, backups: Object.keys(localStorage).filter(k => k.startsWith('hbz.backup')).length }));
+  check('save upgraded to the current format and the old village seed is kept (so the build still fits)', r.v === 3 && r.vs === 4242, JSON.stringify(r));
   check('old village blocks are where you left them', r.b1 === 7 && r.b2 === 8);
   check('progress kept and a backup was made', r.gems === 9 && r.backups >= 1);
   await g.close(); done(g.errors);

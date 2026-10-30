@@ -30,7 +30,7 @@ await step(30);
 check('guest joined the host (role + id)', await G.page.evaluate(() => __g.Net.role === 'client' && __g.P.id === 1));
 check('host knows the guest', await H.page.evaluate(() => __g.players.length === 2 && __g.players[1].id === 1));
 check('guest rebuilt the same hub, including the host\'s build', (await hash(H.page)) === (await hash(G.page)));
-check('guest\'s own save was not touched by the host\'s hub', await G.page.evaluate(() => __g.SaveStore.doc.world.edits.length === 0));
+check('guest\'s own save was not touched by the host\'s hub', await G.page.evaluate(() => __g.WorldStore.cur.data.edits.length === 0));
 
 // positions
 await G.page.evaluate(() => { Object.assign(__g.P, { x: 20.5, y: 12, z: 20.5, yaw: 1 }); });
