@@ -48,3 +48,6 @@ No continuous cycle. `DayNight` (src/js/27-daynight.js) holds `phase` (day/night
 
 ## Realms (generation 4) and the Rift
 `src/js/25-realm-gen4.js`: layout from the seed (`realmLayout`), bounded islands (`realmColumn`), the tear (`buildTear`). `src/js/55-rift.js`: console UI, the zap sequence, `enterRealm` / `leaveRealm`, drawing. A save has `data.map` = `{seed, coords}` while the player is in a realm (null on the station) and `data.realms[seed] = {coords, edits}`. `WorldSave` writes block edits to the realm you are in. Gen 4 is never stored in `meta.gen`: the save stays generation 3 (or older) and the realm is entered through the rift.
+
+## Block registry
+See the header of `src/js/20-blocks.js`. Materials are defined once (ids 1-47 classic and city, 256+ from `data/blocks.json` "materials"); `SHAPABLE` lists the materials that get shapes, and each owns 16 generated ids starting at 1024 + index*16. **Both lists are append-only: never reorder or remove entries, saved worlds store these ids.** Add a material by appending to `materials` (it reuses an existing pattern via `tile`, or gets one of the eight extra patterns via `paint`).

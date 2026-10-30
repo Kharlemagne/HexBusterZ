@@ -110,7 +110,7 @@ function biomeAt(x, z, y) {
 
 // ---- chunk generation
 OWG.gen1 = function (cx, cz) {
-  const S = OWG.S, b = new Uint8Array(256 * WORLD_H), x0 = cx * CS, z0 = cz * CS, M = 5, W = CS + 2 * M;
+  const S = OWG.S, b = new Uint16Array(256 * WORLD_H), x0 = cx * CS, z0 = cz * CS, M = 5, W = CS + 2 * M;
   const hts = new Int16Array(W * W), bio = new Uint8Array(W * W);
   for (let zz = 0; zz < W; zz++) for (let xx = 0; xx < W; xx++) { const c = colInfo(x0 - M + xx, z0 - M + zz); hts[zz * W + xx] = c.h; bio[zz * W + xx] = c.bi; }
   const put = (x, y, z, id) => { const lx = x - x0, lz = z - z0; if (lx < 0 || lz < 0 || lx >= CS || lz >= CS || y < 1 || y >= WORLD_H) return; b[lx | (lz << 4) | (y << 8)] = id; };

@@ -25,6 +25,7 @@ addEventListener('keydown', e => {
   if (e.code.startsWith('Digit')) { const n = +e.code.slice(5); if (n >= 1 && n <= 5) switchWeapon(n - 1); }
   else if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') tryDash();
   else if (e.code === 'KeyC' || e.code === 'ControlLeft') P.cEdge = true;
+  else if (e.code === 'KeyV') cycleShape(e.shiftKey ? -1 : 1);
   else if (e.code === 'KeyQ') switchWeapon(P.lastWeapon);
   else if (e.code === 'KeyM') { muted = !muted; setSetting('muted', muted); feed(muted ? 'SOUND OFF' : 'SOUND ON'); }
 });

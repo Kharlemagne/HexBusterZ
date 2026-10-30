@@ -104,7 +104,7 @@ function smithStall(put) {
 function liftShaft(put, L) { for (let y = 40; y <= CAR.deck + 1; y++) for (let dz = -3; dz <= 3; dz++) for (let dx = -3; dx <= 3; dx++) { const r = Math.max(Math.abs(dx), Math.abs(dz)); if (r <= 2) put(Math.floor(L.x) + dx, y, Math.floor(L.z) + dz, 0); else if (r === 3 && y >= CAR.deck - 1) put(Math.floor(L.x) + dx, y, Math.floor(L.z) + dz, (dx + dz) % 2 ? 14 : 18); } }
 
 OWG.gen2 = function (cx, cz) {
-  const S = OWG.S, b = new Uint8Array(256 * WORLD_H), x0 = cx * CS, z0 = cz * CS, M = 5, W = CS + 2 * M;
+  const S = OWG.S, b = new Uint16Array(256 * WORLD_H), x0 = cx * CS, z0 = cz * CS, M = 5, W = CS + 2 * M;
   const near = gatesNear(x0 + 8, z0 + 8, 40), info = new Array(W * W); for (let zz = 0; zz < W; zz++) for (let xx = 0; xx < W; xx++) info[zz * W + xx] = island2(x0 - M + xx, z0 - M + zz, near);
   const put = (x, y, z, id) => { const lx = x - x0, lz = z - z0; if (lx < 0 || lz < 0 || lx >= CS || lz >= CS || y < 1 || y >= WORLD_H) return; b[lx | (lz << 4) | (y << 8)] = id; };
   const Dk = CAR.deck;

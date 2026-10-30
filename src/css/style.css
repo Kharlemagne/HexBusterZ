@@ -156,7 +156,7 @@ h1.hx::after{color:#00f0ff;transform:translate(5px,-1px);animation:glb 2.3s infi
 .ic{height:60px;border:2px solid #3a2a4a;background:#120a1ccc;position:relative;cursor:pointer;overflow:hidden}.ic:hover{border-color:#ff6af0}.ic.sel{border-color:#37f0ff;box-shadow:0 0 10px #37f0ff}
 .ic u{position:absolute;left:8px;top:6px;width:22px;height:22px;display:block}.ic em{position:absolute;left:3px;bottom:2px;font-style:normal;font-size:8px;letter-spacing:0;color:#cbb;max-width:94%;white-space:nowrap;overflow:hidden}
 .ic b{position:absolute;right:4px;top:4px;font-size:14px;color:#fff}.ic small{position:absolute;left:3px;top:1px;font-size:9px;color:#37f0ff}
-.cat{grid-template-columns:repeat(8,minmax(54px,74px))}
+.cat{grid-template-columns:repeat(8,minmax(54px,74px));max-height:34vh;overflow-y:auto}
 .invbtn button{background:#24123a;color:#e3caff;border:2px solid #8a4ad8;padding:9px 14px;margin:8px 4px;cursor:pointer;letter-spacing:2px;font-family:inherit;font-size:11px}
 #invcur{position:fixed;display:none;z-index:9;pointer-events:none;background:#000c;border:2px solid #ff6af0;color:#fff;padding:4px 8px;font-size:11px;letter-spacing:1px}#invcur u{display:inline-block;width:12px;height:12px;margin-right:6px;vertical-align:middle}
 

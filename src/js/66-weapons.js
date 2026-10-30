@@ -6,10 +6,12 @@ function switchWeapon(i) {
   if (i === 4 && mode !== 'hub') { feed('DIG KIT WORKS IN THE HUB ONLY', '#ff8a3a'); SFX.empty(); return; }
   P.lastWeapon = P.weapon < 0 ? 0 : P.weapon; P.weapon = i; P.charge = 0; P.zoom = false; P.kick = .12; P.kickRot = -.4;
   hotSlots.forEach((d, k) => d.classList.toggle('on', k === i));
-  txt(el.wname, WNAMES[i]);
+  txt(el.wname, WNAMES[i] + (i === 4 ? ' · ' + SHAPE_NAMES[P.shape || 0] : ''));
 }
 function nextWeapon(dir) { let i = P.weapon; for (let k = 0; k < 5; k++) { i = (i + dir + 5) % 5; if (weaponOK(i)) { switchWeapon(i); return; } } }
 function recoil(z, r) { rumble(.15 + z * 2, .1 + z * 2, 60); P.kick = Math.min(.3, P.kick + z); P.kickRot += r; P.flashT = .05; }
+function cycleShape(d = 1) { P.shape = ((P.shape || 0) + d + SHAPE_NAMES.length) % SHAPE_NAMES.length; updateWname(); feed('SHAPE: ' + SHAPE_NAMES[P.shape], '#7af0ff'); SFX.place(); }
+function updateWname() { if (typeof el !== 'undefined' && el.wname) txt(el.wname, WNAMES[P.weapon] + (P.weapon === 4 ? ' · ' + SHAPE_NAMES[P.shape || 0] : '')); }
 function targetBlock() { const e = eyePos(), f = fwdV(); return raycast(e[0], e[1], e[2], f[0], f[1], f[2], 6.5); }
 function playerOverlaps(x, y, z) {
   return x + 1 > P.x - P.hw && x < P.x + P.hw && z + 1 > P.z - P.hw && z < P.z + P.hw && y + 1 > P.y && y < P.y + P.h;
@@ -67,8 +69,10 @@ function updateWeapons(dt) {
       const px = h.x + h.nx, py = h.y + h.ny, pz = h.z + h.nz;
       if (get(px, py, pz) === 0 || isLava(get(px, py, pz))) {
         let bid = Inv.selBlock();
-        if (stairKind(bid)) { const f = fwdV(); bid = 80 + ((stairBase(bid) - 32) << 2) + (Math.abs(f[0]) > Math.abs(f[2]) ? (f[0] > 0 ? 0 : 1) : (f[2] > 0 ? 2 : 3)); }       // stairs rise away from you
-        if (slabKind(bid) === 1) { const e = eyePos(), f = fwdV(), hy = e[1] + f[1] * h.t; if (h.ny < 0 || (h.ny === 0 && hy - py >= .5)) bid += 16; }       // aim at the upper half of a wall, or under a block, and the slab goes in the top half
+        if (bid) { const e = eyePos(), f = fwdV(), hy = e[1] + f[1] * h.t, top = h.ny < 0 || (h.ny === 0 && hy - py >= .5);          // aim at the upper half of a wall, or under a block, and half blocks go in the top half
+          const k = KIND[bid]; if (k === K.RAIL) { /* rails are placed as they are */ }
+          else if (k) bid = shapeId(BASE[bid], k === K.SLAB_B || k === K.SLAB_T ? 1 : k === K.STAIR ? 2 : k === K.VSLAB ? 3 : k === K.WALL ? 4 : k === K.PILLAR ? 5 : k === K.FENCE ? 7 : k === K.PANE ? 8 : 6, f, { top });       // an older slab / stairs item keeps its shape
+          else bid = shapeId(bid, P.shape || 0, f, { top }); }
         if (!bid) { if (digCd <= 0) { feed('NO BLOCK SELECTED — OPEN INVENTORY (I)', '#ff8a3a'); SFX.empty(); digCd = .5; } }
         else if (!playerOverlaps(px, py, pz) && setBlock(px, py, pz, bid)) { Inv.useSel(); SFX.place(); digCd = .15; P.swing = .6; }
       }

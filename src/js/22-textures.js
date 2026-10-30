@@ -6,7 +6,9 @@
 // ============================================================
 const TILE = { WHITE: 0, GRAIN: 64, PLATE: 65, FLESHY: 66, BONEY: 67, GLOW: 68, CLOTH: 69 };
 // ids 0..31 use tiles 0..63; the city blocks (32..47, and every slab made from them) use tiles 128..159
-const blockTile = (id, top) => { if (id >= 80) id = baseOf(id); return id < 32 ? id * 2 + (top ? 1 : 0) : 128 + (((id - 32) & 15) * 2) + (top ? 1 : 0); };
+const PAINT3_KEYS = ['perf', 'corr', 'diam', 'vent', 'rack', 'greeble', 'slate', 'marble'];
+const MAT_TILES = MATS.map((m, i) => m.paint ? 160 + 2 * PAINT3_KEYS.indexOf(m.paint) : null);       // new materials either reuse an existing material's pattern (and just differ in colour) or have their own tile pair from 160
+const blockTile = (id, top) => { const b = BASE[id] || id; if (b >= MAT0) { const t = MAT_TILES[b - MAT0]; if (t !== null) return t + (top ? 1 : 0); return blockTile(MATS[b - MAT0].tile, top); } return b < 32 ? b * 2 + (top ? 1 : 0) : 128 + (((b - 32) & 15) * 2) + (top ? 1 : 0); };
 function tn(x, y, s) { let h = (Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263) ^ Math.imul(s | 0, 1274126177)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
 // every painter returns a multiplier (number = grey, array = [r,g,b]) for pixel (x,y) of a 16x16 tile
 const PAINT = {
@@ -57,6 +59,16 @@ const PAINT2 = [
   (x, y, t, n) => ((x & 3) === 0 ? .7 : 1.0 + (tn(x >> 2, 0, 46) - .5) * .25 + (n - .5) * .1),                                                                                          // 46 gold planks
   (x, y, t, n) => ((y & 3) === 0 ? .66 : y % 8 < 4 ? 1.06 : .94) + (x === 2 && (y & 3) === 2 ? .3 : 0) + (n - .5) * .08                                                                  // 47 pipe
 ];
+const PAINT3 = {                                                                   // tiles 160..175: the extra industrial materials
+  perf: (x, y, t, n) => { const hole = (x % 4 === 1 || x % 4 === 2) && (y % 4 === 1 || y % 4 === 2); return hole ? .22 : .98 + (n - .5) * .1; },
+  corr: (x, y, t, n) => (.78 + .34 * Math.abs(((x % 8) - 4) / 4) + (n - .5) * .05),
+  diam: (x, y, t, n) => { const u = (x + y) % 8, v = (x - y + 16) % 8; return (u === 0 || v === 0) ? 1.3 : .8 + (n - .5) * .08; },
+  vent: (x, y, t, n) => ((y & 3) < 2 ? .25 : 1.0) * (x === 0 || x === 15 ? .8 : 1) + (n - .5) * .04,
+  rack: (x, y, t, n, s) => { if (y % 4 === 0) return .5; const led = x % 5 === 2 && y % 4 === 2 && tn(x, y, s) > .4; return led ? [.7, 1.6, .8] : .85 + (n - .5) * .1; },
+  greeble: (x, y, t, n, s) => { const a = tn(x >> 2, y >> 2, s); return a > .65 ? 1.2 + (n - .5) * .1 : a < .25 ? .55 : .9 + (n - .5) * .1; },
+  slate: (x, y, t, n) => (.85 + (tn(0, y >> 1, 6) - .5) * .3 + (n - .5) * .12),
+  marble: (x, y, t, n, s) => { const v = Math.abs(Math.sin(x * .45 + Math.sin(y * .3) * 2.4 + tn(0, 0, s) * 7)); return v < .1 ? .62 : 1.0 + (n - .5) * .08; }
+};
 const ENT_PAINT = {
   [TILE.GRAIN]: (x, y, t, n) => .92 + (n - .5) * .2,
   [TILE.PLATE]: (x, y, t, n) => (x === 0 || y === 0 ? .72 : (x === 2 || x === 13) && (y === 2 || y === 13) ? 1.3 : .98 + (tn(0, y, 5) - .5) * .1 + (n - .5) * .05),
@@ -74,6 +86,7 @@ function makeAtlas() {
       let m = .625;                                                   // neutral
       if (ti >= 64 && ENT_PAINT[ti]) m = ENT_PAINT[ti](x, y, 0, tn(x, y, ti));
       else if (ti >= 128 && ti < 160) m = PAINT2[(ti - 128) >> 1](x, y, top, tn(x, y, ti), ti);
+      else if (ti >= 160 && ti < 176) m = PAINT3[PAINT3_KEYS[(ti - 160) >> 1]](x, y, top, tn(x, y, ti), ti);
       else if (ti > 0 && ti < 64 && PAINT[id]) m = PAINT[id](x, y, top, tn(x, y, id * 7 + top), id * 31 + top);
       else if (ti > 0 && ti < 64) m = .95 + (tn(x, y, ti) - .5) * .2;    // unpainted block id: plain grain
       const rgb = typeof m === 'number' ? [m, m, m] : m, i = ((oy + y) * 256 + ox + x) * 4;

@@ -325,13 +325,13 @@ function stDockAndGate() {
   for (const sx of [-1, 1]) { for (let z = -112; z <= -98; z++) { stPut(sx * 9, SD + 1, z, B.HULL); stPut(sx * 9, SD + 2, z, slabB(B.NORA - 0)); } }
 }
 function stBuildAll() {
-  ST = new Uint8Array(GW * GD * (GY1 - GY0));
+  ST = new Uint16Array(GW * GD * (GY1 - GY0));
   stHullAndDeck(); stBuildCity(); stRiftHall(); stLampPosts(); stPlazaAndCore(); stSmith(); stDockAndGate();
   stText('HELLGATE', -22, SD + 24, -92, 'x', 1, B.NORA, 1);
 }
 OWG.gen3 = function (cx, cz) {
   if (!ST) stBuildAll();
-  const b = new Uint8Array(256 * WORLD_H), x0 = cx * CS, z0 = cz * CS;
+  const b = new Uint16Array(256 * WORLD_H), x0 = cx * CS, z0 = cz * CS;
   if (x0 + CS <= GX0 || x0 >= GX1 || z0 + CS <= GZ0 || z0 >= GZ1) return b;
   for (let y = GY0; y < GY1 && y < WORLD_H; y++) for (let lz = 0; lz < CS; lz++) { const z = z0 + lz; if (z < GZ0 || z >= GZ1) continue; for (let lx = 0; lx < CS; lx++) { const x = x0 + lx; if (x < GX0 || x >= GX1) continue; const id = ST[((y - GY0) * GD + (z - GZ0)) * GW + (x - GX0)]; if (id) b[lx | (lz << 4) | (y << 8)] = id; } }
   return b;

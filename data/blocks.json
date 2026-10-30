@@ -249,5 +249,223 @@
   "45": "TEALPANEL",
   "46": "GOLDPANEL",
   "47": "PIPE"
- }
+ },
+ "materials": [
+  {
+   "name": "WHITE CONCRETE",
+   "color": "#e6e8ec",
+   "tile": 33
+  },
+  {
+   "name": "LIGHT GRAY CONCRETE",
+   "color": "#a9adb5",
+   "tile": 33
+  },
+  {
+   "name": "GRAY CONCRETE",
+   "color": "#5c606a",
+   "tile": 33
+  },
+  {
+   "name": "BLACK CONCRETE",
+   "color": "#14161c",
+   "tile": 33
+  },
+  {
+   "name": "BROWN CONCRETE",
+   "color": "#6e4a32",
+   "tile": 33
+  },
+  {
+   "name": "RED CONCRETE",
+   "color": "#b4322d",
+   "tile": 33
+  },
+  {
+   "name": "ORANGE CONCRETE",
+   "color": "#d9702a",
+   "tile": 33
+  },
+  {
+   "name": "YELLOW CONCRETE",
+   "color": "#d8c040",
+   "tile": 33
+  },
+  {
+   "name": "LIME CONCRETE",
+   "color": "#78c43a",
+   "tile": 33
+  },
+  {
+   "name": "GREEN CONCRETE",
+   "color": "#2e7d4a",
+   "tile": 33
+  },
+  {
+   "name": "CYAN CONCRETE",
+   "color": "#2a9bb0",
+   "tile": 33
+  },
+  {
+   "name": "LIGHT BLUE CONCRETE",
+   "color": "#5a9be0",
+   "tile": 33
+  },
+  {
+   "name": "BLUE CONCRETE",
+   "color": "#2c4fb8",
+   "tile": 33
+  },
+  {
+   "name": "PURPLE CONCRETE",
+   "color": "#7a3ab8",
+   "tile": 33
+  },
+  {
+   "name": "MAGENTA CONCRETE",
+   "color": "#b8399e",
+   "tile": 33
+  },
+  {
+   "name": "PINK CONCRETE",
+   "color": "#e68ab0",
+   "tile": 33
+  },
+  {
+   "name": "NEON RED",
+   "color": "#ff2a2a",
+   "tile": 41,
+   "emissive": true
+  },
+  {
+   "name": "NEON ORANGE",
+   "color": "#ff8a1e",
+   "tile": 41,
+   "emissive": true
+  },
+  {
+   "name": "NEON YELLOW",
+   "color": "#ffe62a",
+   "tile": 41,
+   "emissive": true
+  },
+  {
+   "name": "NEON LIME",
+   "color": "#a6ff2a",
+   "tile": 41,
+   "emissive": true
+  },
+  {
+   "name": "NEON GREEN",
+   "color": "#2aff7a",
+   "tile": 41,
+   "emissive": true
+  },
+  {
+   "name": "NEON CYAN",
+   "color": "#2af0ff",
+   "tile": 41,
+   "emissive": true
+  },
+  {
+   "name": "NEON SKY",
+   "color": "#2aa8ff",
+   "tile": 41,
+   "emissive": true
+  },
+  {
+   "name": "NEON BLUE",
+   "color": "#3a50ff",
+   "tile": 41,
+   "emissive": true
+  },
+  {
+   "name": "NEON INDIGO",
+   "color": "#6a2aff",
+   "tile": 41,
+   "emissive": true
+  },
+  {
+   "name": "NEON PURPLE",
+   "color": "#b02aff",
+   "tile": 41,
+   "emissive": true
+  },
+  {
+   "name": "NEON MAGENTA",
+   "color": "#ff2ad6",
+   "tile": 41,
+   "emissive": true
+  },
+  {
+   "name": "NEON PINK",
+   "color": "#ff6ab0",
+   "tile": 41,
+   "emissive": true
+  },
+  {
+   "name": "NEON WHITE",
+   "color": "#f2f8ff",
+   "tile": 41,
+   "emissive": true
+  },
+  {
+   "name": "NEON WARM WHITE",
+   "color": "#ffd9a0",
+   "tile": 41,
+   "emissive": true
+  },
+  {
+   "name": "NEON TOXIC",
+   "color": "#c8ff00",
+   "tile": 41,
+   "emissive": true
+  },
+  {
+   "name": "NEON BLOOD",
+   "color": "#ff1a50",
+   "tile": 41,
+   "emissive": true
+  },
+  {
+   "name": "PERFORATED STEEL",
+   "color": "#8a93a3",
+   "paint": "perf"
+  },
+  {
+   "name": "CORRUGATED METAL",
+   "color": "#6c7482",
+   "paint": "corr"
+  },
+  {
+   "name": "DIAMOND PLATE",
+   "color": "#7a8190",
+   "paint": "diam"
+  },
+  {
+   "name": "VENT GRILLE",
+   "color": "#3a3f4a",
+   "paint": "vent"
+  },
+  {
+   "name": "SERVER RACK",
+   "color": "#242a36",
+   "paint": "rack"
+  },
+  {
+   "name": "GREEBLE PLATE",
+   "color": "#4a525f",
+   "paint": "greeble"
+  },
+  {
+   "name": "SLATE",
+   "color": "#3c4350",
+   "paint": "slate"
+  },
+  {
+   "name": "MARBLE",
+   "color": "#d6d2cc",
+   "paint": "marble"
+  }
+ ]
 }

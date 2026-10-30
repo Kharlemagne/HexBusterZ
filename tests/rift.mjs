@@ -25,7 +25,7 @@ check('going back to the same coordinates restores the same realm, including you
 // stairs and neon rails (back on the station)
 await page.evaluate(() => __g.leaveRealm());
 const st = await page.evaluate(() => {
-  const P = __g.P; for (let x = 40; x < 50; x++) for (let y = 81; y < 88; y++) for (let z = 98; z < 104; z++) __g.setBlock(x, y, z, 0);
+  const P = __g.P; __g.OW.update([{ x: 40, z: 100 }], 9000); __g.OW.pump(9000); for (let x = 40; x < 50; x++) for (let y = 81; y < 88; y++) for (let z = 98; z < 104; z++) __g.setBlock(x, y, z, 0);
   for (let i = 0; i < 4; i++) __g.setBlock(42 + i, 81 + i, 100, 80);
   P.x = 40.5; P.z = 100.5; P.y = 81.01; P.yaw = -Math.PI / 2; P.vx = P.vy = P.vz = 0; __g.keys.KeyW = true; let my = 0; for (let i = 0; i < 200; i++) { __g.update(1 / 60); my = Math.max(my, P.y); } __g.keys.KeyW = false;
   for (let x = 40; x < 48; x++) __g.setBlock(x, 81, 102, 144);

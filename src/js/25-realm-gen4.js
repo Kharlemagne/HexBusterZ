@@ -52,7 +52,7 @@ function buildTear(put, T) {                                              // the
   put(x, y + 13, z, 15); put(x - 2, y + 13, z, 19); put(x + 2, y + 13, z, 19);
 }
 OWG.gen4 = function (cx, cz) {
-  const S = OWG.S, L = realmLayout(S), b = new Uint8Array(256 * WORLD_H), x0 = cx * CS, z0 = cz * CS;
+  const S = OWG.S, L = realmLayout(S), b = new Uint16Array(256 * WORLD_H), x0 = cx * CS, z0 = cz * CS;
   const put = (x, y, z, id) => { const lx = x - x0, lz = z - z0; if (lx < 0 || lz < 0 || lx >= CS || lz >= CS || y < 1 || y >= WORLD_H) return; b[lx | (lz << 4) | (y << 8)] = id; };
   const M = 5, W = CS + 2 * M, info = new Array(W * W);
   const inReach = L.isl.some(I => Math.hypot(I.x - (x0 + 8), I.z - (z0 + 8)) < I.r * 1.7 + 14) || L.stones.some(T => Math.hypot(T.x - (x0 + 8), T.z - (z0 + 8)) < T.r + 14);

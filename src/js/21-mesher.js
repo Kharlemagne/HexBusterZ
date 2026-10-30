@@ -1,14 +1,12 @@
 // ---------------- chunk meshing (vertex colour + baked AO) ----------------
 const COL = Object.fromEntries(Object.entries(DATA.blocks.colors).map(([k, v]) => [k, hx(parseInt(v.slice(1), 16))]));   // data/blocks.json
 const EMIT = new Set(DATA.blocks.emissive);
-for (let i = 48; i <= 79; i++) {                                                  // slabs: same colour / light as their base block, listed in the creative palette (bottom slabs only: aim at the top half of a wall, or under a block, to place a top slab)
-  const b = slabBase(i); COL[i] = COL[b]; DATA.blocks.colors[i] = DATA.blocks.colors[b]; DATA.blocks.names[i] = DATA.blocks.names[b] + ' SLAB'; if (EMIT.has(b)) EMIT.add(i);
-  if (i < 64) DATA.blocks.build.push([i, DATA.blocks.names[i]]);
-}
-for (let i = 80; i <= 148; i++) {                                                  // stairs (4 directions each; the one in the palette is placed facing the way you look) and neon rails
-  const b = baseOf(i); COL[i] = COL[b]; DATA.blocks.colors[i] = DATA.blocks.colors[b]; if (EMIT.has(b) || i >= 144) EMIT.add(i);
-  if (i >= 144) { DATA.blocks.names[i] = 'NEON RAIL ' + ['CYAN', 'MAGENTA', 'ORANGE', 'BLUE', 'GREEN'][i - 144]; DATA.blocks.build.push([i, DATA.blocks.names[i]]); }
-  else { DATA.blocks.names[i] = DATA.blocks.names[b] + ' STAIRS'; if (((i - 80) & 3) === 0) DATA.blocks.build.push([i, DATA.blocks.names[i]]); }
+// every id gets its material's colour / light / name; the creative palette lists materials (the shape is chosen with V) and the neon rails
+for (let i = 0; i < MATS.length; i++) { const id = MAT0 + i; COL[id] = hx(parseInt(MATS[i].color.slice(1), 16)); DATA.blocks.colors[id] = MATS[i].color; DATA.blocks.names[id] = MATS[i].name; if (MATS[i].emissive) EMIT.add(id); DATA.blocks.build.push([id, MATS[i].name]); }
+for (let id = 48; id < REG_N; id++) {
+  const b = BASE[id]; if (!b || id === b) continue; COL[id] = COL[b]; DATA.blocks.colors[id] = DATA.blocks.colors[b]; if (EMIT.has(b)) EMIT.add(id);
+  const k = KIND[id]; if (k === K.RAIL) { EMIT.add(id); DATA.blocks.names[id] = 'NEON RAIL ' + ['CYAN', 'MAGENTA', 'ORANGE', 'BLUE', 'GREEN'][id - 144]; DATA.blocks.build.push([id, DATA.blocks.names[id]]); }
+  else DATA.blocks.names[id] = (DATA.blocks.names[b] || 'BLOCK') + ' ' + ['', 'SLAB', 'TOP SLAB', 'STAIRS', 'VERTICAL SLAB', 'WALL', 'PILLAR', 'BEAM', 'BEAM', 'FENCE', 'PANE'][k];
 }
 // a box inside a cell (stairs and rails are built from these); faces on the cell boundary hide against full neighbours
 const cu2 = [0, 1, 1, 0], cv2 = [0, 0, 1, 1];
@@ -16,7 +14,7 @@ function emitBox(out, x, y, z, a, b, id, skip) {
   const em = EMIT.has(id), col = COL[id], vr = .9 + hash(x * 7 + y * 13, z * 5 + y * 3) * .2, O = [x, y, z];
   for (let d = 0; d < 3; d++) for (let s = -1; s <= 1; s += 2) {
     const plane = s > 0 ? b[d] : a[d]; if (skip && skip(d, s)) continue;
-    if (plane === 0 || plane === 1) { const nb = get(x + (d === 0 ? s : 0), y + (d === 1 ? s : 0), z + (d === 2 ? s : 0)); if (isFull(nb) || (isRail(id) && isRail(nb) && d !== 1)) continue; }
+    if (plane === 0 || plane === 1) { const nb = get(x + (d === 0 ? s : 0), y + (d === 1 ? s : 0), z + (d === 2 ? s : 0)); if (isFull(nb) || (isConn(id) && isConn(nb) && d !== 1)) continue; }
     const u = (d + 1) % 3, v = (d + 2) % 3, m = em ? 1 : SHADE[d][s > 0 ? 1 : 0] * vr, tileV = (em ? -1 : 1) * (blockTile(id, d === 1 && s > 0) + 1), vs = [];
     for (let k = 0; k < 4; k++) {
       const P = [0, 0, 0]; P[d] = plane; P[u] = cu2[k] ? b[u] : a[u]; P[v] = cv2[k] ? b[v] : a[v];
@@ -27,16 +25,13 @@ function emitBox(out, x, y, z, a, b, id, skip) {
   }
 }
 function meshPartial(out, id, x, y, z) {
-  if (stairKind(id)) {
-    const d = stairDir(id), cb = cellBoxes(id, 0, 0, 0), A = cb[0], B = cb[1];
-    emitBox(out, x, y, z, A.slice(0, 3), A.slice(3), id); emitBox(out, x, y, z, B.slice(0, 3), B.slice(3), id, (dd, ss) => dd === 1 && ss < 0);       // (the underside of the upper step is inside the stair)
-  } else {                                                                            // neon rail: a post with two bars toward each neighbouring rail or wall
-    emitBox(out, x, y, z, [.375, 0, .375], [.625, 1, .625], id);
-    const ok = i => isRail(i) || isFull(i);
-    for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (ok(get(x + dx, y, z + dz))) for (const [y0, y1] of [[.3, .42], [.7, .82]]) {
-      const a = [dx > 0 ? .625 : dx < 0 ? 0 : .44, y0, dz > 0 ? .625 : dz < 0 ? 0 : .44], b = [dx > 0 ? 1 : dx < 0 ? .375 : .56, y1, dz > 0 ? 1 : dz < 0 ? .375 : .56]; emitBox(out, x, y, z, a, b, id);
-    }
-  }
+  const k = KIND[id], same = (d, ss) => { const nb = get(x + (d === 0 ? ss : 0), y + (d === 1 ? ss : 0), z + (d === 2 ? ss : 0)); return KIND[nb] === k && BASE[nb] === BASE[id]; };
+  const bx = partBoxes(id, x, y, z, true);
+  bx.forEach((q, i) => {
+    const skip = k === K.STAIR ? (i === 1 ? (dd, ss) => dd === 1 && ss < 0 : null)              // (the underside of the upper step is inside the stair)
+      : (k === K.PILLAR || k === K.BEAMX || k === K.BEAMZ || i === 0) ? (dd, ss) => (k === K.PILLAR ? dd === 1 : k === K.BEAMX ? dd === 0 : k === K.BEAMZ ? dd === 2 : dd === 1 && false) && same(dd, ss) : null;
+    emitBox(out, x, y, z, q.slice(0, 3), q.slice(3), id, skip);
+  });
 }
 const SHADE = [[.74, .74], [.46, 1], [.86, .86]];
 const AOV = [.42, .64, .84, 1];
@@ -52,7 +47,7 @@ function buildChunk(cx, cz) {
     const id = ch ? ch.b[li] : world[idx(x, y, z)]; if (!id) continue;
     const lav = isLava(id), sk = slabKind(id);
     if (sk === 3) { meshPartial(out, id, x, y, z); continue; }
-    const b = COL[id], em = EMIT.has(id), bl = ch ? (ch.blood ? ch.blood[li] : 0) : blood[idx(x, y, z)];
+    const b = COL[id] || (COL[id] = [.6, .6, .6]), em = EMIT.has(id), bl = ch ? (ch.blood ? ch.blood[li] : 0) : blood[idx(x, y, z)];
     const vr = .86 + hash(x * 7 + y * 13, z * 5 + y * 3) * .28;
     for (let d = 0; d < 3; d++) for (let s = -1; s <= 1; s += 2) {
       n[0] = n[1] = n[2] = 0; n[d] = s;
