@@ -55,7 +55,7 @@ function baseHeight(x, z) {                                              // terr
 const HUB = { list: [], voidY: 0, deck: 0, gate: { x: 0, z: 0, y: 0, seed: 1 }, spawn: { x: 0, z: 0 }, npc: { x: 0, z: 0 }, lifts: [] };
 function hubSet(gen) {
   if (gen === 4) { const L = realmLayout(OWG.S); Object.assign(HUB, { voidY: REALM_VOID, deck: L.tear.y, gate: null, list: L.gates, spawn: L.spawn, npc: { x: 0, z: -99999 }, lifts: [], tear: L.tear }); }
-  else if (gen === 3) Object.assign(HUB, { list: [STN.gate], tear: null, voidY: 24, deck: SD, gate: STN.gate, spawn: STN.spawn, npc: STN.npc, lifts: [{ x: 0, z: 0, y0: SD, y1: SD + 74 }] });
+  else if (gen === 3) Object.assign(HUB, { list: [STN.gate], tear: null, voidY: 24, deck: SD, gate: STN.gate, spawn: STN.spawn, npc: STN.npc, lifts: [] });
   else if (gen === 2) Object.assign(HUB, { list: [CAR_GATE], tear: null, voidY: VOID_Y, deck: CAR.deck, gate: CAR_GATE, spawn: CAR_SPAWN, npc: CAR_NPC, lifts: LIFTS.map(l => ({ x: l.x, z: l.z, y0: 36, y1: CAR.deck + 1.5 })) });
 }
 // ---- Hellgates: one candidate per REGION x REGION cell, deterministic from the seed
@@ -95,10 +95,9 @@ function colInfo(x, z) {
   return { h: clamp(Math.floor(h), 3, WORLD_H - 8), bi, w };
 }
 function stDistrict(x, z) {
-  if (x > 9 && x < 29 && z > 8 && z < 28) return 'RIFT HALL';
-  if (z > 84) return 'DOCK RING'; if (z < -84) return 'GATE HALL'; if (Math.hypot(x, z) < 20) return 'CORE PLAZA'; if (Math.abs(x) > 80) return 'OUTER WALL';
-  if (Math.abs(x) < 10) return 'MAIN AVENUE'; if (Math.abs(z) < 9) return 'RAIL STREET';
-  return x > 0 ? (z > 0 ? 'MARKET SPRAWL' : 'NEON ROW') : (z > 0 ? 'THE STACKS' : 'HIVE BLOCKS');
+  if (z < -96) return Math.hypot(x - RIFT.x, z - RIFT.z) < 16 ? 'RIFT STABILIZER' : 'GATE PLATFORM';
+  if (z < -2 && Math.abs(x) < 6) return 'THE CATWALK'; if (z > 84) return 'THE DOCK'; if (Math.hypot(x - DAIS.x, z - DAIS.z) < 19) return 'COMMAND DAIS';
+  if (x < -30 && z > 30) return Math.hypot(x + 34, z - 60) < 10 ? 'VEX THE SMITH' : 'OPS BAY'; if (x > 30 && z > 30) return 'ENGINEERING BAY'; return 'COMMAND DECK';
 }
 function realmCoords() { const o = Net.hubOverride; if (o) return o.coords || ''; const m = WorldStore.cur && WorldStore.cur.data.map; return m ? m.coords : ''; }
 function biomeAt(x, z, y) {

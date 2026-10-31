@@ -57,3 +57,6 @@ See the header of `src/js/20-blocks.js`. Materials are defined once (ids 1-47 cl
 
 ## The city
 `src/js/25-station-city.js`: one builder per kind of building and the `CITY` table that assigns them to lots (key = sx,sz,ix,iz). Lots without an entry fall back to the generic towers. `stProtected` (25-station-gen3.js) makes every generated station cell immutable in `setBlock`; tests call `__g.setProtect(false)` (done by `startPlaying`).
+
+## Command center (v2 layout)
+`src/js/25-station-hq.js` replaces the city: dock, dais, bays, catwalk, gate platform, `stConsole`. `RIFT` there holds the stabilizer position. `Rift.phase` is idle, charge, zap, stabilize, open; entering the open rift calls `enterRealm`.

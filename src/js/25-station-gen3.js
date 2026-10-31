@@ -6,7 +6,7 @@
 //   x = east/west, z = south(+)/north(-). Spawn at the south dock, the Hellgate at the north front, the smith by the core plaza.
 // ============================================================
 const SD = 80;                                                                  // deck level (the street surface block)
-const STN = { R: 96, zf: .87, gate: { x: 0, z: -104, y: SD, seed: 0x57A710 }, spawn: { x: .5, z: 103.5 }, npc: { x: -.5, z: 17.5 }, RY: SD + 14, core: { x: 0, z: 0 } };
+const STN = { R: 96, zf: .87, gate: { x: 0, z: -104, y: SD, seed: 0x57A710 }, spawn: { x: .5, z: 103.5 }, npc: { x: -29.5, z: 68.5 }, RY: SD + 14, core: { x: 0, z: 0 } };
 const GX0 = -112, GX1 = 112, GZ0 = -124, GZ1 = 124, GY0 = 34, GY1 = 158, GW = GX1 - GX0, GD = GZ1 - GZ0;
 const stOct = (x, z) => { const q = Math.abs(z) * STN.zf, a = Math.abs(x); return Math.max(a, q, (a + q) / 1.41421); };
 const onStation = (x, z) => stOct(x, z) <= STN.R + .5;
@@ -97,7 +97,7 @@ function stDoor(L, side, y0) {                                                  
   for (let k = -1; k <= 1; k++) for (let h = 1; h <= 3; h++) { if (side === 'n') stPut(mx + k, y0 + h, L.z1, 0); else if (side === 's') stPut(mx + k, y0 + h, L.z2, 0); else if (side === 'w') stPut(L.x1, y0 + h, mz + k, 0); else stPut(L.x2, y0 + h, mz + k, 0); }
 }
 // the Rift Navigation Hall: a console, a tear in the dimension between two Tesla coils (animated in 55-rift.js), a door onto the main avenue
-const RIFT = { x: 22.5, y: SD + 7, z: 18.5, coils: [[22.5, SD + 17.5, 12.5], [22.5, SD + 17.5, 24.5]], console: { x: 16.5, z: 18.5 }, arrive: { x: 14.5, z: 18.5 } };
+// (the rift constants live in 25-station-hq.js)
 function stCoil(cx, cz) {
   stBox(cx - 2, SD + 1, cz - 2, cx + 2, SD + 2, cz + 2, B.HULL); for (const [dx, dz] of [[-2, -2], [2, -2], [-2, 2], [2, 2]]) stPut(cx + dx, SD + 2, cz + dz, B.NORA);
   for (let y = SD + 3; y <= SD + 15; y++) { stBox(cx - 1, y, cz - 1, cx + 1, y, cz + 1, (y % 3 === 0) ? B.NORA : B.TECH); if (y % 3 === 0) { stRing(cx - 2, y, cz - 2, cx + 2, y, cz + 2, slabB(B.HULL)); } }
@@ -198,26 +198,6 @@ function bMarket(L, r, side) {                                                  
 
 // ============================================================ assembly
 const LOTX = [[10, 28], [34, 54], [60, 80]], LOTZ = [[9, 27], [33, 52], [58, 78], [84, 100]];
-function stHullAndDeck() {
-  for (let z = GZ0; z < GZ1; z++) for (let x = GX0; x < GX1; x++) {
-    const o = stOct(x, z); if (o > STN.R + .5) continue;
-    for (let y = 44; y < SD; y++) {
-      const k = (SD - 1 - y) / (SD - 44), Ry = STN.R * (1 - k * .5); if (o > Ry) continue;
-      const rim = o > Ry - 1.5; let id = B.HULL;
-      if (rim) id = (y % 8 === 0) ? B.NORA : (((x + z + y) % 14) === 0 ? B.LAMP : ((x * 5 + z * 3 + y) % 9 === 0 ? B.TECH : B.HULL));
-      else if (y === 44) id = ((x + z) % 6 === 0) ? B.NBLU : B.TECH;
-      stPut(x, y, z, id);
-    }
-    let dk = B.STREET; const ax = Math.abs(x), az = Math.abs(z);
-    if (ax >= 7 && ax <= 9 && az < 100) dk = B.HULL; else if (az >= 6 && az <= 8 && ax < 90) dk = B.HULL;
-    else if ((ax === 5) && (z & 3) < 2 && az < 100) dk = B.CONC; else if (az === 4 && (x & 3) < 2 && ax < 90) dk = B.CONC;
-    stPut(x, SD, z, dk);
-    if (o > STN.R - 2.2) {                                                          // the perimeter wall: plates, an orange light strip, a concrete cap
-      stPut(x, SD + 1, z, B.HULL); stPut(x, SD + 2, z, B.HULL); stPut(x, SD + 3, z, B.NORA); stPut(x, SD + 4, z, B.HULL); stPut(x, SD + 5, z, slabB(B.CONC));
-      if (o > STN.R - 1.2 && (x + z) % 12 === 0) { stBox(x, SD + 6, z, x, SD + 9, z, B.HULL); stPut(x, SD + 10, z, B.LAMP); }
-    }
-  }
-}
 function stPlazaAndCore() {
   const RY = STN.RY, cx = 0, cz = 0;
   for (let z = -16; z <= 16; z++) for (let x = -16; x <= 16; x++) {                   // the plaza floor: rings and spokes
@@ -326,11 +306,6 @@ function stDockAndGate() {
   stGantry(88, 1); stGantry(-94, -1);
   buildGate(stPut, STN.gate);
   for (const sx of [-1, 1]) { for (let z = -112; z <= -98; z++) { stPut(sx * 9, SD + 1, z, B.HULL); stPut(sx * 9, SD + 2, z, slabB(B.NORA - 0)); } }
-}
-function stBuildAll() {
-  ST = new Uint16Array(GW * GD * (GY1 - GY0));
-  stHullAndDeck(); stBuildCity(); stRiftHall(); stLampPosts(); stPlazaAndCore(); stSmith(); stDockAndGate();
-  stText('HELLGATE', -22, SD + 24, -92, 'x', 1, B.NORA, 1);
 }
 OWG.gen3 = function (cx, cz) {
   if (!ST) stBuildAll();

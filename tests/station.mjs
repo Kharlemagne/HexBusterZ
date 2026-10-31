@@ -19,18 +19,16 @@ const slab = await page.evaluate(() => {
 });
 check('a half block is half a block tall: you stand on it at +0.5 and walk up onto the next block', slab.dropA > 81.45 && slab.dropA < 81.6 && slab.maxY > 81.9, JSON.stringify(slab));
 check('slab kinds: 49 is a bottom slab, 65 a top slab, 33 a full block', slab.kind === 1 && slab.top === 2 && slab.full === 0);
-const stairs = await page.evaluate(() => {
-  const P = __g.P; P.x = 14.5; P.y = 81.01; P.z = 3.5; P.yaw = -Math.PI / 2; P.vx = P.vy = P.vz = 0; __g.OW.update([{ x: P.x, z: P.z }], 9000); __g.OW.pump(9000);
-  __g.keys.KeyW = true; let maxY = 0; for (let i = 0; i < 400; i++) { __g.update(1 / 60); maxY = Math.max(maxY, P.y); } __g.keys.KeyW = false; return maxY;
-});
-check('you can walk up the half-block stairway to the elevated rail (+14)', stairs > 94.9, String(stairs));
-const lift = await page.evaluate(() => { const P = __g.P; P.x = 0; P.z = 0; P.y = 81.2; P.vy = 0; P.vx = P.vz = 0; __g.OW.update([{ x: 0, z: 0 }], 9000); __g.OW.pump(9000); let m = 0; for (let i = 0; i < 200; i++) { __g.update(1 / 60); m = Math.max(m, P.y); } return m; });
-check('the core lift carries you up past the canopy', lift > 120, String(lift));
-const edge = await page.evaluate(() => { const P = __g.P; __g.OW.update([{ x: 140, z: 0 }], 9000); P.x = 140; P.z = 0; P.y = 83; P.vy = 0; P.vx = 0; for (let i = 0; i < 400 && P.alive; i++) __g.update(1 / 60); return !P.alive || __g.mode() !== 'hub'; });
+const walkCat = await page.evaluate(() => { const P = __g.P; P.alive = true; P.hp = 100; P.x = 0.5; P.z = 0; P.y = 81.01; P.yaw = 0; P.vx = P.vy = P.vz = 0; __g.OW.update([{ x: 0, z: -40 }], 20000); __g.OW.pump(20000); __g.keys.KeyW = true; for (let i = 0; i < 560; i++) __g.update(1 / 60); __g.keys.KeyW = false; return { z: P.z, y: P.y, alive: P.alive }; });
+check('you can walk the whole catwalk to the Hellgate platform', walkCat.alive && walkCat.z < -80 && walkCat.y > 80, JSON.stringify(walkCat));
+const side = await page.evaluate(() => { const P = __g.P; P.x = 12; P.z = -50; P.y = 81.01; P.vx = P.vy = P.vz = 0; for (let i = 0; i < 200 && P.alive; i++) __g.update(1 / 60); return !P.alive; });
+check('beside the catwalk is open space: step off and you fall', side);
+const edge = await page.evaluate(() => { const P = __g.P; P.alive = true; P.hp = 100; __g.OW.update([{ x: 140, z: 0 }], 9000); P.x = 140; P.z = 0; P.y = 83; P.vy = 0; P.vx = 0; for (let i = 0; i < 400 && P.alive; i++) __g.update(1 / 60); return !P.alive || __g.mode() !== 'hub'; });
 check('stepping off the station into space is death', edge);
 await page.evaluate(() => __g.setProtect(true));
 const prot = await page.evaluate(() => {
-  const sel = (() => { for (let x = 11; x < 90; x++) for (let z = 10; z < 90; z++) for (let y = 83; y < 95; y++) if (__g.stGet(x, y, z)) return [x, y, z]; })();
+  __g.P.alive = true; __g.P.hp = 100; __g.OW.update([{ x: 8, z: 22 }, { x: 4, z: 90 }], 30000);
+  const sel = (() => { for (let y = 83; y < 95; y++) for (let x = 5; x < 12; x++) for (let z = 20; z < 26; z++) if (__g.stGet(x, y, z)) return [x, y, z]; })();
   const P = __g.P; const S = __g.STN; let hullCell = sel;
   const before = hullCell ? __g.get(...hullCell) : -1, ok1 = hullCell ? __g.setBlock(hullCell[0], hullCell[1], hullCell[2], 0) : null, after = hullCell ? __g.get(...hullCell) : -1;
   const deck = [__g.setBlock(3, 80, 90, 0), __g.get(3, 80, 90)];

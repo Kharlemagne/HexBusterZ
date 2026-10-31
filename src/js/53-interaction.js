@@ -21,7 +21,7 @@ function tryInteract() {
 }
 function interactPrompt() {
   const k = gp.on ? '[Y]' : '[E]';
-  if (mode === 'hub') return nearNPC() ? k + '  TRADE WITH VEX THE SMITH' : Rift.nearConsole() ? k + '  RIFT CONSOLE — ENTER COORDINATES' : '';
+  if (mode === 'hub') return nearNPC() ? k + '  TRADE WITH VEX THE SMITH' : Rift.nearConsole() ? k + '  RIFT CONSOLE — ' + (Rift.phase === 'open' ? 'CHANGE COORDINATES' : 'ENTER COORDINATES') : (Rift.phase === 'open' && OW.gen === 3 && Math.hypot(P.x - RIFT.x, P.z - RIFT.z) < 14) ? 'THE RIFT IS OPEN — STEP IN TO TRAVEL TO ' + esc(Rift.dest).toUpperCase().slice(0, 24) : '';
   const t = nearTurret(); if (t && !t.on) return k + '  POWER UP TURRET — ◆ ' + t.price;
   if (nearLock() && !Run.hasKey) return 'LOCKED — THE KEY IS IN THE TREASURE ROOM CHEST';
   return '';
