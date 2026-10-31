@@ -54,3 +54,6 @@ See the header of `src/js/20-blocks.js`. Materials are defined once (ids 1-47 cl
 
 ## Light
 `src/js/21b-light.js`: emitters are listed by base id in `LV` (level) and `LC` (colour); a chunk is lit when meshed (`computeLight`: flood fill, 1 per block, RGB separately, solid full blocks stop it) and the result is multiplied into vertex colours. Chunks keep an `em` flag (any emitter) so empty areas skip the work.
+
+## The city
+`src/js/25-station-city.js`: one builder per kind of building and the `CITY` table that assigns them to lots (key = sx,sz,ix,iz). Lots without an entry fall back to the generic towers. `stProtected` (25-station-gen3.js) makes every generated station cell immutable in `setBlock`; tests call `__g.setProtect(false)` (done by `startPlaying`).

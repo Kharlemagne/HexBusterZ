@@ -130,6 +130,7 @@ function markDirty(x, z) {
 }
 function setBlock(x, y, z, id) {
   if (y < 1 || y >= H) return false;
+  if (useChunks && OW.gen === 3 && stProtected(x, y, z)) return false;                    // the Helicarrier cannot be broken, built over or blown up
   if (useChunks) {
     const old = OW.set(x, y, z, id);                       // -1 = that chunk is not loaded (the edit is still remembered)
     if (old !== -1) { markDirty(x, z); if (old !== id && (emits(id) || emits(old))) markDirtyLight(x, z); }

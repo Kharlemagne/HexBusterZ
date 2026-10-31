@@ -26,6 +26,18 @@ const stairs = await page.evaluate(() => {
 check('you can walk up the half-block stairway to the elevated rail (+14)', stairs > 94.9, String(stairs));
 const lift = await page.evaluate(() => { const P = __g.P; P.x = 0; P.z = 0; P.y = 81.2; P.vy = 0; P.vx = P.vz = 0; __g.OW.update([{ x: 0, z: 0 }], 9000); __g.OW.pump(9000); let m = 0; for (let i = 0; i < 200; i++) { __g.update(1 / 60); m = Math.max(m, P.y); } return m; });
 check('the core lift carries you up past the canopy', lift > 120, String(lift));
-const edge = await page.evaluate(() => { const P = __g.P; P.x = 140; P.z = 0; P.y = 83; P.vy = 0; P.vx = 0; for (let i = 0; i < 400 && P.alive; i++) __g.update(1 / 60); return !P.alive || __g.mode() !== 'hub'; });
+const edge = await page.evaluate(() => { const P = __g.P; __g.OW.update([{ x: 140, z: 0 }], 9000); P.x = 140; P.z = 0; P.y = 83; P.vy = 0; P.vx = 0; for (let i = 0; i < 400 && P.alive; i++) __g.update(1 / 60); return !P.alive || __g.mode() !== 'hub'; });
 check('stepping off the station into space is death', edge);
+await page.evaluate(() => __g.setProtect(true));
+const prot = await page.evaluate(() => {
+  const sel = (() => { for (let x = 11; x < 90; x++) for (let z = 10; z < 90; z++) for (let y = 83; y < 95; y++) if (__g.stGet(x, y, z)) return [x, y, z]; })();
+  const P = __g.P; const S = __g.STN; let hullCell = sel;
+  const before = hullCell ? __g.get(...hullCell) : -1, ok1 = hullCell ? __g.setBlock(hullCell[0], hullCell[1], hullCell[2], 0) : null, after = hullCell ? __g.get(...hullCell) : -1;
+  const deck = [__g.setBlock(3, 80, 90, 0), __g.get(3, 80, 90)];
+  const free = __g.setBlock(5, 95, 90, 33), placed = __g.get(5, 95, 90), freeBreak = __g.setBlock(5, 95, 90, 0);
+  __g.explode && void 0;
+  return { hullCell, before, after, ok1, deck, free, placed, freeBreak };
+});
+check('station blocks cannot be broken or replaced', prot.hullCell && prot.ok1 === false && prot.after === prot.before && prot.deck[0] === false && prot.deck[1] === 37, JSON.stringify(prot));
+check('but anything you build in open air can be placed and broken', prot.free === true && prot.placed === 33 && prot.freeBreak === true, JSON.stringify(prot));
 await g.close(); done(g.errors);

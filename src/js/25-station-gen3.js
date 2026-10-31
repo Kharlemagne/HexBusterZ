@@ -10,7 +10,8 @@ const STN = { R: 96, zf: .87, gate: { x: 0, z: -104, y: SD, seed: 0x57A710 }, sp
 const GX0 = -112, GX1 = 112, GZ0 = -124, GZ1 = 124, GY0 = 34, GY1 = 158, GW = GX1 - GX0, GD = GZ1 - GZ0;
 const stOct = (x, z) => { const q = Math.abs(z) * STN.zf, a = Math.abs(x); return Math.max(a, q, (a + q) / 1.41421); };
 const onStation = (x, z) => stOct(x, z) <= STN.R + .5;
-let ST = null;
+let ST = null, STN_LOCK = true;                                                // the station is indestructible while STN_LOCK (tests switch it off)
+const stProtected = (x, y, z) => STN_LOCK && OW.gen === 3 && !!ST && !!stGet(x, y, z);
 const stPut = (x, y, z, id) => { if (x < GX0 || x >= GX1 || z < GZ0 || z >= GZ1 || y < GY0 || y >= GY1) return; ST[((y - GY0) * GD + (z - GZ0)) * GW + (x - GX0)] = id; };
 const stGet = (x, y, z) => (x < GX0 || x >= GX1 || z < GZ0 || z >= GZ1 || y < GY0 || y >= GY1) ? 0 : ST[((y - GY0) * GD + (z - GZ0)) * GW + (x - GX0)];
 const stBox = (x1, y1, z1, x2, y2, z2, id) => { for (let y = y1; y <= y2; y++) for (let z = z1; z <= z2; z++) for (let x = x1; x <= x2; x++) stPut(x, y, z, id); };
@@ -296,8 +297,10 @@ function stBuildCity() {
   for (const L of lots) {
     const cx = (L.x1 + L.x2) / 2, cz = (L.z1 + L.z2) / 2, side = Math.abs(cx) <= 45 ? (cx > 0 ? 'w' : 'e') : (cz > 0 ? 'n' : 's'), near = Math.hypot(cx, cz) < 52, rr = stRng((L.x1 * 73856093) ^ (L.z1 * 19349663) ^ 0x51), q = L.q;
     L.side = side;
-    if (near) { if (q < .4) bNeedle(L, rr, side, ['L1', 'L2', 'L3', 'L4', 'L5', 'L6'][(L.ix * 3 + L.iz + (L.sx > 0 ? 1 : 0)) % 6]); else if (q < .85) bMega(L, rr, side); else bMarket(L, rr, side); }
-    else { if (q < .3) bApt(L, rr, side); else if (q < .55) bBrick(L, rr, side); else if (q < .72) bMarket(L, rr, side); else if (q < .86) bIndustrial(L, rr, side); else bMega(L, rr, side); }
+    const spec = CITY[L.sx + ',' + L.sz + ',' + L.ix + ',' + L.iz];
+    if (spec) spec[0](L, rr);
+    else if (near) { if (q < .5) bNeedle(L, rr, side, ['L1', 'L2', 'L3', 'L4'][(L.ix * 3 + L.iz) % 4]); else bMega(L, rr, side); }
+    else { if (q < .35) bApt(L, rr, side); else if (q < .7) bBrick(L, rr, side); else bMega(L, rr, side); }
   }
   for (const sx of [1, -1]) for (const sz of [1, -1]) {                                       // the four corner towers
     const x1 = sx > 0 ? 62 : -74, z1 = sz > 0 ? 56 : -68; bNeedle({ x1, x2: x1 + 12, z1, z2: z1 + 12 }, stRng(sx * 31 + sz * 7 + 9), sz > 0 ? 'n' : 's', sx * sz > 0 ? 'L5' : 'L6');

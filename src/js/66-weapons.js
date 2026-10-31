@@ -63,7 +63,7 @@ function updateWeapons(dt) {
         if (!Inv.creative) { const [dk, dn] = dropOf(id); spawnDrop(h.x + .5, h.y + .4, h.z + .5, dk, dn); }          // the block pops out as a little item you walk over to collect
         for (let i = 0; i < 7; i++) emit(h.x + .5, h.y + .5, h.z + .5, rnd(-3, 3), rnd(1, 5), rnd(-3, 3), rnd(.08, .2), COL[id] || [1, 1, 1], rnd(1, 3), 0);
         SFX.dig(); digCd = .12; P.swing = 1;
-      }
+      } else if (stProtected(h.x, h.y, h.z)) { feed('HELICARRIER HULL — INDESTRUCTIBLE', '#7af0ff'); SFX.shink && SFX.shink(); digCd = .45; }
     }
     if (R && digCd <= 0 && h) {
       const px = h.x + h.nx, py = h.y + h.ny, pz = h.z + h.nz;
