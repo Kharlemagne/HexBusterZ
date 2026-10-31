@@ -34,4 +34,14 @@ const P2 = await page.evaluate(() => {
   return { shape: P.shape, placed, kind: __g.KIND[placed], drop: [__g.blockId(33, 3, 0), __g.BASE[__g.blockId(33, 3, 0)]] };
 });
 check('V cycles the shape and the dig kit places that shape (stairs)', P2.shape === 2 && P2.kind === 3, JSON.stringify(P2));
+const lt = await page.evaluate(() => {
+  const P = __g.P; __g.OW.update([{ x: 60, z: 100 }], 9000); __g.OW.pump(9000);
+  for (let x = 56; x < 66; x++) for (let y = 81; y < 90; y++) for (let z = 96; z < 106; z++) __g.setBlock(x, y, z, 0);
+  const f = (x, y, z) => { const L = computeLight(x >> 4, z >> 4, 100); if (!L) return null; const i = ((y * L.W) + (z - L.z0)) * L.W + (x - L.x0); return [L.R[i], L.G[i], L.B[i]]; };
+  const none = f(60, 83, 100); __g.setBlock(60, 83, 100, 14);                        // a cyan neon block
+  const near = f(62, 83, 100), far = f(70, 83, 100), mix = (__g.setBlock(64, 83, 100, 15), f(63, 83, 100));
+  return { none, near, far, mix, em: OW.chunks.get(ckey(60 >> 4, 100 >> 4)).em };
+});
+check('a neon block throws coloured light that fades with distance', lt.em && lt.near && lt.near[2] > lt.near[0] && lt.near[2] > 3 && (!lt.far || lt.far[2] < lt.near[2]), JSON.stringify(lt));
+check('two neon colours mix between them (cyan + magenta gives both red and blue)', lt.mix && lt.mix[0] > 2 && lt.mix[2] > 2, JSON.stringify(lt.mix));
 await g.close(); done(g.errors);

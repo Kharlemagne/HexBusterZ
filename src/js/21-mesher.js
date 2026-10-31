@@ -11,7 +11,8 @@ for (let id = 48; id < REG_N; id++) {
 // a box inside a cell (stairs and rails are built from these); faces on the cell boundary hide against full neighbours
 const cu2 = [0, 1, 1, 0], cv2 = [0, 0, 1, 1];
 function emitBox(out, x, y, z, a, b, id, skip) {
-  const em = EMIT.has(id), col = COL[id], vr = .9 + hash(x * 7 + y * 13, z * 5 + y * 3) * .2, O = [x, y, z];
+  const em = EMIT.has(id), col = COL[id], vr = .9 + hash(x * 7 + y * 13, z * 5 + y * 3) * .2, O = [x, y, z]; let l0 = 0, l1 = 0, l2 = 0;
+  if (LT && !em) { const c = lcell(x, y, z); if (c >= 0) { l0 = LT.R[c] / LMAX * LGAIN; l1 = LT.G[c] / LMAX * LGAIN; l2 = LT.B[c] / LMAX * LGAIN; } }
   for (let d = 0; d < 3; d++) for (let s = -1; s <= 1; s += 2) {
     const plane = s > 0 ? b[d] : a[d]; if (skip && skip(d, s)) continue;
     if (plane === 0 || plane === 1) { const nb = get(x + (d === 0 ? s : 0), y + (d === 1 ? s : 0), z + (d === 2 ? s : 0)); if (isFull(nb) || (isConn(id) && isConn(nb) && d !== 1)) continue; }
@@ -19,7 +20,7 @@ function emitBox(out, x, y, z, a, b, id, skip) {
     for (let k = 0; k < 4; k++) {
       const P = [0, 0, 0]; P[d] = plane; P[u] = cu2[k] ? b[u] : a[u]; P[v] = cv2[k] ? b[v] : a[v];
       const su = d === 0 ? P[2] : P[0], sv = d === 1 ? P[2] : P[1];
-      vs.push(O[0] + P[0], O[1] + P[1], O[2] + P[2], col[0] * m, col[1] * m, col[2] * m, 1, su, sv, tileV);
+      vs.push(O[0] + P[0], O[1] + P[1], O[2] + P[2], col[0] * (m + l0), col[1] * (m + l1), col[2] * (m + l2), 1, su, sv, tileV);
     }
     for (const k of [0, 1, 2, 0, 2, 3]) for (let j = 0; j < VF; j++) out.push(vs[k * VF + j]);
   }
@@ -41,7 +42,8 @@ function buildChunk(cx, cz) {
   const key = ckey(cx, cz), ch = useChunks ? OW.chunks.get(key) : null; if (useChunks && !ch) return;
   const out = []; const x0 = cx * CS, z0 = cz * CS, yMax = ch ? Math.min(H, ch.top + 2) : H;
   const n = [0, 0, 0], p = [0, 0, 0], q = [0, 0, 0], ao = [0, 0, 0, 0];
-  const cu = [0, 1, 1, 0], cv = [0, 0, 1, 1];
+  const cu = [0, 1, 1, 0], cv = [0, 0, 1, 1], lt = [0, 0, 0], lk = [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]];
+  LT = null; if (ch) { let top = ch.top; for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const c2 = OW.chunks.get(ckey(cx + dx, cz + dz)); if (c2 && c2.top > top) top = c2.top; } LT = computeLight(cx, cz, Math.min(H - 1, Math.max(top, ch.top) + 2)); }
   for (let y = 0; y < yMax; y++) for (let z = z0; z < z0 + CS; z++) for (let x = x0; x < x0 + CS; x++) {
     const li = ch ? ((x & 15) | ((z & 15) << 4) | (y << 8)) : 0;
     const id = ch ? ch.b[li] : world[idx(x, y, z)]; if (!id) continue;
@@ -67,6 +69,7 @@ function buildChunk(cx, cz) {
         const s2 = solid(q[0], q[1], q[2]); q[u] += du;
         const c = solid(q[0], q[1], q[2]);
         ao[k] = (s1 && s2) ? 0 : 3 - (s1 + s2 + c);
+        if (LT) { const a = lcell(p[0], p[1], p[2]); q[0] = p[0]; q[1] = p[1]; q[2] = p[2]; q[u] += du; const c1 = lcell(q[0], q[1], q[2]); q[u] = p[u]; q[v] += dv; const c2 = lcell(q[0], q[1], q[2]); q[u] += du; vertexLight(lk[k], a, c1, c2, lcell(q[0], q[1], q[2])); }
       }
       const sh = SHADE[d][s > 0 ? 1 : 0];
       const verts = [], hv = (x * 73856093 ^ y * 19349663 ^ z * 83492791 ^ (d * 3 + (s > 0 ? 1 : 0)) * 2654435761) >>> 0;
@@ -78,6 +81,7 @@ function buildChunk(cx, cz) {
         if (lav && P[1] > y + .5) { const ch2 = lavaCorner(P[0], y, P[2]); P[1] = y + ch2; if (ch2 < 1) wob = 2; }   // the lava surface follows its neighbours, so flows slope and never leave steps or cracks
         let m = em ? 1 : sh * AOV[ao[k]] * vr, r = b[0] * m, g = b[1] * m, bb = b[2] * m;
         if (em) { const f = .85 + hash(x + k, z + y) * .3; r *= f; g *= f; bb *= f; }
+        else if (LT) { const l = lk[k]; r = b[0] * (m + l[0] * LGAIN); g = b[1] * (m + l[1] * LGAIN); bb = b[2] * (m + l[2] * LGAIN); }
         if (bl && !em) { const t = Math.min(.85, bl * .3); r = lerp(r, .42, t); g = lerp(g, .02, t); bb = lerp(bb, .03, t); }
         let su = d === 0 ? cv[k] : cu[k], sv = d === 0 ? cu[k] : cv[k]; if (sk && d !== 1) sv = sv * .5 + (sk === 2 ? .5 : 0);                         // texture runs horizontally along the face, up = +y
         verts.push(P[0], P[1], P[2], r, g, bb, wob, flipU ? 1 - su : su, flipV ? 1 - sv : sv, tileV);
@@ -114,6 +118,7 @@ function buildAll() {
   else for (let cx = 0; cx < NC; cx++) for (let cz = 0; cz < NC; cz++) buildChunk(cx, cz);
   dirty.clear();
 }
+function markDirtyLight(x, z) { const cx = Math.floor(x / CS), cz = Math.floor(z / CS); for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) if (OW.chunks.has(ckey(cx + dx, cz + dz))) dirty.add(ckey(cx + dx, cz + dz)); }
 function markDirty(x, z) {
   const cx = Math.floor(x / CS), cz = Math.floor(z / CS);
   const add = (a, b) => { if (useChunks ? OW.chunks.has(ckey(a, b)) : (a >= 0 && b >= 0 && a < NC && b < NC)) dirty.add(ckey(a, b)); };
@@ -127,7 +132,7 @@ function setBlock(x, y, z, id) {
   if (y < 1 || y >= H) return false;
   if (useChunks) {
     const old = OW.set(x, y, z, id);                       // -1 = that chunk is not loaded (the edit is still remembered)
-    if (old !== -1) markDirty(x, z);
+    if (old !== -1) { markDirty(x, z); if (old !== id && (emits(id) || emits(old))) markDirtyLight(x, z); }
     if (old !== id) for (const fn of blockListeners) fn(x, y, z, id, old);
     return true;
   }

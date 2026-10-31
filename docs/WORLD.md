@@ -51,3 +51,6 @@ No continuous cycle. `DayNight` (src/js/27-daynight.js) holds `phase` (day/night
 
 ## Block registry
 See the header of `src/js/20-blocks.js`. Materials are defined once (ids 1-47 classic and city, 256+ from `data/blocks.json` "materials"); `SHAPABLE` lists the materials that get shapes, and each owns 16 generated ids starting at 1024 + index*16. **Both lists are append-only: never reorder or remove entries, saved worlds store these ids.** Add a material by appending to `materials` (it reuses an existing pattern via `tile`, or gets one of the eight extra patterns via `paint`).
+
+## Light
+`src/js/21b-light.js`: emitters are listed by base id in `LV` (level) and `LC` (colour); a chunk is lit when meshed (`computeLight`: flood fill, 1 per block, RGB separately, solid full blocks stop it) and the result is multiplied into vertex colours. Chunks keep an `em` flag (any emitter) so empty areas skip the work.

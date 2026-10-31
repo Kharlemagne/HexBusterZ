@@ -17,7 +17,7 @@ const OW = {
   },
   set(x, y, z, id) {                                                    // returns the old block, -1 if that chunk isn't loaded
     const ch = this.chunks.get(ckey(x >> 4, z >> 4)); if (!ch) return -1;
-    const li = (x & 15) | ((z & 15) << 4) | (y << 8), old = ch.b[li]; ch.b[li] = id; if (ch.blood) ch.blood[li] = 0; if (id && y > ch.top) ch.top = y;
+    const li = (x & 15) | ((z & 15) << 4) | (y << 8), old = ch.b[li]; ch.b[li] = id; if (ch.blood) ch.blood[li] = 0; if (id && y > ch.top) ch.top = y; if (id && LV[BASE[id]] && !isLava(id)) ch.em = true;
     return old;
   },
   has(cx, cz) { return this.chunks.has(ckey(cx, cz)); },
@@ -25,9 +25,9 @@ const OW = {
     const key = ckey(cx, cz); if (this.chunks.has(key)) return;
     const b = OWG.gen(cx, cz); let top = 0;
     for (let y = WORLD_H - 1; y > 0 && !top; y--) { const o = y << 8; for (let i = 0; i < 256; i++) if (b[o + i]) { top = y; break; } }
-    const ch = { cx, cz, b, top, blood: null, age: 0 };
+    const ch = { cx, cz, b, top, blood: null, age: 0, em: false }; for (let i = 0; i < b.length; i++) { const id = b[i]; if (id && LV[BASE[id]] && !isLava(id)) { ch.em = true; break; } }
     const em = this.edits.get(key);
-    if (em) for (const [li, e] of em) { if (e.orig === -1) e.orig = b[li]; b[li] = e.id; const y = li >> 8; if (e.id && y > ch.top) ch.top = y; }
+    if (em) for (const [li, e] of em) { if (e.orig === -1) e.orig = b[li]; b[li] = e.id; const y = li >> 8; if (e.id && y > ch.top) ch.top = y; if (e.id && LV[BASE[e.id]] && !isLava(e.id)) ch.em = true; }
     this.chunks.set(key, ch); this.lch = null; this.lcx = 1e9;
     for (const [a, c] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) if (this.chunks.has(ckey(cx + a, cz + c))) dirty.add(ckey(cx + a, cz + c));
   },
