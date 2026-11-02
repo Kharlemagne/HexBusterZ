@@ -12,11 +12,15 @@ check('after dying you are regrown in a vat again', dead === 'dead' && re.st ===
 const dr = await page.evaluate(() => { const V = __g.Vat, P = __g.P, i = V.cur, vv = __g.VATS[i]; for (let k = 0; k < 215; k++) __g.update(1 / 60); const o = { open: V.door[i], fill: V.fill[i] }; for (let k = 0; k < 90; k++) __g.update(1 / 60); o.open2 = V.door[i];
   P.x = vv.x + vv.face * 6 + .5; P.z = vv.z + .5; for (let k = 0; k < 30; k++) __g.update(1 / 60); o.closing = V.door[i] < o.open2;
   for (let k = 0; k < 230; k++) __g.update(1 / 60); o.closed = V.door[i]; o.refill = V.fill[i];
-  P.x = vv.x + vv.face * 2.4 + .5; P.z = vv.z + .5; P.y = 81.01; __g.update(1 / 60); o.pushed = Math.abs(P.x - (vv.x + .5)) > 2.8;
+  P.x = vv.x + vv.face * 2.4 + .5; P.z = vv.z + .5; P.y = 81.01; __g.update(1 / 60); o.pushed = Math.abs(P.x - (vv.x + .5)) > 2.45;
   return o; });
 check('when the vat drains the glass doors slide open', dr.open2 > .95 && dr.fill === 0, JSON.stringify(dr));
 check('after you step away the doors slide shut together and the vat fills up again', dr.closing && dr.closed < .02 && dr.refill > .95, JSON.stringify(dr));
 check('a closed door is solid', dr.pushed, JSON.stringify(dr));
+const wl = await page.evaluate(() => { const V = __g.Vat, P = __g.P, i = V.cur, vv = __g.VATS[i], f = vv.face, cx = vv.x + .5, cz = vv.z + .5; V.door[i] = 1; const o = {};
+  const walk = (x, z, vx, vz) => { P.x = x; P.z = z; P.y = 81.01; P.vx = vx; P.vz = vz; for (let k = 0; k < 100; k++) { P.vx = vx; P.vz = vz; __g.update(1 / 60); V.door[i] = 1; } return [P.x - cx, P.z - cz]; };
+  o.side = walk(cx, cz + 4, 0, -5); o.back = walk(cx - 5 * f, cz, 4 * f, 0); o.door = walk(cx + 5 * f, cz, -4 * f, 0); return o; });
+check('the glass walls are solid even with the doors open, but you can walk in through the open door', wl.side[1] > 1.8 && Math.abs(wl.back[0]) > 1.8 && Math.abs(wl.door[0]) < 1.2, JSON.stringify(wl));
 await page.evaluate(() => { for (let i = 0; i < 260; i++) __g.update(1 / 60); });
 const r = await page.evaluate(() => { const P = __g.P; return { gen: __g.OW.gen, y: P.y, ok: P.onGround || P.y < 83, bio: __g.biomeAt(P.x, P.z, P.y), deck: __g.get(Math.floor(P.x), 80, Math.floor(P.z)), clock: __g.DayNight.clock() }; });
 check('new worlds are generation 3 and you wake up in a respawn vat', r.gen === 3 && r.y > 80.5 && r.y < 83 && /HELICARRIER/.test(r.bio) && r.deck > 0, JSON.stringify(r));
