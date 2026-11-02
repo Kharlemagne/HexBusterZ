@@ -6,7 +6,7 @@
 // ============================================================
 const TILE = { WHITE: 0, GRAIN: 64, PLATE: 65, FLESHY: 66, BONEY: 67, GLOW: 68, CLOTH: 69 };
 // ids 0..31 use tiles 0..63; the city blocks (32..47, and every slab made from them) use tiles 128..159
-const PAINT3_KEYS = ['perf', 'corr', 'diam', 'vent', 'rack', 'greeble', 'slate', 'marble'];
+const PAINT3_KEYS = ['perf', 'corr', 'diam', 'vent', 'rack', 'greeble', 'slate', 'marble', 'tile', 'crate', 'truss', 'lab', 'screen', 'vat'];
 const MAT_TILES = MATS.map((m, i) => m.paint ? 160 + 2 * PAINT3_KEYS.indexOf(m.paint) : null);       // new materials either reuse an existing material's pattern (and just differ in colour) or have their own tile pair from 160
 const blockTile = (id, top) => { const b = BASE[id] || id; if (b >= MAT0) { const t = MAT_TILES[b - MAT0]; if (t !== null) return t + (top ? 1 : 0); return blockTile(MATS[b - MAT0].tile, top); } return b < 32 ? b * 2 + (top ? 1 : 0) : 128 + (((b - 32) & 15) * 2) + (top ? 1 : 0); };
 function tn(x, y, s) { let h = (Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263) ^ Math.imul(s | 0, 1274126177)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
@@ -67,6 +67,12 @@ const PAINT3 = {                                                                
   rack: (x, y, t, n, s) => { if (y % 4 === 0) return .5; const led = x % 5 === 2 && y % 4 === 2 && tn(x, y, s) > .4; return led ? [.7, 1.6, .8] : .85 + (n - .5) * .1; },
   greeble: (x, y, t, n, s) => { const a = tn(x >> 2, y >> 2, s); return a > .65 ? 1.2 + (n - .5) * .1 : a < .25 ? .55 : .9 + (n - .5) * .1; },
   slate: (x, y, t, n) => (.85 + (tn(0, y >> 1, 6) - .5) * .3 + (n - .5) * .12),
+  tile: (x, y, t, n) => (x === 0 || y === 0 || x === 8 || y === 8 ? .62 : 1.0 + (n - .5) * .1),                                                  // picture 1: teal floor tiles with grout lines
+  crate: (x, y, t, n) => { const strap = x === 2 || x === 13 || y === 2 || y === 13; const rib = (y % 4 === 0) ? .78 : 1.0; return (x === 0 || y === 0 || x === 15 || y === 15) ? .55 : strap ? [.7, .85, 1.5] : rib + (n - .5) * .08; },     // picture 2: red cargo crate with blue-lit straps
+  truss: (x, y, t, n) => { const a = Math.abs(x - y) < 2 || Math.abs(x + y - 15) < 2, e = x < 2 || x > 13 || y < 2 || y > 13; return (a || e) ? 1.05 + (n - .5) * .1 : .22; },
+  lab: (x, y, t, n, s) => { const k = Math.floor(x / 5) + Math.floor(y / 5) * 3, a = tn(k, 0, s); if (x % 5 === 4 || y % 5 === 4) return .6; return a > .7 ? [.6, 1.3, .9] : a > .35 ? .95 + (n - .5) * .1 : [.8, .9, 1.0]; },        // picture 1: wall of lab equipment
+  screen: (x, y, t, n, s) => { if (x === 0 || y === 0 || x === 15 || y === 15) return .5; const w = Math.sin(x * .7 + tn(0, 0, s) * 9) * 3.2 + 8; if (Math.abs(y - w) < 1.1) return [.6, 1.7, .9]; return (y % 5 === 2 && x % 3 !== 0 && tn(x, y, s) > .45) ? [.5, 1.2, .8] : .35 + (n - .5) * .08; },
+  vat: (x, y, t, n) => { const bub = n > .93 ? 1.3 : 1; return (.85 + .3 * Math.sin(y * .6 + x * .25)) * bub + (n - .5) * .06; },
   marble: (x, y, t, n, s) => { const v = Math.abs(Math.sin(x * .45 + Math.sin(y * .3) * 2.4 + tn(0, 0, s) * 7)); return v < .1 ? .62 : 1.0 + (n - .5) * .08; }
 };
 const ENT_PAINT = {
@@ -86,7 +92,7 @@ function makeAtlas() {
       let m = .625;                                                   // neutral
       if (ti >= 64 && ENT_PAINT[ti]) m = ENT_PAINT[ti](x, y, 0, tn(x, y, ti));
       else if (ti >= 128 && ti < 160) m = PAINT2[(ti - 128) >> 1](x, y, top, tn(x, y, ti), ti);
-      else if (ti >= 160 && ti < 176) m = PAINT3[PAINT3_KEYS[(ti - 160) >> 1]](x, y, top, tn(x, y, ti), ti);
+      else if (ti >= 160 && ti < 192 && PAINT3[PAINT3_KEYS[(ti - 160) >> 1]]) m = PAINT3[PAINT3_KEYS[(ti - 160) >> 1]](x, y, top, tn(x, y, ti), ti);
       else if (ti > 0 && ti < 64 && PAINT[id]) m = PAINT[id](x, y, top, tn(x, y, id * 7 + top), id * 31 + top);
       else if (ti > 0 && ti < 64) m = .95 + (tn(x, y, ti) - .5) * .2;    // unpainted block id: plain grain
       const rgb = typeof m === 'number' ? [m, m, m] : m, i = ((oy + y) * 256 + ox + x) * 4;

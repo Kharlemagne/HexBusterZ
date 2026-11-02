@@ -5,7 +5,7 @@ function update(dt) {
   const was = P.bt > 0; P.bt = Math.max(0, P.bt - dt); if (was && P.bt <= 0) { SFX.btEnd(); feed('BULLET TIME OVER', '#6ec8ff'); }
   const bt = P.bt > 0, wdt = bt ? dt * .1 : dt, pdt = bt ? dt * .5 : dt;      // bullet time: world at 10%, you at 50%
   worldDt = wdt; musicSlow = bt ? .4 : 1; musicMode = mode === 'hub' ? 0 : (Run.cur && Run.cur.type === 'boss' && Run.cur.state === 'active') ? 2 : 1;
-  updatePlayer(pdt); updateWeapons(dt); updateDrops(wdt);
+  updatePlayer(pdt); if (typeof Vat !== 'undefined') Vat.tick(dt); updateWeapons(dt); updateDrops(wdt);
   if (useChunks && OW.gen >= 2 && P.alive && P.y < HUB.voidY && Net.role !== 'client') { feed('SWALLOWED BY THE DEEP', '#a64bff'); hurtPlayer(9999, 0, 0, 0, 'self'); }       // fall off the world and the abyss takes you
   if (Net.role !== 'client') {                       // a guest only renders what the host tells it
     for (const e of enemies) if (!e.dead) { if (e.type === 'boss') updateBoss(e, wdt); else updateEnemy(e, wdt); }

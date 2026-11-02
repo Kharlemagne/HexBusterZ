@@ -60,3 +60,6 @@ See the header of `src/js/20-blocks.js`. Materials are defined once (ids 1-47 cl
 
 ## Command center (v2 layout)
 `src/js/25-station-hq.js` replaces the city: dock, dais, bays, catwalk, gate platform, `stConsole`. `RIFT` there holds the stabilizer position. `Rift.phase` is idle, charge, zap, stabilize, open; entering the open rift calls `enterRealm`.
+
+## Respawn vats
+`VATS` (25-station-hq.js) lists the eight tanks, `Vat` (55-vat.js) runs the regrow sequence. `enterHub` starts it for generation 3 unless you arrive from the rift or a finished dungeon.

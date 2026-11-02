@@ -466,6 +466,49 @@
    "name": "MARBLE",
    "color": "#d6d2cc",
    "paint": "marble"
+  },
+  {
+   "name": "TECH TILE",
+   "color": "#2f6b66",
+   "paint": "tile"
+  },
+  {
+   "name": "CARGO CRATE",
+   "color": "#b8442e",
+   "paint": "crate"
+  },
+  {
+   "name": "RED TRUSS",
+   "color": "#c2452a",
+   "paint": "truss"
+  },
+  {
+   "name": "LAB PANEL",
+   "color": "#2c3b3a",
+   "paint": "lab"
+  },
+  {
+   "name": "SCREEN GLASS",
+   "color": "#0c1f1c",
+   "paint": "screen"
+  },
+  {
+   "name": "VAT GREEN",
+   "color": "#3bff7a",
+   "paint": "vat",
+   "emissive": true
+  },
+  {
+   "name": "VAT BLUE",
+   "color": "#3aa8ff",
+   "paint": "vat",
+   "emissive": true
+  },
+  {
+   "name": "VAT AMBER",
+   "color": "#ffb23a",
+   "paint": "vat",
+   "emissive": true
   }
  ]
 }

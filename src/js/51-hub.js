@@ -74,13 +74,14 @@ function enterHub(first, fromRun, arrive) {
   mode = 'hub';
   const o = Net.hubOverride, cd = WorldStore.cur.data, inRealm = !o && cd.map && cd.realms && cd.realms[String(cd.map.seed)], gv = o ? o.gen : inRealm ? 4 : WorldStore.cur.meta.gen, g2 = gv >= 2, g3 = gv === 3, g4 = gv === 4;
   const rs = g4 ? realmLayout((o ? o.seed : cd.map.seed) | 0) : null;
-  const rt = fromRun && OW.returnTo, sx = rt ? rt.x : g4 ? rs.spawn.x : g3 ? (arrive === 'rift' ? RIFT.arrive.x : STN.spawn.x) : g2 ? CAR_SPAWN.x : 32.5, sz = rt ? rt.z : g4 ? rs.spawn.z : g3 ? (arrive === 'rift' ? RIFT.arrive.z : STN.spawn.z) : g2 ? CAR_SPAWN.z : (fromRun ? 15.5 : 44.5);
+  const vi = g3 && !arrive && !fromRun ? Vat.pick() : -1;
+  const rt = fromRun && OW.returnTo, sx = vi >= 0 ? VATS[vi].x + .5 : rt ? rt.x : g4 ? rs.spawn.x : g3 ? (arrive === 'rift' ? RIFT.arrive.x : STN.spawn.x) : g2 ? CAR_SPAWN.x : 32.5, sz = vi >= 0 ? VATS[vi].z + .5 : rt ? rt.z : g4 ? rs.spawn.z : g3 ? (arrive === 'rift' ? RIFT.arrive.z : STN.spawn.z) : g2 ? CAR_SPAWN.z : (fromRun ? 15.5 : 44.5);
   genHub(undefined, sx, sz); flushSave();
   enemies.length = 0; eprojs.length = 0; bombs.length = 0; beams.length = 0; drops.length = 0; PL.fill(0);
   Run.chests = []; Run.turrets = []; Run.smoke = []; Run.hasKey = false; Run.glyph = null; Run.cur = null; resetBossSystems(); sky = null;
   Object.assign(P, { x: sx, y: topY(Math.floor(sx), Math.floor(sz)) + 1.01, z: sz, vx: 0, vy: 0, vz: 0, yaw: rt ? 0 : g4 ? 0 : arrive === 'rift' ? 0 : fromRun ? Math.PI : 0, pitch: 0, hp: 100, alive: true, sliding: false, slamming: false, slamT: null, lock: null, dashT: 0, dashF: 3, inv: 0, shake: 0, hurtFlash: 0, charge: 0, h: 1.75, eye: 1.6, airT: 0 });
   Object.assign(S, { style: 0, rank: 0, combo: 0, lastKill: -99, wHist: {}, time: 0 });
-  P.weapon = -1; switchWeapon(0); refreshHotbar();
+  P.weapon = -1; switchWeapon(0); refreshHotbar(); if (vi >= 0) { Vat.begin(vi); P.yaw = VATS[vi].face > 0 ? -Math.PI / 2 : Math.PI / 2; } else Vat.cur = -1;
   el.dead.classList.remove('on'); el.feed.innerHTML = '';
   Net.announceWorld();
   banner(g4 ? 'REALM ' + realmCoords().toUpperCase().slice(0, 24) : g3 ? (arrive === 'rift' ? 'BACK ABOARD' : fromRun ? 'BACK ABOARD' : 'THE HELICARRIER') : g2 ? (fromRun ? 'BACK ABOARD' : 'THE HELICARRIER') : rt ? 'BACK IN THE OPEN' : fromRun ? 'BACK IN THE VILLAGE' : 'EMBER VILLAGE', fromRun ? 'SPEND YOUR GEMS AT THE SMITH' : g4 ? 'THE TEAR BEHIND YOU LEADS HOME · TWO HELLGATES BURN ON THE BIGGEST ISLANDS' : g3 ? 'THE HELLGATE WAITS AT THE FRONT · THE STATION HURTLES THROUGH THE DEEP' : g2 ? 'THE HELLGATE WAITS AT THE FAR FRONT · THE SKY IS OPEN' : 'THE HELLGATE IS NORTH · THE WORLD IS OPEN');
