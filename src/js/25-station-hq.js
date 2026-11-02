@@ -42,7 +42,7 @@ function stHullAndDeck() {
 }
 // ---- a console: a real workstation. face = the direction its player stands in ('s','n','e','w'); accent = neon material for the lights
 let CON_Y = 0, CON_W = 3;
-function stConsole(cx, cz, face, accent, screenCol, yb = 0, W = 3) {
+function stConsole(cx, cz, face, accent, screenCol, yb = 0, W = 3, stype = 0) {
   CON_Y = yb; CON_W = W;
   const T = (u, v) => face === 's' ? [cx + u, cz + v] : face === 'n' ? [cx - u, cz - v] : face === 'e' ? [cx + v, cz - u] : [cx - v, cz + u];      // u across, v towards the player
   const back = face === 's' ? 3 : face === 'n' ? 2 : face === 'e' ? 1 : 0;                       // the stair direction that rises away from the player
@@ -55,10 +55,8 @@ function stConsole(cx, cz, face, accent, screenCol, yb = 0, W = 3) {
     P(u, -2, 1, B.HULL); P(u, -2, 2, B.HULL);
   }
   for (const u of [-CON_W - 1, CON_W + 1]) for (let v = -2; v <= 1; v++) { P(u, v, 1, B.HULL); P(u, v, 2, v === -1 ? accent : B.TECH); P(u, v, 3, SH(B.HULL, K.SLAB_B)); }       // side wings with a status light each
-  for (let u = -CON_W; u <= CON_W; u++) for (let h = 0; h < 4; h++) {                                      // the screen: a frame, dark glass and rows of "text"
-    const edge = Math.abs(u) === CON_W || h === 3 || h === 0; const lit = !edge && (((u * 5 + h * 3 + cx + cz) & 7) < 4 + h);
-    P(u, -2, 3 + h, edge ? B.TECH : (lit ? (h === 2 ? screenCol : accent) : MID('SCREEN GLASS')));
-  }
+  const sf = face === 's' ? 2 : face === 'n' ? 3 : face === 'e' ? 0 : 1;                           // the screen faces the operator
+  for (let u = -CON_W; u <= CON_W; u++) for (let h = 0; h < 4; h++) P(u, -2, 3 + h, (Math.abs(u) === CON_W && CON_W > 1) || h === 0 ? B.TECH : screenId(stype, sf));        // one merged monitor
   P(-CON_W, 0, 2, accent); P(CON_W, 0, 2, accent);
 }
 // ---- the command dais: three tiers (slab step + full step each), a holo-table, a ring of consoles facing inward toward it, four tapering pylons
@@ -82,8 +80,8 @@ function stDais() {
   for (const [dx, dy, dz] of [[0, 3, 0], [2, 1, 1], [-2, 4, -1], [1, 5, -2], [-1, 2, 2]]) stPut(cx + dx, H0 + dy, cz + dz, NEO('WHITE'));
   for (let y = 1; y <= 3; y++) stPut(cx, SD + 4 + y, cz, SH(NEO('SKY'), K.PILLAR));
   // consoles stand on tier 2 (surface SD+3) with their SCREENS toward the table, operators on the outside
-  for (const [dx, dz, f] of [[0, -8, 'n'], [0, 8, 's'], [-8, 0, 'w'], [8, 0, 'e']]) stConsole(cx + dx, cz + dz, f, NEO('SKY'), NEO('LIME'), 2, 3);
-  for (const [dx, dz, f] of [[-6, -6, 'n'], [6, -6, 'n'], [-6, 6, 's'], [6, 6, 's']]) stConsole(cx + dx, cz + dz, f, NEO('ORANGE'), NEO('YELLOW'), 2, 1);
+  for (const [dx, dz, f] of [[0, -8, 'n'], [0, 8, 's'], [-8, 0, 'w'], [8, 0, 'e']]) stConsole(cx + dx, cz + dz, f, NEO('SKY'), NEO('LIME'), 2, 3, (dx + dz + 16) % 8 / 2 | 0);
+  for (const [dx, dz, f] of [[-6, -6, 'n'], [6, -6, 'n'], [-6, 6, 's'], [6, 6, 's']]) stConsole(cx + dx, cz + dz, f, NEO('ORANGE'), NEO('YELLOW'), 2, 1, (dx > 0 ? 1 : 0) + (dz > 0 ? 2 : 0));
   // four pylons on the diagonals: a 3x3 foot, a plus-shaped waist, a 1x1 needle, one lit strip facing the table
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
     const px = cx + sx * 21, pz = cz + sz * 21; if (pz < 4) continue;
@@ -109,7 +107,7 @@ function stScreenWall(x, z, face, w, h, cols) {
 }
 // ---- a bay of three console desks facing north under a neon canopy, with a lit name board
 function stBay(cx, cz, name, accent, screen, kind) {
-  for (let k = -1; k <= 1; k++) stConsole(cx + k * 10, cz, 'n', accent, screen);
+  for (let k = -1; k <= 1; k++) stConsole(cx + k * 10, cz, 'n', accent, screen, 0, 3, kind === 'crates' ? 2 : 0);
   if (kind === 'crates') for (const dx of [-14, -9, 9, 14]) for (let l = 0; l < 2; l++) { stBox(cx + dx - 1, SD + 1 + l * 2, cz - 12, cx + dx, SD + 2 + l * 2, cz - 11, MID('CARGO CRATE')); stPut(cx + dx - 1, SD + 3 + l * 2, cz - 12, B.NBLU); }
   if (kind === 'lab') for (let u = -15; u <= 15; u++) { if (Math.abs(u) < 3 || (u & 1)) continue; stBox(cx + u, SD + 1, cz + 2 - 12, cx + u, SD + 4, cz + 2 - 12, MID('LAB PANEL')); }
   for (let u = -16; u <= 16; u++) { stPut(cx + u, SD + 9, cz + 2, (u & 1) ? B.TECH : B.HULL); if (Math.abs(u) === 16 || Math.abs(u) === 6) for (let y = 1; y <= 8; y++) stPut(cx + u, SD + y, cz + 3, B.HULL); }
@@ -159,7 +157,7 @@ function stGatePlatform() {
     for (let y = SD + 3; y <= SD + 15; y++) { stBox(cx - 1, y, cz - 1, cx + 1, y, cz + 1, (y % 3 === 0) ? NEO('SKY') : B.TECH); if (y % 3 === 0) stRing(cx - 2, y, cz - 2, cx + 2, y, cz + 2, SH(B.HULL, K.SLAB_B)); }
     stBox(cx - 1, SD + 16, cz - 1, cx + 1, SD + 18, cz + 1, NEO('WHITE')); stBox(cx, SD + 19, cz, cx, SD + 21, cz, B.HULL);
   }
-  stConsole(Math.floor(RIFT.console.x), Math.floor(RIFT.console.z), 'w', NEO('SKY'), NEO('LIME'));
+  stConsole(Math.floor(RIFT.console.x), Math.floor(RIFT.console.z), 'w', NEO('SKY'), NEO('LIME'), 0, 3, 3);
 }
 function stPerimeter() {
   for (const sx of [-1, 1]) for (const z of [30, 70]) stScreenWall(sx * 52, z, sx > 0 ? 'w' : 'e', 16, 7, [NEO('LIME'), NEO('CYAN'), NEO('ORANGE')]);

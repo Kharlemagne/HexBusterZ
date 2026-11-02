@@ -70,7 +70,8 @@ function updateWeapons(dt) {
       if (get(px, py, pz) === 0 || isLava(get(px, py, pz))) {
         let bid = Inv.selBlock();
         if (bid) { const e = eyePos(), f = fwdV(), hy = e[1] + f[1] * h.t, top = h.ny < 0 || (h.ny === 0 && hy - py >= .5);          // aim at the upper half of a wall, or under a block, and half blocks go in the top half
-          const k = KIND[bid]; if (k === K.RAIL) { /* rails are placed as they are */ }
+          const k = KIND[bid]; if (k === K.SCREEN) { const nf = h.nx > 0 ? 0 : h.nx < 0 ? 1 : h.nz > 0 ? 2 : h.nz < 0 ? 3 : (Math.abs(f[0]) > Math.abs(f[2]) ? (f[0] > 0 ? 1 : 0) : (f[2] > 0 ? 3 : 2)); bid = screenId(screenType(bid), nf); }
+          else if (k === K.RAIL) { /* rails are placed as they are */ }
           else if (k) bid = shapeId(BASE[bid], k === K.SLAB_B || k === K.SLAB_T ? 1 : k === K.STAIR ? 2 : k === K.VSLAB ? 3 : k === K.WALL ? 4 : k === K.PILLAR ? 5 : k === K.FENCE ? 7 : k === K.PANE ? 8 : 6, f, { top });       // an older slab / stairs item keeps its shape
           else bid = shapeId(bid, P.shape || 0, f, { top }); }
         if (!bid) { if (digCd <= 0) { feed('NO BLOCK SELECTED — OPEN INVENTORY (I)', '#ff8a3a'); SFX.empty(); digCd = .5; } }

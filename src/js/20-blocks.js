@@ -8,7 +8,7 @@
 //    256..        materials added in data/blocks.json "materials" (append only)
 //    1024 + i*16 + slot   the generated shapes of the i-th entry of SHAPABLE (append only), slot: 0 slab, 1 top slab, 2-5 stairs, 6-9 vertical slab, 10 wall, 11 pillar, 12/13 beam x/z, 14 fence, 15 pane
 // ============================================================
-const K = { FULL: 0, SLAB_B: 1, SLAB_T: 2, STAIR: 3, VSLAB: 4, WALL: 5, PILLAR: 6, BEAMX: 7, BEAMZ: 8, FENCE: 9, PANE: 10, RAIL: 11 };
+const K = { SCREEN: 12, FULL: 0, SLAB_B: 1, SLAB_T: 2, STAIR: 3, VSLAB: 4, WALL: 5, PILLAR: 6, BEAMX: 7, BEAMZ: 8, FENCE: 9, PANE: 10, RAIL: 11 };
 const SHAPE_NAMES = ['FULL BLOCK', 'SLAB', 'STAIRS', 'VERTICAL SLAB', 'WALL', 'PILLAR', 'BEAM', 'FENCE', 'PANE'];      // what the player cycles through (V)
 const MAT0 = 256, MATS = DATA.blocks.materials || [], REG_N = 4096;
 const BASE = new Uint16Array(REG_N), KIND = new Uint8Array(REG_N), DIR = new Uint8Array(REG_N), SHAPABLE = [], SHAPE_IDX = new Int16Array(REG_N).fill(-1);
@@ -33,9 +33,13 @@ function blockId(base, kind, dir = 0) {
   const slot = kind === K.SLAB_B ? 0 : kind === K.SLAB_T ? 1 : kind === K.STAIR ? 2 + dir : kind === K.VSLAB ? 6 + dir : kind === K.WALL ? 10 : kind === K.PILLAR ? 11 : kind === K.BEAMX ? 12 : kind === K.BEAMZ ? 13 : kind === K.FENCE ? 14 : kind === K.PANE ? 15 : -1;
   return slot < 0 ? base : 1024 + SHAPE_IDX[base] * 16 + slot;
 }
+// ---- monitor blocks: 3000 + type*4 + facing. type 0 alpha, 1 beta, 2 gamma, 3 delta; facing = the side the screen is on (0 +x, 1 -x, 2 +z, 3 -z).
+const SCR0 = 3000, SCR_NAMES = ['ALPHA-SCREEN', 'BETA-SCREEN', 'GAMMA-SCREEN', 'DELTA-SCREEN'], SCR_COLORS = ['#3dff7a', '#3aa8ff', '#ffb23a', '#d04aff'];
+for (let i = 0; i < 16; i++) { BASE[SCR0 + i] = 32; KIND[SCR0 + i] = K.SCREEN; DIR[SCR0 + i] = i & 3; }
+const isScreen = i => KIND[i] === K.SCREEN, screenType = i => (i - SCR0) >> 2, screenId = (type, facing) => SCR0 + type * 4 + facing;
 const baseOf = i => BASE[i], kindOf = i => KIND[i];
 const stairKind = i => KIND[i] === K.STAIR, isRail = i => KIND[i] === K.RAIL;
-const slabKind = i => { const k = KIND[i]; return k < 3 ? k : 3; };            // 0 = full block, 1 = bottom half, 2 = top half, 3 = any other partial shape (own boxes)
+const slabKind = i => { const k = KIND[i]; return k < 3 || k === K.SCREEN ? (k === K.SCREEN ? 0 : k) : 3; };            // 0 = full block, 1 = bottom half, 2 = top half, 3 = any other partial shape (own boxes)
 const isConn = i => { const k = KIND[i]; return k === K.WALL || k === K.FENCE || k === K.PANE || k === K.RAIL; };      // joins up with its neighbours like a fence
 const stairDir = i => DIR[i];
 const slabBase = baseOf, stairBase = baseOf;
@@ -75,4 +79,4 @@ function partBoxes(id, x, y, z, mesh) {
   return r;
 }
 function cellBoxes(id, x, y, z) { return partBoxes(id, x, y, z, false).map(q => [x + q[0], y + q[1], z + q[2], x + q[3], y + q[4], z + q[5]]); }
-const isFull = i => i !== 0 && !isLava(i) && !KIND[i];
+const isFull = i => i !== 0 && !isLava(i) && (!KIND[i] || KIND[i] === K.SCREEN);

@@ -63,3 +63,6 @@ See the header of `src/js/20-blocks.js`. Materials are defined once (ids 1-47 cl
 
 ## Respawn vats
 `VATS` (25-station-hq.js) lists the eight tanks, `Vat` (55-vat.js) runs the regrow sequence. `enterHub` starts it for generation 3 unless you arrive from the rift or a finished dungeon.
+
+## Monitors
+Ids 3000 + type*4 + facing (`K.SCREEN`). The mesher encodes the merged size in the tile number (`200 + type + 4*(W-1) + 32*(H-1)`) and gives the screen face uv in blocks across the whole group (`screenRun`); the fragment shader function `scr()` draws and animates it from that.

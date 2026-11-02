@@ -15,6 +15,41 @@ varying vec4 vc;varying float vd;varying vec2 vuv;varying float vt;varying vec3 
 float lh(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 float lv(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(lh(i),lh(i+vec2(1.0,0.0)),f.x),mix(lh(i+vec2(0.0,1.0)),lh(i+vec2(1.0,1.0)),f.x),f.y);}
 // flowing lava in WORLD space, so neighbouring lava blocks form one continuous river: warped noise drifts, a dark crust floats on glowing orange, bright cracks open and close
+float H1(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+// MONITOR BLOCKS: four kinds (alpha green, beta blue, gamma amber, delta violet), each cycling through three little programs. uv counts blocks across the whole merged screen, so
+// two or more identical monitors side by side share ONE picture that is stretched over all of them.
+vec3 scr(float ti,vec2 uv,float t){
+  float k=ti-200.0,ty=mod(k,4.0),r=floor(k/4.0),W=mod(r,8.0)+1.0,Hh=floor(r/8.0)+1.0;
+  float d=min(min(uv.x,W-uv.x),min(uv.y,Hh-uv.y));
+  if(d<0.07)return vec3(0.015,0.02,0.025);
+  if(d<0.1)return ty<0.5?vec3(0.1,0.5,0.25):ty<1.5?vec3(0.1,0.3,0.6):ty<2.5?vec3(0.6,0.4,0.1):vec3(0.45,0.15,0.6);
+  vec2 s2=(uv-0.1)/(vec2(W,Hh)-0.2);float a=(W-0.2)/(Hh-0.2);vec2 q=vec2(s2.x*a,s2.y);
+  float m=mod(floor(t/6.0+ty*1.7),3.0);vec3 c=vec3(0.0);float v=0.0;
+  if(ty<0.5){
+    c=vec3(0.15,1.0,0.4);
+    if(m<0.5){float row=floor(q.y*10.0)+floor(t*2.0),len=H1(vec2(row,1.0))*a*13.0+2.0,col=floor(q.x*14.0);v=step(col+1.0,len)*step(0.35,H1(vec2(col,row)))*step(0.18,fract(q.x*14.0))*step(0.2,fract(q.y*10.0));}
+    else if(m<1.5){vec2 p=q-vec2(a*0.5,0.5);float rr=length(p),an=atan(p.y,p.x),sw=fract(an/6.2832-t*0.4);v=pow(1.0-sw,5.0)*step(rr,0.46)+step(abs(fract(rr*8.0)-0.5),0.04)*step(rr,0.46)*0.5+step(0.985,H1(floor(q*28.0)))*pow(1.0-sw,2.0)*step(rr,0.46);}
+    else{float y1=0.5+0.22*sin(q.x*13.0-t*3.0),y2=0.5+0.16*sin(q.x*21.0+t*2.0);v=smoothstep(0.035,0.0,abs(q.y-y1))+0.6*smoothstep(0.03,0.0,abs(q.y-y2));}
+  }else if(ty<1.5){
+    c=vec3(0.25,0.65,1.0);
+    if(m<0.5){float n=floor(q.x*16.0),h=0.12+0.8*abs(sin(t*2.0+n*1.9)*cos(t*1.3+n*0.7));v=step(q.y,h)*step(0.14,fract(q.x*16.0))*step(0.15,fract(q.y*14.0));c=mix(c,vec3(0.9,0.5,1.0),q.y);}
+    else if(m<1.5){float row=floor(q.y*5.0),p=fract(t*0.12*(1.0+row*0.3)+H1(vec2(row,3.0)));v=step(q.x/a,p)*step(0.2,fract(q.y*5.0))*step(0.1,fract(q.x*20.0))+0.15*step(0.2,fract(q.y*5.0));}
+    else{float y=0.5+0.2*sin(q.x*9.0+t)+0.1*sin(q.x*23.0-t*2.0);v=smoothstep(0.03,0.0,abs(q.y-y))+step(q.y,y)*0.18+0.2*step(abs(fract(q.y*6.0)-0.5),0.02)+0.2*step(abs(fract(q.x*8.0)-0.5),0.02);}
+  }else if(ty<2.5){
+    c=vec3(1.0,0.62,0.12);
+    if(m<0.5){float st=step(0.5,fract((q.x+q.y)*6.0-t*0.5));vec2 p=q-vec2(a*0.5,0.45);float tri=step(abs(p.x),(0.3-p.y)*0.5)*step(-0.25,p.y)*step(p.y,0.3),ex=step(abs(p.x),0.035)*step(-0.05,p.y)*step(p.y,0.17)+step(length(p-vec2(0.0,-0.15)),0.04);v=mix(st*0.35,mix(1.0,0.0,ex),tri*step(0.0,sin(t*5.0)+0.3));if(tri<0.5)c=vec3(1.0,0.35,0.1);}
+    else if(m<1.5){float ph=fract(q.x*0.7-t*0.5),y=0.5+0.34*exp(-pow((ph-0.3)*30.0,2.0))-0.14*exp(-pow((ph-0.36)*40.0,2.0));v=smoothstep(0.035,0.0,abs(q.y-y))+0.15*step(abs(fract(q.y*6.0)-0.5),0.02);c=vec3(1.0,0.35,0.2);}
+    else{float rr=length(q-vec2(a*0.5,0.5));v=step(0.7,fract(rr*4.0-t*0.7))*(1.1-rr)*step(rr,0.5);c=mix(c,vec3(1.0,0.2,0.1),sin(t*4.0)*0.5+0.5);}
+  }else{
+    c=vec3(0.85,0.3,1.0);
+    if(m<0.5){float col=floor(q.x*20.0),sp=0.5+H1(vec2(col,2.0))*1.5,y=fract(q.y+t*sp*0.3+H1(vec2(col,3.0)));v=pow(1.0-y,3.0)*step(0.15,fract(q.x*20.0))*step(0.3,H1(vec2(col,floor(q.y*20.0+t*8.0*sp*0.3))));c=mix(c,vec3(0.9,1.0,1.0),step(0.92,1.0-y));}
+    else if(m<1.5){vec2 cc=floor(q*vec2(18.0,10.0));v=step(0.55,H1(cc+floor(t*4.0*H1(cc))))*step(0.2,fract(q.x*18.0))*step(0.25,fract(q.y*10.0));}
+    else{vec2 p=q-vec2(a*0.5,0.5);float rr=length(p),an=atan(p.y,p.x);v=(sin(an*5.0+rr*18.0-t*3.0)*0.5+0.5)*step(rr,0.47)*step(0.04,rr);c=mix(vec3(0.4,0.2,1.0),vec3(1.0,0.3,0.9),rr*2.0);}
+  }
+  vec3 col=vec3(0.015,0.03,0.03)+c*0.1+c*clamp(v,0.0,1.4)*1.15;
+  col*=0.88+0.12*sin(uv.y*Hh*3.0+q.y*160.0)*(1.0)+0.04*sin(t*40.0+uv.x);
+  return col;
+}
 vec3 lava(vec3 w,float t,float dist){
   vec2 p=w.xz*0.42+vec2(t*0.055,t*0.032);float n=0.0,a=0.5;
   for(int i=0;i<4;i++){n+=a*lv(p+vec2(sin(p.y*1.6+t*0.35),cos(p.x*1.4-t*0.3))*0.7);p=p*2.03+vec2(1.7,9.2);a*=0.5;}
@@ -31,6 +66,7 @@ void main(){
   vec3 av=texture2D(avg,vec2((ti+0.5)/256.0,0.5)).rgb;
   tx=mix(tx,av,smoothstep(36.0,90.0,vd));
   vec3 col=vc.rgb*tx*1.6;
+  if(ti>199.5)col=scr(ti,vuv,tm);
   if((ti>7.5&&ti<9.5)||(ti>45.5&&ti<61.5)){float sd=step(0.5,mod(ti,2.0));col=lava(mix(vec3(vwp.x+vwp.z,0.0,vwp.y*1.3+tm*0.8),vwp,sd),tm,vd);}
   float lamp=0.62*(1.0-smoothstep(1.5,22.0,vd));
   col*=mix(max(amb,lamp),1.0,em);

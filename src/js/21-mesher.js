@@ -8,6 +8,17 @@ for (let id = 48; id < REG_N; id++) {
   const k = KIND[id]; if (k === K.RAIL) { EMIT.add(id); DATA.blocks.names[id] = 'NEON RAIL ' + ['CYAN', 'MAGENTA', 'ORANGE', 'BLUE', 'GREEN'][id - 144]; DATA.blocks.build.push([id, DATA.blocks.names[id]]); }
   else DATA.blocks.names[id] = (DATA.blocks.names[b] || 'BLOCK') + ' ' + ['', 'SLAB', 'TOP SLAB', 'STAIRS', 'VERTICAL SLAB', 'WALL', 'PILLAR', 'BEAM', 'BEAM', 'FENCE', 'PANE'][k];
 }
+for (let t = 0; t < 4; t++) for (let f = 0; f < 4; f++) { const id = SCR0 + t * 4 + f; DATA.blocks.names[id] = SCR_NAMES[t]; DATA.blocks.colors[id] = SCR_COLORS[t]; COL[id] = COL[32]; }
+for (let t = 0; t < 4; t++) DATA.blocks.build.push([SCR0 + t * 4, SCR_NAMES[t]]);
+// where a monitor sits in its group of identical neighbours: i,j = its place counted from the left / bottom as seen from the front, W,H = size of the merged screen
+function screenRun(x, y, z, id) {
+  const f = DIR[id], ax = f < 2 ? 2 : 0, rs = (f === 0 || f === 3) ? -1 : 1, at = (n, k) => ax === 2 ? get(x, y + k, z + n) : get(x + n, y + k, z);
+  const same = (n, k) => at(n, k) === id;
+  let nl = 0, nr = 0, nd = 0, nu = 0;
+  while (nl < 7 && same(-rs * (nl + 1), 0)) nl++; while (nr < 7 - nl && same(rs * (nr + 1), 0)) nr++;
+  while (nd < 3 && same(0, -(nd + 1))) nd++; while (nu < 3 - nd && same(0, nu + 1)) nu++;
+  return { i: nl, j: nd, W: nl + nr + 1, H: nd + nu + 1, ax, rs };
+}
 // a box inside a cell (stairs and rails are built from these); faces on the cell boundary hide against full neighbours
 const cu2 = [0, 1, 1, 0], cv2 = [0, 0, 1, 1];
 function emitBox(out, x, y, z, a, b, id, skip) {
@@ -47,7 +58,7 @@ function buildChunk(cx, cz) {
   for (let y = 0; y < yMax; y++) for (let z = z0; z < z0 + CS; z++) for (let x = x0; x < x0 + CS; x++) {
     const li = ch ? ((x & 15) | ((z & 15) << 4) | (y << 8)) : 0;
     const id = ch ? ch.b[li] : world[idx(x, y, z)]; if (!id) continue;
-    const lav = isLava(id), sk = slabKind(id);
+    const lav = isLava(id), sk = slabKind(id), scr = KIND[id] === K.SCREEN;
     if (sk === 3) { meshPartial(out, id, x, y, z); continue; }
     const b = COL[id] || (COL[id] = [.6, .6, .6]), em = EMIT.has(id), bl = ch ? (ch.blood ? ch.blood[li] : 0) : blood[idx(x, y, z)];
     const vr = .86 + hash(x * 7 + y * 13, z * 5 + y * 3) * .28;
@@ -73,7 +84,9 @@ function buildChunk(cx, cz) {
       }
       const sh = SHADE[d][s > 0 ? 1 : 0];
       const verts = [], hv = (x * 73856093 ^ y * 19349663 ^ z * 83492791 ^ (d * 3 + (s > 0 ? 1 : 0)) * 2654435761) >>> 0;
-      const flipU = (hv & 1) === 1, flipV = d === 1 ? ((hv >> 1) & 1) === 1 : false, tileV = (em ? -1 : 1) * (blockTile(id, d === 1 && s > 0) + 1);
+      let sRun = null; if (scr && ((DIR[id] === 0 && d === 0 && s > 0) || (DIR[id] === 1 && d === 0 && s < 0) || (DIR[id] === 2 && d === 2 && s > 0) || (DIR[id] === 3 && d === 2 && s < 0))) sRun = screenRun(x, y, z, id);
+      const flipU = (hv & 1) === 1, flipV = d === 1 ? ((hv >> 1) & 1) === 1 : false; let tileV = (em ? -1 : 1) * (blockTile(id, d === 1 && s > 0) + 1);
+      if (sRun) tileV = -(200 + screenType(id) + 4 * (sRun.W - 1) + 32 * (sRun.H - 1) + 1);
       for (let k = 0; k < 4; k++) {
         const P = [x, y, z]; P[d] += s > 0 ? 1 : 0; P[u] += cu[k]; P[v] += cv[k];
         if (sk) P[1] = y + (sk === 2 ? .5 : 0) + (P[1] - y) * .5;                                  // half blocks are half as tall
@@ -84,6 +97,7 @@ function buildChunk(cx, cz) {
         else if (LT) { const l = lk[k]; r = b[0] * (m + l[0] * LGAIN); g = b[1] * (m + l[1] * LGAIN); bb = b[2] * (m + l[2] * LGAIN); }
         if (bl && !em) { const t = Math.min(.85, bl * .3); r = lerp(r, .42, t); g = lerp(g, .02, t); bb = lerp(bb, .03, t); }
         let su = d === 0 ? cv[k] : cu[k], sv = d === 0 ? cu[k] : cv[k]; if (sk && d !== 1) sv = sv * .5 + (sk === 2 ? .5 : 0);                         // texture runs horizontally along the face, up = +y
+        if (sRun) { const o = P[sRun.ax] - (sRun.ax === 2 ? z : x); su = sRun.i + (sRun.rs > 0 ? o : 1 - o); sv = sRun.j + (P[1] - y); verts.push(P[0], P[1], P[2], 1, 1, 1, 1, su, sv, tileV); continue; }
         verts.push(P[0], P[1], P[2], r, g, bb, wob, flipU ? 1 - su : su, flipV ? 1 - sv : sv, tileV);
       }
       const flip = ao[0] + ao[2] < ao[1] + ao[3];
@@ -133,7 +147,7 @@ function setBlock(x, y, z, id) {
   if (useChunks && OW.gen === 3 && stProtected(x, y, z)) return false;                    // the Helicarrier cannot be broken, built over or blown up
   if (useChunks) {
     const old = OW.set(x, y, z, id);                       // -1 = that chunk is not loaded (the edit is still remembered)
-    if (old !== -1) { markDirty(x, z); if (old !== id && (emits(id) || emits(old))) markDirtyLight(x, z); }
+    if (old !== -1) { markDirty(x, z); if (old !== id && (emits(id) || emits(old) || KIND[id] === K.SCREEN || KIND[old] === K.SCREEN)) markDirtyLight(x, z); }
     if (old !== id) for (const fn of blockListeners) fn(x, y, z, id, old);
     return true;
   }

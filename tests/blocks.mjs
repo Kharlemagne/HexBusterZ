@@ -44,4 +44,16 @@ const lt = await page.evaluate(() => {
 });
 check('a neon block throws coloured light that fades with distance', lt.em && lt.near && lt.near[2] > lt.near[0] && lt.near[2] > 3 && (!lt.far || lt.far[2] < lt.near[2]), JSON.stringify(lt));
 check('two neon colours mix between them (cyan + magenta gives both red and blue)', lt.mix && lt.mix[0] > 2 && lt.mix[2] > 2, JSON.stringify(lt.mix));
+const sc = await page.evaluate(() => {
+  __g.OW.update([{ x: 32, z: 100 }], 20000); for (let x = 28; x < 38; x++) for (let y = 81; y < 90; y++) for (let z = 96; z < 104; z++) __g.setBlock(x, y, z, 0);
+  const A = __g.screenId(0, 2), Bt = __g.screenId(1, 2);
+  for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) __g.setBlock(30 + i, 82 + j, 98, A);
+  __g.setBlock(33, 82, 98, A); __g.setBlock(34, 82, 98, Bt);
+  const sq = __g.screenRun(30, 82, 98, A), top = __g.screenRun(31, 83, 98, A), lone = __g.screenRun(33, 82, 98, A), other = __g.screenRun(34, 82, 98, Bt);
+  const P = __g.P; P.x = 30.5; P.z = 100.5; P.y = 82.01; P.yaw = 0; P.vx = P.vy = P.vz = 0; __g.keys.KeyW = true; for (let i = 0; i < 100; i++) __g.update(1 / 60); __g.keys.KeyW = false;
+  return { sq, top, lone, other, stop: P.z, full: __g.isFull(A), names: __g.MATS && [0, 4, 8, 12].map(t => DATA.blocks.names[3000 + t]) };
+});
+check('two by two identical monitors merge into one 2x2 screen, each block knowing its place', sc.sq.W === 2 && sc.sq.H === 2 && sc.sq.i === 0 && sc.sq.j === 0 && sc.top.i === 1 && sc.top.j === 1, JSON.stringify([sc.sq, sc.top]));
+check('a lone monitor, or one next to a different type, stays 1x1', sc.lone.W === 1 && sc.lone.H === 1 && sc.other.W === 1 && sc.other.H === 1, JSON.stringify([sc.lone, sc.other]));
+check('monitors are solid blocks and have their four names', sc.full && sc.stop > 98.9 && sc.names.join() === 'ALPHA-SCREEN,BETA-SCREEN,GAMMA-SCREEN,DELTA-SCREEN', JSON.stringify(sc));
 await g.close(); done(g.errors);
