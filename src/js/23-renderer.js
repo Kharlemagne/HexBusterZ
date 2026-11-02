@@ -11,7 +11,7 @@ precision highp float;
 #else
 precision mediump float;
 #endif
-varying vec4 vc;varying float vd;varying vec2 vuv;varying float vt;varying vec3 vwp;uniform sampler2D tex;uniform sampler2D avg;uniform vec3 fogc;uniform vec2 fogr;uniform float amb;uniform float tm;
+varying vec4 vc;varying float vd;varying vec2 vuv;varying float vt;varying vec3 vwp;uniform sampler2D tex;uniform sampler2D avg;uniform vec3 fogc;uniform vec2 fogr;uniform float ga;uniform float amb;uniform float tm;
 float lh(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 float lv(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(lh(i),lh(i+vec2(1.0,0.0)),f.x),mix(lh(i+vec2(0.0,1.0)),lh(i+vec2(1.0,1.0)),f.x),f.y);}
 // flowing lava in WORLD space, so neighbouring lava blocks form one continuous river: warped noise drifts, a dark crust floats on glowing orange, bright cracks open and close
@@ -71,7 +71,7 @@ void main(){
   float lamp=0.62*(1.0-smoothstep(1.5,22.0,vd));
   col*=mix(max(amb,lamp),1.0,em);
   float fg=smoothstep(fogr.x,fogr.y,vd)*min(vc.a,1.0);
-  gl_FragColor=vec4(mix(col,fogc,fg),1.0);
+  gl_FragColor=vec4(mix(col,fogc,fg),ga);
 }`;
 // the sky: one full-screen triangle; every pixel works out its view direction and paints gradient, sun, moon (an eye), stars and the horizon band
 const SKY_VS = `attribute vec2 q;varying vec2 ndc;void main(){ndc=q;gl_Position=vec4(q,1.0,1.0);}`;
@@ -269,8 +269,8 @@ function initGL() {
   gl.useProgram(prog);
   loc.p = 0; loc.c = 1; loc.uv = 2; loc.t = 3;
   loc.vp = gl.getUniformLocation(prog, 'vp'); loc.cam = gl.getUniformLocation(prog, 'cam');
-  loc.fogc = gl.getUniformLocation(prog, 'fogc'); loc.fogr = gl.getUniformLocation(prog, 'fogr'); loc.amb = gl.getUniformLocation(prog, 'amb'); loc.tm = gl.getUniformLocation(prog, 'tm');
-  gl.uniform1i(gl.getUniformLocation(prog, 'tex'), 0); gl.uniform1i(gl.getUniformLocation(prog, 'avg'), 1); gl.uniform1f(loc.amb, 1);
+  loc.fogc = gl.getUniformLocation(prog, 'fogc'); loc.fogr = gl.getUniformLocation(prog, 'fogr'); loc.amb = gl.getUniformLocation(prog, 'amb'); loc.ga = gl.getUniformLocation(prog, 'ga'); loc.tm = gl.getUniformLocation(prog, 'tm');
+  gl.uniform1i(gl.getUniformLocation(prog, 'tex'), 0); gl.uniform1i(gl.getUniformLocation(prog, 'avg'), 1); gl.uniform1f(loc.amb, 1); gl.uniform1f(loc.ga, 1);
   for (const k of [loc.p, loc.c, loc.uv, loc.t]) gl.enableVertexAttribArray(k);
   { const A = makeAtlas(); texAtlas = gl.createTexture(); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, texAtlas);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, A.canvas);
@@ -298,6 +298,11 @@ function flushDyn() {
   gl.bindBuffer(gl.ARRAY_BUFFER, dynBuf);
   gl.bufferData(gl.ARRAY_BUFFER, dyn.subarray(0, dn), gl.DYNAMIC_DRAW);
   bindAttribs(); gl.drawArrays(gl.TRIANGLES, 0, dn / VF); dn = 0;
+}
+// translucent things (glass, fluid): drawn after everything solid, blended, without writing depth, one flush per transparency level
+function flushDynA(a) {
+  if (!dn) return; gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false); gl.uniform1f(loc.ga, a);
+  flushDyn(); gl.depthMask(true); gl.disable(gl.BLEND); gl.uniform1f(loc.ga, 1);
 }
 let camX = 0, camY = 20, camZ = 0, camFX = 0, camFZ = 1, cullR = 140;
 function drawWorld() {

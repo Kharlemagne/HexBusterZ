@@ -175,17 +175,13 @@ const VATS = (() => { const v = []; for (const sx of [-1, 1]) for (let k = 0; k 
 function stVat(V) {
   const cx = V.x, cz = V.z, f = V.face;
   for (let dz = -3; dz <= 3; dz++) for (let dx = -3; dx <= 3; dx++) {                                    // the pad: hazard ring, grating inside
-    const m = Math.max(Math.abs(dx), Math.abs(dz)); if (m === 3) stPut(cx + dx, SD, cz + dz, ((dx + dz) & 1) ? B.HAZ : B.HULL); else stPut(cx + dx, SD, cz + dz, MID('PERFORATED STEEL'));
+    const m = Math.max(Math.abs(dx), Math.abs(dz)); if (m === 3) stPut(cx + dx, SD, cz + dz, ((dx + dz) & 1) ? B.HAZ : B.HULL); else stPut(cx + dx, SD, cz + dz, m <= 1 ? MID('VAT PURPLE') : MID('PERFORATED STEEL'));
   }
   for (const [dx, dz] of [[-2, -2], [2, -2], [-2, 2], [2, 2]]) for (let y = 1; y <= 9; y++) stPut(cx + dx, SD + y, cz + dz, y % 4 === 0 ? NEO('SKY') : B.HULL);       // four corner posts
-  for (let y = 1; y <= 8; y++) for (let u = -1; u <= 1; u++) {                                           // the glowing tank walls: back and both sides (the front is the open door)
-    stPut(cx - f * 2, SD + y, cz + u, SH(MID('VAT GREEN'), K.PANE)); stPut(cx + u * f, SD + y, cz - 2, SH(MID('VAT GREEN'), K.PANE)); stPut(cx + u * f, SD + y, cz + 2, SH(MID('VAT GREEN'), K.PANE));
-  }
   for (let dz = -2; dz <= 2; dz++) for (let dx = -2; dx <= 2; dx++) { stPut(cx + dx, SD + 10, cz + dz, ((dx + dz) & 1) ? MID('LAB PANEL') : B.HULL); }       // the cap with a lamp ring
   stBox(cx - 1, SD + 11, cz - 1, cx + 1, SD + 11, cz + 1, B.HULL); stPut(cx, SD + 11, cz, B.LAMP); stBox(cx, SD + 12, cz, cx, SD + 15, cz, B.PIPE);
-  stPut(cx + f * 3, SD + 8, cz, NEO('LIME')); stPut(cx + f * 3, SD + 7, cz, B.HULL);                      // the status light over the door
-  stBox(cx + f * 3, SD + 1, cz - 2, cx + f * 3, SD + 1, cz - 2, MID('RED TRUSS'));
-  for (const dz of [-3, 3]) stBox(cx + f * 3, SD + 1, cz + dz, cx + f * 3, SD + 3, cz + dz, B.HULL);        // door posts
+  stPut(cx + f * 3, SD + 8, cz, NEO('MAGENTA')); stPut(cx + f * 3, SD + 7, cz, B.HULL);                      // the status light over the door
+    for (const dz of [-3, 3]) stBox(cx + f * 3, SD + 1, cz + dz, cx + f * 3, SD + 3, cz + dz, B.HULL);        // door posts
   stBox(cx + f * 3, SD + 4, cz - 3, cx + f * 3, SD + 4, cz + 3, B.HULL);
 }
 function stRevivalBay() { for (const V of VATS) stVat(V); for (const sx of [-1, 1]) for (let z = 50; z <= 90; z += 4) stPut(sx * 13, SD, z, NEO('LIME')); }

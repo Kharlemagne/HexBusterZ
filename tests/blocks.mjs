@@ -13,7 +13,7 @@ const R = await page.evaluate(() => {
 check('chunks store 16-bit ids', R.chunk16);
 check('every material has its shapes, all ids unique, all with a colour', R.dup === 0 && !R.bad && R.noCol === 0 && R.n >= 1200, JSON.stringify(R));
 check('the original slab, stair and rail ids still mean the same thing', JSON.stringify(R.legacy) === JSON.stringify([48, 64, 80 + 4 + 2, 11, 43]), JSON.stringify(R.legacy));
-check('48 materials (16 concrete, 16 neon, 8 industrial, 8 lab and cargo) are in the palette', R.mats === 48);
+check('49 materials (16 concrete, 16 neon, 8 industrial, 9 lab, cargo and vat) are in the palette', R.mats === 49);
 const T = await page.evaluate(() => {
   const P = __g.P, o = {}; const clear = () => { for (let x = 40; x < 48; x++) for (let y = 81; y < 90; y++) for (let z = 98; z < 106; z++) __g.setBlock(x, y, z, 0); };
   clear(); const walk = (id, n) => { clear(); for (let z = 99; z <= 101; z++) __g.setBlock(44, 81, z, id); P.x = 41.5; P.z = 100.5; P.y = 81.01; P.vx = P.vy = P.vz = 0; P.yaw = -Math.PI / 2; __g.keys.KeyW = true; let my = 0; for (let i = 0; i < n; i++) { __g.update(1 / 60); my = Math.max(my, P.y); } __g.keys.KeyW = false; return [+P.x.toFixed(2), +my.toFixed(2)]; };

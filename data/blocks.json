@@ -509,6 +509,12 @@
    "color": "#ffb23a",
    "paint": "vat",
    "emissive": true
+  },
+  {
+   "name": "VAT PURPLE",
+   "color": "#b44aff",
+   "paint": "vat",
+   "emissive": true
   }
  ]
 }

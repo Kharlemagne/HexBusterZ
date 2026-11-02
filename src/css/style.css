@@ -74,7 +74,7 @@ h1.title span{color:#ffd23a}
 .rf-r{font-size:12px;letter-spacing:2px;color:#8a7ac8;max-width:640px}
 .rf-r u{cursor:pointer;margin:0 6px;color:#ff6af0}
 .rf-h{margin-top:14px;font-size:11px;letter-spacing:3px;color:#6a5aa8}
-#vatfx{position:fixed;inset:0;background:radial-gradient(circle,#2dff7a55,#0a6b3acc);opacity:0;pointer-events:none;z-index:8}
+#vatfx{position:fixed;inset:0;background:radial-gradient(circle,#a02dff55,#3a0a6bcc);opacity:0;pointer-events:none;z-index:8}
 #riftfx{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:9}
 .sh-t{font-size:clamp(30px,6vw,60px);font-style:italic;color:#ff2a3a;-webkit-text-stroke:2px #000;letter-spacing:4px}
 .sh-g{font-size:20px;color:#ff6af0;letter-spacing:4px;margin:8px 0 18px}
