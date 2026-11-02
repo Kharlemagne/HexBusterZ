@@ -10,14 +10,23 @@ for (let id = 48; id < REG_N; id++) {
 }
 for (let t = 0; t < 4; t++) for (let f = 0; f < 4; f++) { const id = SCR0 + t * 4 + f; DATA.blocks.names[id] = SCR_NAMES[t]; DATA.blocks.colors[id] = SCR_COLORS[t]; COL[id] = COL[32]; }
 for (let t = 0; t < 4; t++) DATA.blocks.build.push([SCR0 + t * 4, SCR_NAMES[t]]);
-// where a monitor sits in its group of identical neighbours: i,j = its place counted from the left / bottom as seen from the front, W,H = size of the merged screen
+// MONITOR MERGING. Identical monitors (same type, same facing, touching in the wall's plane) are tiled into RECTANGLES whose sides are 1 or an even number up to 10
+// (1x1, 2x1, 1x2, 2x2, 4x2, 10x10...). Never an L: a block that no rectangle can include just stays a 1x1 screen of its own until a neighbour arrives. The tiling is greedy from the
+// bottom-left of the group, so it depends only on which cells are there, never on the order they were placed in. Returns this block's place in its tile:
+// i,j = counted from the left / bottom as seen from the front, W,H = tile size.
 function screenRun(x, y, z, id) {
-  const f = DIR[id], ax = f < 2 ? 2 : 0, rs = (f === 0 || f === 3) ? -1 : 1, at = (n, k) => ax === 2 ? get(x, y + k, z + n) : get(x + n, y + k, z);
-  const same = (n, k) => at(n, k) === id;
-  let nl = 0, nr = 0, nd = 0, nu = 0;
-  while (nl < 7 && same(-rs * (nl + 1), 0)) nl++; while (nr < 7 - nl && same(rs * (nr + 1), 0)) nr++;
-  while (nd < 3 && same(0, -(nd + 1))) nd++; while (nu < 3 - nd && same(0, nu + 1)) nu++;
-  return { i: nl, j: nd, W: nl + nr + 1, H: nd + nu + 1, ax, rs };
+  const f = DIR[id], ax = f < 2 ? 2 : 0, rs = (f === 0 || f === 3) ? -1 : 1, R = 24, S = 2 * R + 1, have = new Uint8Array(S * S), used = new Uint8Array(S * S);
+  for (let b = -R; b <= R; b++) for (let a = -R; a <= R; a++) have[(b + R) * S + a + R] = (ax === 2 ? get(x, y + b, z + rs * a) : get(x + rs * a, y + b, z)) === id ? 1 : 0;
+  const free = (a, b) => a >= -R && a <= R && b >= -R && b <= R && have[(b + R) * S + a + R] && !used[(b + R) * S + a + R];
+  for (let b = -R; b <= 0; b++) for (let a = -R; a <= R; a++) {
+    if (!free(a, b)) continue;
+    let run = 0; while (run < 10 && free(a + run, b)) run++;
+    const W = run >= 2 ? run & ~1 : 1; let hh = 0; while (hh < 10) { let ok = true; for (let k = 0; k < W; k++) if (!free(a + k, b + hh)) { ok = false; break; } if (!ok) break; hh++; }
+    const H = hh >= 2 ? hh & ~1 : 1;
+    for (let q = 0; q < H; q++) for (let k = 0; k < W; k++) used[(b + q + R) * S + a + k + R] = 1;
+    if (a <= 0 && 0 < a + W && b <= 0 && 0 < b + H) return { i: -a, j: -b, W, H, ax, rs };
+  }
+  return { i: 0, j: 0, W: 1, H: 1, ax, rs };
 }
 // a box inside a cell (stairs and rails are built from these); faces on the cell boundary hide against full neighbours
 const cu2 = [0, 1, 1, 0], cv2 = [0, 0, 1, 1];
@@ -86,7 +95,7 @@ function buildChunk(cx, cz) {
       const verts = [], hv = (x * 73856093 ^ y * 19349663 ^ z * 83492791 ^ (d * 3 + (s > 0 ? 1 : 0)) * 2654435761) >>> 0;
       let sRun = null; if (scr && ((DIR[id] === 0 && d === 0 && s > 0) || (DIR[id] === 1 && d === 0 && s < 0) || (DIR[id] === 2 && d === 2 && s > 0) || (DIR[id] === 3 && d === 2 && s < 0))) sRun = screenRun(x, y, z, id);
       const flipU = (hv & 1) === 1, flipV = d === 1 ? ((hv >> 1) & 1) === 1 : false; let tileV = (em ? -1 : 1) * (blockTile(id, d === 1 && s > 0) + 1);
-      if (sRun) tileV = -(200 + screenType(id) + 4 * (sRun.W - 1) + 32 * (sRun.H - 1) + 1);
+      if (sRun) tileV = -(200 + screenType(id) + 4 * (sRun.W - 1) + 40 * (sRun.H - 1) + 1);
       for (let k = 0; k < 4; k++) {
         const P = [x, y, z]; P[d] += s > 0 ? 1 : 0; P[u] += cu[k]; P[v] += cv[k];
         if (sk) P[1] = y + (sk === 2 ? .5 : 0) + (P[1] - y) * .5;                                  // half blocks are half as tall

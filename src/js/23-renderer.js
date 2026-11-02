@@ -19,7 +19,7 @@ float H1(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 // MONITOR BLOCKS: four kinds (alpha green, beta blue, gamma amber, delta violet), each cycling through three little programs. uv counts blocks across the whole merged screen, so
 // two or more identical monitors side by side share ONE picture that is stretched over all of them.
 vec3 scr(float ti,vec2 uv,float t){
-  float k=ti-200.0,ty=mod(k,4.0),r=floor(k/4.0),W=mod(r,8.0)+1.0,Hh=floor(r/8.0)+1.0;
+  float k=ti-200.0,ty=mod(k,4.0),r=floor(k/4.0),W=mod(r,10.0)+1.0,Hh=floor(r/10.0)+1.0;
   float d=min(min(uv.x,W-uv.x),min(uv.y,Hh-uv.y));
   if(d<0.07)return vec3(0.015,0.02,0.025);
   if(d<0.1)return ty<0.5?vec3(0.1,0.5,0.25):ty<1.5?vec3(0.1,0.3,0.6):ty<2.5?vec3(0.6,0.4,0.1):vec3(0.45,0.15,0.6);

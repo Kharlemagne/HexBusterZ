@@ -56,4 +56,21 @@ const sc = await page.evaluate(() => {
 check('two by two identical monitors merge into one 2x2 screen, each block knowing its place', sc.sq.W === 2 && sc.sq.H === 2 && sc.sq.i === 0 && sc.sq.j === 0 && sc.top.i === 1 && sc.top.j === 1, JSON.stringify([sc.sq, sc.top]));
 check('a lone monitor, or one next to a different type, stays 1x1', sc.lone.W === 1 && sc.lone.H === 1 && sc.other.W === 1 && sc.other.H === 1, JSON.stringify([sc.lone, sc.other]));
 check('monitors are solid blocks and have their four names', sc.full && sc.stop > 98.9 && sc.names.join() === 'ALPHA-SCREEN,BETA-SCREEN,GAMMA-SCREEN,DELTA-SCREEN', JSON.stringify(sc));
+const mg = await page.evaluate(() => {
+  __g.OW.update([{ x: 32, z: 100 }], 20000); const A = __g.screenId(2, 2), put = (x, y) => __g.setBlock(x, y, 98, A);
+  for (let x = 24; x < 38; x++) for (let y = 81; y < 96; y++) __g.setBlock(x, y, 98, 0);
+  const R = (x, y) => { const r = __g.screenRun(x, y, 98, A); return [r.i, r.j, r.W, r.H]; };
+  put(24, 82); put(25, 82); put(24, 83);                                                     // an L
+  const L = [R(24, 82), R(25, 82), R(24, 83)];
+  for (let x = 28; x < 31; x++) put(x, 82);                                                  // a row of three
+  const row = [R(28, 82), R(29, 82), R(30, 82)];
+  for (let x = 30; x < 40; x++) for (let y = 86; y < 96; y++) if (x < 38) put(x, y);        // a 8 x 10 slab
+  const slab = [R(30, 86), R(37, 95)];
+  const wide = []; for (let x = 24; x < 38; x++) __g.setBlock(x, 82, 96, A); const R2 = x => { const r = __g.screenRun(x, 82, 96, A); return [r.i, r.j, r.W, r.H]; }; wide.push(R2(24), R2(35), R2(33));
+  return { L, row, slab, wide };
+});
+check('an L of monitors is not merged: the pair joins and the odd one stays alone', JSON.stringify(mg.L) === JSON.stringify([[0, 0, 2, 1], [1, 0, 2, 1], [0, 0, 1, 1]]), JSON.stringify(mg.L));
+check('three in a row: two merge, the third waits on its own', JSON.stringify(mg.row) === JSON.stringify([[0, 0, 2, 1], [1, 0, 2, 1], [0, 0, 1, 1]]), JSON.stringify(mg.row));
+check('a big wall merges in even sizes up to ten (8 wide x 10 high is one screen)', JSON.stringify(mg.slab) === JSON.stringify([[0, 0, 8, 10], [7, 9, 8, 10]]), JSON.stringify(mg.slab));
+check('a row longer than ten is cut into tiles of at most ten', mg.wide[0][2] === 10 && mg.wide[1][2] === 4 && mg.wide[1][0] === 1 && mg.wide[2][2] === 10, JSON.stringify(mg.wide));
 await g.close(); done(g.errors);

@@ -56,7 +56,10 @@ function stConsole(cx, cz, face, accent, screenCol, yb = 0, W = 3, stype = 0) {
   }
   for (const u of [-CON_W - 1, CON_W + 1]) for (let v = -2; v <= 1; v++) { P(u, v, 1, B.HULL); P(u, v, 2, v === -1 ? accent : B.TECH); P(u, v, 3, SH(B.HULL, K.SLAB_B)); }       // side wings with a status light each
   const sf = face === 's' ? 2 : face === 'n' ? 3 : face === 'e' ? 0 : 1;                           // the screen faces the operator
-  for (let u = -CON_W; u <= CON_W; u++) for (let h = 0; h < 4; h++) P(u, -2, 3 + h, (Math.abs(u) === CON_W && CON_W > 1) || h === 0 ? B.TECH : screenId(stype, sf));        // one merged monitor
+  for (let u = -CON_W; u <= CON_W; u++) for (let h = 0; h < 4; h++) {
+    if (stype === 'quad') { const q = (u === 0 || u === 1) && (h === 1 || h === 2); P(u, -2, 3 + h, q ? screenId(h === 1 ? u : 2 + u, sf) : B.TECH); }          // one of each monitor, 2x2: alpha beta / gamma delta (they never merge, they are different)
+    else P(u, -2, 3 + h, (Math.abs(u) === CON_W && CON_W > 1) || h === 0 ? B.TECH : screenId(stype, sf));
+  }
   P(-CON_W, 0, 2, accent); P(CON_W, 0, 2, accent);
 }
 // ---- the command dais: three tiers (slab step + full step each), a holo-table, a ring of consoles facing inward toward it, four tapering pylons
@@ -157,7 +160,7 @@ function stGatePlatform() {
     for (let y = SD + 3; y <= SD + 15; y++) { stBox(cx - 1, y, cz - 1, cx + 1, y, cz + 1, (y % 3 === 0) ? NEO('SKY') : B.TECH); if (y % 3 === 0) stRing(cx - 2, y, cz - 2, cx + 2, y, cz + 2, SH(B.HULL, K.SLAB_B)); }
     stBox(cx - 1, SD + 16, cz - 1, cx + 1, SD + 18, cz + 1, NEO('WHITE')); stBox(cx, SD + 19, cz, cx, SD + 21, cz, B.HULL);
   }
-  stConsole(Math.floor(RIFT.console.x), Math.floor(RIFT.console.z), 'w', NEO('SKY'), NEO('LIME'), 0, 3, 3);
+  stConsole(Math.floor(RIFT.console.x), Math.floor(RIFT.console.z), 'w', NEO('SKY'), NEO('LIME'), 0, 3, 'quad');
 }
 function stPerimeter() {
   for (const sx of [-1, 1]) for (const z of [30, 70]) stScreenWall(sx * 52, z, sx > 0 ? 'w' : 'e', 16, 7, [NEO('LIME'), NEO('CYAN'), NEO('ORANGE')]);
