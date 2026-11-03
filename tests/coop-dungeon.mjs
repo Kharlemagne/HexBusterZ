@@ -4,8 +4,8 @@ import { openGame, startPlaying, check, done, chromium, GL_ARGS } from './lib.mj
 console.log('co-op dungeon rules');
 const slow = () => { const raf = window.requestAnimationFrame.bind(window); window.requestAnimationFrame = f => setTimeout(() => raf(f), 700); };
 const browser = await chromium.launch({ args: GL_ARGS });
-const H = await openGame({ width: 320, height: 200, init: slow, browser }); await startPlaying(H.page);
-const G = await openGame({ width: 320, height: 200, init: slow, browser }); await startPlaying(G.page);
+const H = await openGame({ width: 320, height: 200, init: slow, browser }); await startPlaying(H.page, 1);
+const G = await openGame({ width: 320, height: 200, init: slow, browser }); await startPlaying(G.page, 1);
 const bridge = async (from, to) => {
   await from.page.exposeFunction('__out', async s => { try { await to.page.evaluate(s => window.__tr && window.__tr.onmessage && window.__tr.onmessage(s), s); } catch { } });
   await from.page.evaluate(() => { window.__tr = { send: s => window.__out(s), onmessage: null, close() { } }; });

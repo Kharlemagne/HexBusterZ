@@ -33,10 +33,10 @@ const fake = () => {
   };
 };
 const browser = await chromium.launch({ args: GL_ARGS });
-const H = await openGame({ width: 320, height: 200, init: fake, browser }); await startPlaying(H.page);
+const H = await openGame({ width: 320, height: 200, init: fake, browser }); await startPlaying(H.page, 1);
 await H.ctx.addInitScript(fake);
 const gp = await H.ctx.newPage(); const gerr = []; gp.on('pageerror', e => gerr.push('PAGEERROR ' + e.message));
-await gp.goto(GAME_URL); await gp.waitForFunction(() => window.__g && /CLICK TO PLAY/.test(document.getElementById('msub').textContent)); await startPlaying(gp);
+await gp.goto(GAME_URL); await gp.waitForFunction(() => window.__g && /CLICK TO PLAY/.test(document.getElementById('msub').textContent)); await startPlaying(gp, 1);
 const G = { page: gp };
 
 // --- packet encoding vs the MQTT 3.1.1 spec examples

@@ -3,8 +3,8 @@ import { openGame, startPlaying, check, done, chromium, GL_ARGS } from './lib.mj
 console.log('co-op over WebRTC (join codes)');
 const slow = () => { const raf = window.requestAnimationFrame.bind(window); window.requestAnimationFrame = f => setTimeout(() => raf(f), 700); };
 const browser = await chromium.launch({ args: [...GL_ARGS, '--disable-features=WebRtcHideLocalIpsWithMdns'] });
-const H = await openGame({ width: 320, height: 200, init: slow, browser }); await startPlaying(H.page);
-const G = await openGame({ width: 320, height: 200, init: slow, browser }); await startPlaying(G.page);
+const H = await openGame({ width: 320, height: 200, init: slow, browser }); await startPlaying(H.page, 1);
+const G = await openGame({ width: 320, height: 200, init: slow, browser }); await startPlaying(G.page, 1);
 const invite = await H.page.evaluate(() => __g.Coop.makeInvite());
 check('host makes an invite code', /^HBZJ1\./.test(invite), invite.slice(0, 20));
 const reply = await G.page.evaluate(c => __g.Coop.joinInvite(c), invite);
