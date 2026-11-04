@@ -29,7 +29,7 @@ function drawCannonArm() {
   const w = P.weapon, acc = MODE_ACC[w] || MODE_ACC[0];
   const spd = Math.hypot(P.vx, P.vz), gr = P.onGround ? 1 : .3, k = clamp(spd / 10, 0, 1.3) * gr;
   const bob = Math.sin(P.bobT + 1.2) * .012 * k, bobX = Math.cos(P.bobT * .5 + 1) * .01 * k, tt = performance.now() / 1000;
-  let ox = -.63 - bobX - P.swayX * .6, oy = -.175 + bob - P.kick * .1 + Math.sin(tt * 1.3) * .004, oz = -.6 + P.kick * .5, rx = .09 + P.kickRot * .4;
+  let ox = -.47 - bobX - P.swayX * .6, oy = -.175 + bob - P.kick * .1 + Math.sin(tt * 1.3) * .004, oz = -.6 + P.kick * .5, rx = .09 + P.kickRot * .4;
   if (P.sliding) { oy -= .06; ox += .03; } if (P.dashT > 0) oz += .04; if (P.slamming) oy -= .1;
   if (w === 4) { rx -= P.swing * 1.0; oz -= P.swing * .1; }
   const R = mulR(mulR(rotY(-.25 - P.swayX), rotX(rx)), rotZ(.05)), VS_ = .62;
@@ -65,7 +65,7 @@ function holoText(text, cx, cy, z, px, c) {
 }
 function drawModeHolo(info) {
   const { W, acc, tt } = info, w = P.weapon, f = .85 + Math.sin(tt * 23) * .05 + (Math.random() < .03 ? -.4 : 0);
-  const cx = W(0, 0, 0)[0] + .39, cy = W(0, 0, 0)[1] + .22, cz = -.55, px = .0026;
+  const cx = W(0, 0, 0)[0] + .23, cy = W(0, 0, 0)[1] + .22, cz = -.55, px = .0026;
   const a = [acc[0] * f, acc[1] * f, acc[2] * f], dim = [acc[0] * .35 * f, acc[1] * .35 * f, acc[2] * .35 * f];
   const name = WNAMES[w], pw = (name.length * 6 + 4) * px, ph = P.weapon === 4 ? .092 : .07, pyo = P.weapon === 4 ? -.011 : 0;
   pushBox(cx, cy - .004 + pyo, cz + .002, pw + .02, ph, .002, acc[0] * .05, acc[1] * .06, acc[2] * .06, null, false, 0, TILE.GLOW);                 // faint glass
