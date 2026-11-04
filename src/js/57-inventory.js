@@ -1,5 +1,5 @@
 // ============================================================
-//  INVENTORY — 36 slots (the first 9 are the dig-kit hotbar). Items are block ids (numbers) or special items (strings).
+//  INVENTORY — 36 slots (the first 9 are the omnitool hotbar). Items are block ids (numbers) or special items (strings).
 //  Breaking a block puts it in your inventory; placing one uses it up (unless CREATIVE is on). Saved with your profile
 //  (SaveStore.doc.inv); every player's inventory is their own, even in co-op.
 // ============================================================
@@ -78,7 +78,7 @@ function renderInv() {
   h += '</div><div class="ig hbrow">'; for (let i = 0; i < 9; i++) h += invCell(Inv.slots[i], i); h += '</div>';
   if (Inv.creative) { h += '<div class="sb-l">CREATIVE — click a block to grab a full stack</div><div class="ig cat">'; for (const [id, nm] of DATA.blocks.build) h += '<div class="ic" onclick="Inv.cursor={k:' + id + ',n:99};renderInv()"><u style="background:' + itemColor(id) + '"></u><em>' + nm + '</em></div>'; h += '</div>'; }
   h += '<div class="invbtn"><button onclick="Inv.sort();renderInv()">SORT BAG</button><button onclick="Inv.cursor=null;Inv.changed();renderInv()">TRASH HELD</button><button onclick="Inv.creative=!Inv.creative;Inv.changed();renderInv()">CREATIVE: ' + (Inv.creative ? 'ON' : 'OFF') + '</button><button onclick="closeInv()">CLOSE (I)</button></div>';
-  h += '<div class="sh-f">CLICK pick up / drop / swap · RIGHT-CLICK half or one · SHIFT-CLICK bag ⇄ hotbar · 1-9 pick a hotbar slot · the dig kit places from the selected slot</div>';
+  h += '<div class="sh-f">CLICK pick up / drop / swap · RIGHT-CLICK half or one · SHIFT-CLICK bag ⇄ hotbar · 1-9 pick a hotbar slot · the omnitool places from the selected slot</div>';
   el.inv.innerHTML = h; updateInvCursor(); if (gp.active) padInvMark();
 }
 // the doll turns to look at your mouse; called every frame while the screen is open
@@ -92,7 +92,7 @@ function updateInvCursor() {
   const c = Inv.cursor, e = el.invcur; if (!invOpen || !c) { e.style.display = 'none'; return; }
   e.style.display = 'block'; e.style.left = (mpos.x + 10) + 'px'; e.style.top = (mpos.y + 10) + 'px'; e.innerHTML = '<u style="background:' + itemColor(c.k) + '"></u>' + itemName(c.k) + ' ×' + c.n;
 }
-function drawBuildBar() {                                                           // the little 9-slot bar shown while the dig kit is in hand
+function drawBuildBar() {                                                           // the little 9-slot bar shown while the omnitool is in hand
   const showB = P.weapon === 4; css(el.bsel, 'display', showB ? 'flex' : 'none'); if (!showB) return;
   let key = '' + Inv.sel + Inv.creative; for (let i = 0; i < 9; i++) { const s = Inv.slots[i]; key += s ? s.k + ':' + s.n + ',' : '-,'; }
   if (key === Inv.shown) return; Inv.shown = key;

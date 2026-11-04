@@ -1,7 +1,7 @@
 // ---------------- HUD ----------------
 function updateHUD() {
   css(el.hpf, 'width', clamp(P.hp, 0, 100) + '%'); txt(el.hptxt, Math.max(0, Math.ceil(P.hp)));
-  css(el.hpf, 'background', P.hp < 30 ? '#ff2a3a' : '#e8d84a');
+  css(el.hpf, 'background', P.hp < 30 ? '#ff2a3a' : P.hp < 60 ? '#ffd23a' : '#37f0ff');
   dashBars.forEach((b, i) => { const v = Math.round(clamp(P.dashF - i, 0, 1) * 100) + '%'; if (b._w !== v) { b.style.setProperty('--w', v); b._w = v; } });
   const r = RANKS[S.rank]; txt(el.rank, r.l); css(el.rank, 'color', r.c); txt(el.rankname, r.n); css(el.rankname, 'color', r.c);
   css(el.sfill, 'width', ((S.style % 120) / 120 * 100) + '%'); css(el.sfill, 'background', r.c);

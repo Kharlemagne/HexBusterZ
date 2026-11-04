@@ -54,7 +54,7 @@ function renderFrame(dt) {
   if (state === 'play' || state === 'paused') {
     gl.clear(gl.DEPTH_BUFFER_BIT); gl.uniform1f(loc.amb, 1);
     gl.uniformMatrix4fv(loc.vp, false, perspective(1.05, asp, .01, 10)); gl.uniform3f(loc.cam, 0, 0, 0);
-    drawViewmodel(); flushDyn();
+    drawViewmodel();
   }
 }
 

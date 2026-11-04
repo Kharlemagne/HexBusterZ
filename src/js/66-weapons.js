@@ -3,7 +3,7 @@ function refreshHotbar() { hotSlots.forEach((d, i) => d.classList.toggle('locked
 function switchWeapon(i) {
   if (i === P.weapon || i < 0 || i > 4) return;
   if (!Save.unlocked[i]) { feed('LOCKED — FORGE IT AT THE SMITH', '#ff8a3a'); SFX.empty(); return; }
-  if (i === 4 && mode !== 'hub') { feed('DIG KIT WORKS IN THE HUB ONLY', '#ff8a3a'); SFX.empty(); return; }
+  if (i === 4 && mode !== 'hub') { feed('OMNITOOL WORKS IN THE HUB ONLY', '#ff8a3a'); SFX.empty(); return; }
   P.lastWeapon = P.weapon < 0 ? 0 : P.weapon; P.weapon = i; P.charge = 0; P.zoom = false; P.kick = .12; P.kickRot = -.4;
   hotSlots.forEach((d, k) => d.classList.toggle('on', k === i));
   txt(el.wname, WNAMES[i] + (i === 4 ? ' · ' + SHAPE_NAMES[P.shape || 0] : ''));
