@@ -1,0 +1,43 @@
+{
+  "grid": { "w": 11, "h": 9, "d": 15, "budget": 1000 },
+  "cats": [
+    { "id": "hull", "name": "HULL BLOCKS", "icon": "▣" },
+    { "id": "arms", "name": "ARMAMENT", "icon": "✦" },
+    { "id": "drive", "name": "DRIVE UNITS", "icon": "➤" },
+    { "id": "sys", "name": "SHIP SYSTEMS", "icon": "◉" }
+  ],
+  "parts": [
+    { "id": "plate",   "cat": "hull",  "name": "Plate Block",     "shape": "cube",    "cost": 18, "hp": 10, "info": "Plain armoured cube. The backbone of every hull." },
+    { "id": "half",    "cat": "hull",  "name": "Half Plate",      "shape": "slab",    "cost": 10, "hp": 5,  "info": "A half-height plate for flush floors and thin skins." },
+    { "id": "slope",   "cat": "hull",  "name": "Slope Plate",     "shape": "ramp",    "cost": 22, "hp": 8,  "info": "A ramp wedge. Turns a boxy nose into a blade." },
+    { "id": "corner",  "cat": "hull",  "name": "Corner Cap",      "shape": "corner",  "cost": 20, "hp": 6,  "info": "Tri-sided corner that closes a slope neatly." },
+    { "id": "spike",   "cat": "hull",  "name": "Spike Cap",       "shape": "pyramid", "cost": 24, "hp": 6,  "info": "Four-sided point. Good for prows and ram spikes." },
+    { "id": "pillar",  "cat": "hull",  "name": "Round Pillar",    "shape": "post",    "cost": 28, "hp": 12, "info": "Eight-sided column. Stack them into a fuselage." },
+    { "id": "nose",    "cat": "hull",  "name": "Nose Cone",       "shape": "cone",    "cost": 30, "hp": 7,  "rol": 1, "info": "Tapers to a point toward the front of the ship." },
+    { "id": "bubble",  "cat": "hull",  "name": "Round Cap",       "shape": "dome",    "cost": 26, "hp": 8,  "info": "A smooth half-dome for rounding off a hull." },
+    { "id": "wing",    "cat": "hull",  "name": "Wing Plate",      "shape": "plate",   "cost": 14, "hp": 3,  "rol": 3, "info": "Thin flat wing section. Helps the ship bank." },
+    { "id": "blade",   "cat": "hull",  "name": "Swept Blade",     "shape": "blade",   "cost": 20, "hp": 3,  "rol": 4, "mob": 1, "info": "Swept-back wing tip. Point the long edge forward." },
+    { "id": "tail",    "cat": "hull",  "name": "Tail Fin",        "shape": "fin",     "cost": 16, "hp": 3,  "mob": 4, "info": "Upright fin. Keeps the ship pointed where you aim it." },
+    { "id": "spar",    "cat": "hull",  "name": "Long Spar",       "shape": "spar",    "cost": 12, "hp": 2,  "info": "Thin rod that runs the whole cell. Struts and antennae." },
+
+    { "id": "bolt",    "cat": "arms",  "name": "Bolt Cannon",     "shape": "cannon",  "cost": 40, "off": 12, "info": "Reliable single barrel. Fires toward the front of the block." },
+    { "id": "twin",    "cat": "arms",  "name": "Twin Bolt",       "shape": "cannon2", "cost": 70, "off": 22, "info": "Two barrels in one block. Twice the noise." },
+    { "id": "turret",  "cat": "arms",  "name": "Dome Turret",     "shape": "turret",  "cost": 48, "off": 14, "hp": 4, "info": "A turret on a round base. Covers the top and bottom of the ship." },
+    { "id": "rocket",  "cat": "arms",  "name": "Rocket Pod",      "shape": "pod",     "cost": 85, "off": 26, "info": "Four launch tubes. Big bang, short reach." },
+    { "id": "lance",   "cat": "arms",  "name": "Beam Lance",      "shape": "lance",   "cost": 110, "off": 34, "pow": -6, "info": "A long precision beam. Drains reactor power." },
+
+    { "id": "ion",     "cat": "drive", "name": "Ion Thruster",    "shape": "thruster", "cost": 45, "spd": 10, "pow": -2, "info": "Compact engine. Nozzle faces the back of the block." },
+    { "id": "burn",    "cat": "drive", "name": "Burn Booster",    "shape": "booster", "cost": 90, "spd": 22, "pow": -5, "info": "Fat afterburner. Fast and thirsty." },
+    { "id": "vector",  "cat": "drive", "name": "Vector Nozzle",   "shape": "vector",  "cost": 60, "spd": 6, "mob": 8, "pow": -2, "info": "Steerable exhaust for tight turns." },
+    { "id": "twinion", "cat": "drive", "name": "Twin Ion",        "shape": "twinion", "cost": 80, "spd": 18, "pow": -4, "info": "Two small engines side by side." },
+    { "id": "gyro",    "cat": "drive", "name": "Gyro Ring",       "shape": "gyro",    "cost": 55, "rol": 10, "mob": 4, "pow": -1, "info": "Spinning disc. Lets the ship roll and flip." },
+
+    { "id": "helm",    "cat": "sys",   "name": "Command Dome",    "shape": "cockpit", "cost": 60, "hp": 20, "mob": 2, "info": "Pilot seat under a glass dome. Every ship needs one." },
+    { "id": "canopy",  "cat": "sys",   "name": "Glass Canopy",    "shape": "canopy",  "cost": 50, "hp": 12, "mob": 2, "info": "Streamlined cockpit with a swept glass roof." },
+    { "id": "core",    "cat": "sys",   "name": "Fusion Core",     "shape": "reactor", "cost": 80, "hp": 6, "pow": 14, "info": "Powers your weapons and engines." },
+    { "id": "cell",    "cat": "sys",   "name": "Cell Stack",      "shape": "battery", "cost": 40, "hp": 4, "pow": 8, "info": "A cheap block of stored power." },
+    { "id": "ward",    "cat": "sys",   "name": "Ward Emitter",    "shape": "shield",  "cost": 75, "hp": 25, "pow": -3, "info": "Projects a barrier that soaks hits." },
+    { "id": "tank",    "cat": "sys",   "name": "Cargo Tank",      "shape": "tank",    "cost": 30, "hp": 8, "info": "Fuel and cargo drum. Tough and cheap." },
+    { "id": "mast",    "cat": "sys",   "name": "Radar Mast",      "shape": "mast",    "cost": 30, "mob": 3, "info": "Sensor dish on a pole. Improves handling." }
+  ]
+}

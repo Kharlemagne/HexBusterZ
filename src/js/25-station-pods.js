@@ -14,6 +14,19 @@ function stShip(cx, cz, hullId, trimId) {                                       
   for (const [dx, dz] of [[-6, -2], [-6, 2], [4, -2], [4, 2]]) { stPut(cx + dx, y, cz + dz, B.TECH); stPut(cx + dx, y + 1, cz + dz, B.TECH); }
   for (const dz of [-2, 0, 2]) stPut(cx - 10, y + 3, cz + dz, NEO('ORANGE'));                       // engine glow
 }
+const SHIPYARD = { tx: 6, tz: -7, y0: Y0, px: 6, pz: 4 };                                         // the terminal you press E at, and the pad where your saved ship hovers
+function stYard() {
+  const y0 = Y0, cx = SHIPYARD.px, cz = SHIPYARD.pz;
+  for (let z = cz - 9; z <= cz + 9; z++) for (let x = cx - 8; x <= cx + 8; x++) {
+    const ex = Math.abs(x - cx) === 8, ez = Math.abs(z - cz) === 9;
+    stPut(x, y0, z, ex || ez ? NEO('SKY') : (x === cx || z === cz) ? NEO('ORANGE') : ((x + z) & 1) ? B.TECH : B.STREET);
+  }
+  stBox(cx - 6, y0 + 1, -13, cx + 6, y0 + 12, -12, B.TECH);                                        // the backing wall with the sign
+  for (let x = cx - 6; x <= cx + 6; x++) { stPut(x, y0 + 1, -11, NEO('SKY')); stPut(x, y0 + 12, -11, NEO('SKY')); }
+  stSign3('SHIPYARD', cx, y0 + 6, -11, NEO('ORANGE'));
+  stBox(cx - 2, y0 + 1, -9, cx + 2, y0 + 2, -8, B.HULL); stBox(cx - 2, y0 + 3, -9, cx + 2, y0 + 3, -9, B.TECH); stBox(cx - 2, y0 + 4, -9, cx + 2, y0 + 5, -9, NEO('SKY'));   // the console and its glowing screen
+  stPut(cx - 3, y0 + 1, -9, B.LAMP); stPut(cx + 3, y0 + 1, -9, B.LAMP);
+}
 function stHangar() {
   const y0 = Y0, H = HG.h;
   stBox(HG.x0 - 3, y0 - 4, HG.z0 - 3, HG.x1 + 3, y0 + H + 2, HG.z1 + 3, B.HULL);
@@ -70,7 +83,7 @@ function stPods() {
     for (let y = SD + 2; y <= SD + 4; y++) stPut(33, y, pz, NEO('SKY'));
     stText(String(i + 1), 29, SD + 6, pz - 2, 'z', 1, NEO('ORANGE'));
   }
-  stHangar(); stTunnel();
+  stHangar(); stTunnel(); stYard();
   for (let i = 0; i < PODZ.length; i++) { const pz = PODZ[i]; stBox(30, Y0 + 1, pz - 1, 32, SD, pz + 1, 0); }     // re-open the shafts where the tunnel sleeve overlapped
 }
 // ---------------- the ride ----------------
