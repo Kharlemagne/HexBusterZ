@@ -29,10 +29,10 @@ function drawCannonArm() {
   const w = P.weapon, acc = MODE_ACC[w] || MODE_ACC[0];
   const spd = Math.hypot(P.vx, P.vz), gr = P.onGround ? 1 : .3, k = clamp(spd / 10, 0, 1.3) * gr;
   const bob = Math.sin(P.bobT + 1.2) * .012 * k, bobX = Math.cos(P.bobT * .5 + 1) * .01 * k, tt = performance.now() / 1000;
-  let ox = -.39 - bobX - P.swayX * .6, oy = -.175 + bob - P.kick * .1 + Math.sin(tt * 1.3) * .004, oz = -.6 + P.kick * .5, rx = .09 + P.kickRot * .4;
+  let ox = -.34 - bobX - P.swayX * .6, oy = -.175 + bob - P.kick * .1 + Math.sin(tt * 1.3) * .004, oz = -.6 + P.kick * .5, rx = .09 + P.kickRot * .4;
   if (P.sliding) { oy -= .06; ox += .03; } if (P.dashT > 0) oz += .04; if (P.slamming) oy -= .1;
   if (w === 4) { rx -= P.swing * 1.0; oz -= P.swing * .1; }
-  const R = mulR(mulR(rotY(.3 - P.swayX), rotX(rx)), rotZ(.05)), VS_ = .62;
+  const R = mulR(mulR(rotY(.42 - P.swayX), rotX(rx)), rotZ(.05)), VS_ = .62;
   const W = (lx, ly, lz) => [ox + (R[0] * lx + R[1] * ly + R[2] * lz) * VS_, oy + (R[3] * lx + R[4] * ly + R[5] * lz) * VS_, oz + (R[6] * lx + R[7] * ly + R[8] * lz) * VS_];
   for (const p of CANNON.concat(MODE_PARTS[w])) {
     const pu = p.pulse ? 1 + Math.sin(tt * 6) * .12 : 1, q = W(p.o[0], p.o[1], p.o[2]);
