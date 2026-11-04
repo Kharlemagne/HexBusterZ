@@ -1,5 +1,7 @@
 # Multiplayer (co-op, host-authoritative, WebRTC)
 
+> **Shelved for now.** The menu entries (MULTIPLAYER on the title screen, OPEN TO CO-OP in the pause menu) are hidden unless the game is opened with `?coop=1`. The code is untouched, and the `coop*.mjs` tests only run with `node tests/run-all.mjs --coop` (or by hand). The last known-good state is on the `coop-working` branch. Features added since (vats, monitors, the Rift, the new character) have not been checked for guests.
+
 ## How it works
 - **Host** runs the real game: enemies, bosses, projectiles, hazards, rooms, the village and its save.
 - **Guests** rebuild the same world from a seed (`world` message: hub seed + village edits, or the dungeon run seed), send their own position / hits / block edits, and render what the host sends (20 snapshots per second, smoothed).

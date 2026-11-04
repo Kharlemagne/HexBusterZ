@@ -8,6 +8,8 @@
 //
 //  Messages  host -> guest: world, snap, block, hurt, bye     guest -> host: in, dmg, block
 // ============================================================
+// Co-op is shelved while the game's core is still changing: the menu entries are hidden unless the page is opened with ?coop=1 (the code and its tests are untouched).
+const COOP_ENABLED = /[?&]coop=1/.test(location.search);
 const NET_HZ = 20;
 const BUILD_ID = BUILD_INFO.version + '-' + BUILD_INFO.commit;      // shown in the CO-OP box; both players should match
 const Net = {

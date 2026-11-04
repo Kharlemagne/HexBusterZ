@@ -33,7 +33,7 @@ const OPTS = [                                                    // [key, label
 const optV = k => { const v = SaveStore.doc.settings[k]; return v === undefined || v === null ? ({ music: .7, sfx: .8, renderDist: 7, fov: 93, sens: 1, shake: 1 })[k] : v; };
 const SCREENS = {
   title() {
-    return btn('sp', 'SINGLEPLAYER') + btn('mp', 'MULTIPLAYER') + btn('opt', 'OPTIONS', 'h') + btn('ctl', 'CONTROLS', 'h') + btn('savedata', 'SAVE DATA · EXPORT / IMPORT', 'sm')
+    return btn('sp', 'SINGLEPLAYER') + (COOP_ENABLED ? btn('mp', 'MULTIPLAYER') : '') + btn('opt', 'OPTIONS', 'h') + btn('ctl', 'CONTROLS', 'h') + btn('savedata', 'SAVE DATA · EXPORT / IMPORT', 'sm')
       + '<div id="mmsg" class="mmsg">' + esc(Menu.msg) + '</div>';
   },
   worlds() {
@@ -78,7 +78,7 @@ const SCREENS = {
     const c = WorldStore.cur, online = Net.role !== 'offline';
     let h = '<div class="mh">GAME MENU</div>' + btn('resume', 'BACK TO GAME') + btn('opt', 'OPTIONS', 'h') + btn('ctl', 'CONTROLS', 'h');
     if (Net.role === 'host') h += '<div class="mroom">ROOM CODE: <b>' + esc(Coop.code || '…') + '</b> · ' + (players.length - 1) + ' FRIEND(S) CONNECTED</div>';
-    else if (Net.role === 'offline') h += btn('opencoop', 'OPEN TO CO-OP');
+    else if (Net.role === 'offline' && COOP_ENABLED) h += btn('opencoop', 'OPEN TO CO-OP');
     h += btn('quit', online ? 'DISCONNECT AND QUIT TO TITLE' : 'SAVE AND QUIT TO TITLE', 'sm');
     h += '<div class="mnote">' + (c && !c.ephemeral ? esc(c.meta.name) + ' · SEED ' + c.meta.seed + ' · ' : '') + DayNight.clock() + '</div><div id="mmsg" class="mmsg">' + esc(Menu.msg) + '</div>';
     return h;
