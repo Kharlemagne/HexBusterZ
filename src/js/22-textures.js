@@ -6,7 +6,7 @@
 // ============================================================
 const TILE = { WHITE: 0, GRAIN: 64, PLATE: 65, FLESHY: 66, BONEY: 67, GLOW: 68, CLOTH: 69 };
 // ids 0..31 use tiles 0..63; the city blocks (32..47, and every slab made from them) use tiles 128..159
-const PAINT3_KEYS = ['perf', 'corr', 'diam', 'vent', 'rack', 'greeble', 'slate', 'marble', 'tile', 'crate', 'truss', 'lab', 'screen', 'vat'];
+const PAINT3_KEYS = ['perf', 'corr', 'diam', 'vent', 'rack', 'greeble', 'slate', 'marble', 'tile', 'crate', 'truss', 'lab', 'screen', 'vat', 'wire', 'ledface'];
 const MAT_TILES = MATS.map((m, i) => m.paint ? 160 + 2 * PAINT3_KEYS.indexOf(m.paint) : null);       // new materials either reuse an existing material's pattern (and just differ in colour) or have their own tile pair from 160
 const blockTile = (id, top) => { const b = BASE[id] || id; if (b >= MAT0) { const t = MAT_TILES[b - MAT0]; if (t !== null) return t + (top ? 1 : 0); return blockTile(MATS[b - MAT0].tile, top); } return b < 32 ? b * 2 + (top ? 1 : 0) : 128 + (((b - 32) & 15) * 2) + (top ? 1 : 0); };
 function tn(x, y, s) { let h = (Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263) ^ Math.imul(s | 0, 1274126177)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
@@ -72,6 +72,8 @@ const PAINT3 = {                                                                
   truss: (x, y, t, n) => { const a = Math.abs(x - y) < 2 || Math.abs(x + y - 15) < 2, e = x < 2 || x > 13 || y < 2 || y > 13; return (a || e) ? 1.05 + (n - .5) * .1 : .22; },
   lab: (x, y, t, n, s) => { const k = Math.floor(x / 5) + Math.floor(y / 5) * 3, a = tn(k, 0, s); if (x % 5 === 4 || y % 5 === 4) return .6; return a > .7 ? [.6, 1.3, .9] : a > .35 ? .95 + (n - .5) * .1 : [.8, .9, 1.0]; },        // picture 1: wall of lab equipment
   screen: (x, y, t, n, s) => { if (x === 0 || y === 0 || x === 15 || y === 15) return .5; const w = Math.sin(x * .7 + tn(0, 0, s) * 9) * 3.2 + 8; if (Math.abs(y - w) < 1.1) return [.6, 1.7, .9]; return (y % 5 === 2 && x % 3 !== 0 && tn(x, y, s) > .45) ? [.5, 1.2, .8] : .35 + (n - .5) * .08; },
+  wire: (x, y, t, n, s) => { const k = (x + (y >> 3)) % 4, on = ((y + x * 3) % 7) < 5 && x % 2 === 0; if (!on) return .5 + (n - .5) * .15 + (x % 4 === 3 ? .1 : 0); return [[.35, .9, 2.8], [2.8, 2.3, .3], [2.8, .4, .35], [.4, 2.5, .7]][k]; },          // black loom: dark braided cable with a few coloured strands
+  ledface: (x, y, t, n, s) => { if (x === 0 || y === 0 || x === 15) return .45; if (y % 4 === 0) return .6; const q = tn(x >> 1, y >> 2, s); if (x % 2 === 1 && y % 4 === 2) return q > .86 ? [2.6, 1.5, .1] : q > .3 ? [.1, 1.9, 2.2] : .8; return .85 + (n - .5) * .1; },
   vat: (x, y, t, n) => { const bub = n > .93 ? 1.3 : 1; return (.85 + .3 * Math.sin(y * .6 + x * .25)) * bub + (n - .5) * .06; },
   marble: (x, y, t, n, s) => { const v = Math.abs(Math.sin(x * .45 + Math.sin(y * .3) * 2.4 + tn(0, 0, s) * 7)); return v < .1 ? .62 : 1.0 + (n - .5) * .08; }
 };

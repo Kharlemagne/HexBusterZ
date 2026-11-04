@@ -24,14 +24,23 @@ const DRONE = [
   P_([-.6, .05, 0], [.5, .06, .12], 0x39424d), P_([.6, .05, 0], [.5, .06, .12], 0x39424d), P_([0, .05, -.6], [.12, .06, .5], 0x39424d), P_([0, .05, .6], [.12, .06, .5], 0x39424d),
   P_([0, .2, 0], [.18, .04, .18], 0xffffff, { orb: { r: .85, y: .28, spd: 11, ph: 0 } }), P_([0, .2, 0], [.18, .04, .18], 0xffffff, { orb: { r: .85, y: .28, spd: 11, ph: 1.6 } }), P_([0, .2, 0], [.18, .04, .18], 0xffffff, { orb: { r: .85, y: .28, spd: 11, ph: 3.1 } }), P_([0, .2, 0], [.18, .04, .18], 0xffffff, { orb: { r: .85, y: .28, spd: 11, ph: 4.7 } })
 ];
-const BRIDGE_CREW = [[29.5, -33, 1], [29.5, -24, 1], [29.5, -12, 1], [29.5, 0, 1], [29.5, 12, 1], [29.5, 24, 1], [29.5, 33, 1], [.5, -17.5, 0], [.5, 18.5, 2]];     // x, z, facing: 1 east, 0 south, 2 north
+const BRIDGE_CREW = [[29.5, -33, 1], [29.5, -24, 1], [29.5, -12, 1], [29.5, 0, 1], [29.5, 12, 1], [29.5, 24, 1], [29.5, 33, 1], [14.5, 33.5, 0], [-14.5, 33.5, 0], [28.5, 33.5, 0], [-28.5, 33.5, 0], [14.5, -33.5, 2], [-14.5, -33.5, 2], [28.5, -33.5, 2], [-28.5, -33.5, 2]];     // x, z, facing: 1 east, 0 south, 2 north
+const RING_CREW = [0, 1, 2, 3, 4, 5].map(k => { const a = k * Math.PI / 3 + Math.PI / 6, ox = Math.cos(a), oz = Math.sin(a); return [ox * 4.6 + .5, oz * 4.6 + .5, Math.atan2(ox, oz)]; });
 const GATE_CREW = [[-26.5, -72, -1], [-26.5, -86, -1], [27.5, -72, 1], [27.5, -86, 1]];
 const faceYaw = f => f === 1 ? Math.PI / 2 : f === -1 ? -Math.PI / 2 : f === 2 ? Math.PI : 0;
 const fire = (a, b) => { const k = Math.max(0, Math.min(1, a)); return [.25 + .75 * k, .02 + .6 * k * k * (.6 + .4 * b), .01 + .35 * k * k * k]; };
+function drawLeds(t) {                                                         // blinking server lights: 8 frames, uneven 120 ms steps, one hash per light
+  const fr = Math.floor(t / .12);
+  for (let i = 0; i < STN_LEDS.length; i++) { const L = STN_LEDS[i]; if (Math.abs(L[2] - camZ) > 45 || Math.abs(L[0] - camX) > 60) continue;
+    for (let k = 0; k < 2; k++) { const q = ih(i * 2 + k, (fr + i) & 7, 3, 55); if (q < .45) continue; const amber = q > .93, c = amber ? [1, .6, 0] : [0, .9, 1];
+      pushBox(L[0] - .02, L[1] + .2 + k * .4, L[2] + .15 + k * .5, .06, .12, .12, c[0], c[1], c[2], null, false); } }
+}
 function stationNear(rz0, rz1) { return camZ > rz0 && camZ < rz1; }
 function drawStationProps(t) {
   if (stationNear(-125, 50)) {                                                  // ---- the bridge (visible from the door too)
     BRIDGE_CREW.forEach(([x, z, f], i) => drawParts(CREW, x, SD + 1, z, rotY(faceYaw(f)), 1, t, false, t * 5 + i * 1.7));
+    RING_CREW.forEach(([x, z, yaw], i) => drawParts(CREW, x, SD + 1, z, rotY(yaw), 1, t, false, t * 5 + i));
+    drawLeds(t);
     const a = t * .07, wx = Math.cos(a) * 22, wz = Math.sin(a) * 22; drawParts(WHEELY, wx, SD + 1, wz, rotY(-a + Math.PI), 1, t, false, t * 4);
     const b = -t * .22, dxp = Math.cos(b) * 8, dzp = Math.sin(b) * 8; drawParts(DRONE, dxp, SD + 12 + Math.sin(t * 1.1) * .5, dzp, rotY(-b), 1, t, false, 0);
     pushBox(dxp, SD + 11.5 + Math.sin(t * 1.1) * .5, dzp, .12, 1.8, .12, .4, .9, 1, null, false, .55);
@@ -78,20 +87,22 @@ function holoPanel(cx, cy, cz, w, h, axis, col, t, seed) {                     /
   pushBox(cx, cy, cz, sx, h, sz, col[0] * .4, col[1] * .4, col[2] * .4, null, false);
 }
 function drawStationGlass(t) {
+  const BR = .85 + .15 * Math.sin(t * 3), gph = (t * 1.1) % 7, GL = gph < .18 ? .35 : 1, HJ = gph < .18 ? Math.sin(t * 90) * .25 : 0;                // breathing alpha, and a brief glitch every few seconds
   const near = stationNear(-125, 50) || camZ < -20; if (!near) return;
   const CY = [.25, .85, 1], OR = [1, .5, .12];
   if (camZ > -45) {                                                             // ---- the bridge: the holo cylinder over the console, window tint
     const cx = HEX.x + .5, cz = HEX.z + .5, y0 = SD + 5, H = 9, N = 20;
     for (let k = 0; k < N; k++) { const a = k / N * TAU + t * .3, fl = .5 + .5 * Math.sin(t * 2 + k * 1.3); pushBox(cx + Math.cos(a) * 3.2, y0 + H / 2, cz + Math.sin(a) * 3.2, 1.05, H, .06, CY[0], CY[1] * (.7 + .3 * fl), CY[2], rotY(-a - Math.PI / 2), false); }
     pushBox(cx, y0 + H / 2, cz, 1.3, H, 1.3, .1, .5, .8, null, false);
-    flushDynA(.28);
+    flushDynA(.28 * BR * GL);
     for (let k = 0; k < 5; k++) { const y = y0 + ((k * 1.9 + t * .9) % H), rr = 3.25; for (let s = 0; s < 24; s++) { const a = s / 24 * TAU + t * (k & 1 ? .5 : -.5); pushBox(cx + Math.cos(a) * rr, y, cz + Math.sin(a) * rr, .5, .08, .5, .5, 1, 1, rotY(-a), false); } }
     for (let k = 0; k < 14; k++) { const a = t * .4 + k * 1.7, rr = 1 + (k % 4) * .5, y = y0 + 1 + ((k * 2.3 + t * .7) % (H - 2)); pushBox(cx + Math.cos(a) * rr, y, cz + Math.sin(a) * rr, .3, .3, .3, .7, 1, 1, rotY(a), false); }
     pushBox(cx, SD + 4.6, cz, 6.4, .12, 6.4, .3, .9, 1, null, false); pushBox(cx, SD + 5 + H, cz, 6.8, .12, 6.8, .3, .9, 1, null, false);
-    flushDynA(.55);
+    flushDynA(.55 * BR * GL);
+    drawBridgeHolos(t, BR * GL, HJ);
     const wy = (WIN.y0 + WIN.y1 + 1) / 2, wz = (WIN.z0 + WIN.z1 + 1) / 2;                       // the window: a faint blue pane with slow reflections
     pushBox(WIN.x0 + 1.5, wy, wz, .1, WIN.y1 - WIN.y0 + 1, WIN.z1 - WIN.z0 + 1, .1, .25, .4, null, false); flushDynA(.07);
-    for (let k = 0; k < 4; k++) { const z = -26 + ((k * 17 + t * 2.5) % 54); pushBox(WIN.x0 + 1.4, wy + Math.sin(k * 2) * 3, z, .06, 12, .5, .5, .8, 1, rotY(0), false); } flushDynA(.06);
+    for (let k = 0; k < 4; k++) { const z = -26 + ((k * 17 + t * 2.5) % 54); pushBox(WIN.x0 + 1.4, wy + Math.sin(k * 2) * 3, z, .06, 16, .5, .5, .8, 1, rotX(.7), false); } flushDynA(.06);
     for (const [x, z, f] of BRIDGE_CREW) { if (f !== 1) continue; holoPanel(x + 2.1, SD + 6.2, z, 2.8, 1.6, 'z', CY, t, z); }          // little holo screens over the desks
     flushDynA(.22);
   }
@@ -109,4 +120,20 @@ function drawStationGlass(t) {
     for (const [x, z] of GATE_CREW) { const s = x < 0 ? -1 : 1; for (let k = 0; k < 3; k++) pushBox(x + s * 2.6, SD + 6 + k * .15, z, .06, 1.7, 3 - k * .5, OR[0], OR[1] * .8, OR[2], null, false); }
     flushDynA(.26);
   }
+}
+
+// the ring console's holograms: a floating curved band of data over the desk, a wireframe globe over the pedestal, small screens above the desks
+function drawBridgeHolos(t, br, hj) {
+  const cx = HEX.x + .5, cz = HEX.z + .5, C = [.2, .9, 1];
+  for (let k = 0; k < 28; k++) { const a = Math.PI * .6 + k / 28 * Math.PI * 1.55 + t * .08; if (a > TAU) continue; const x = cx + Math.cos(a) * 7.2 + hj, z = cz + Math.sin(a) * 7.2;
+    pushBox(x, SD + 15, z, 1.3, 3.2, .08, .12, .45, .55, rotY(-a - Math.PI / 2), false);
+    for (let r = 0; r < 4; r++) if (ih(k, r, Math.floor(t * 2 + r), 12) > .35) pushBox(x, SD + 13.8 + r * .75, z, .9 * (.4 + ih(k, r, 3, 9) * .6), .22, .1, .5, 1, 1, rotY(-a - Math.PI / 2), false); }
+  flushDynA(.34 * br);
+  for (let i = 0; i < 3; i++) for (let k = 0; k < 14; k++) { const a = k / 14 * TAU + t * (.5 + i * .2), r = 2.2; const ca = Math.cos(a), sa = Math.sin(a), tilt = i * 1.05;
+    pushBox(cx + ca * r * Math.cos(tilt) * .98, SD + 7 + sa * r, cz + ca * r * Math.sin(tilt), .3, .3, .3, .3, 1, 1, null, false); }
+  for (let k = 0; k < 8; k++) { const y = SD + 7 + Math.sin(k / 8 * Math.PI - Math.PI / 2 + Math.PI / 2) * 0; pushBox(cx, SD + 4.6 + k * .55, cz, 2.4 * Math.sin((k + .5) / 8 * Math.PI) + .1, .05, 2.4 * Math.sin((k + .5) / 8 * Math.PI) + .1, .3, .9, 1, rotY(t * .3 + k), false); }
+  flushDynA(.6 * br);
+  for (let k = 0; k < 6; k++) { const a = k * Math.PI / 3 + Math.PI / 6, x = cx + Math.cos(a) * 6.6, z = cz + Math.sin(a) * 6.6; pushBox(x, SD + 6.2 + Math.sin(t * 1.2 + k) * .15, z, 2.2, 1.4, .06, .1, .5, .6, rotY(-a - Math.PI / 2), false); }
+  for (const sx of [-1, 1]) for (const ox of [14, 28]) for (const sz of [-1, 1]) pushBox(sx * ox + .5, SD + 6.4, sz * 32.5 + .5, 2.6, 1.3, .06, .1, .5, .6, null, false);
+  flushDynA(.3 * br);
 }

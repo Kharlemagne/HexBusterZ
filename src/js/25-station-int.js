@@ -72,67 +72,80 @@ function wallPaint(R, fn) {                                                     
     for (let z = R.z0; z <= R.z1; z++) { stPut(R.x0 - 1, y, z, fn(z, ry, 'w')); stPut(R.x1 + 1, y, z, fn(z, ry, 'e')); }
   }
 }
-// ---------------- B: the bridge
+// ---------------- B: the bridge (v2, from Karl's concept art and block spec)
 const HEX = { x: 0, z: 0 };
+let STN_LEDS = [];                                                                             // [x,y,z] of server faces that get blinking lights drawn over them
+const inwardFace = (dx, dz) => Math.abs(dx) > Math.abs(dz) ? (dx > 0 ? 1 : 0) : (dz > 0 ? 3 : 2);   // the monitor side that looks at the centre
 function stHallB() {
-  const R = RM.B, T = IM('BRIDGE TRIM'), SK = NEO('TEAL'), BP = IM('BRIDGE PLATE'), GF = IM('GRATED FLOOR');
-  for (let z = R.z0; z <= R.z1; z++) for (let x = R.x0; x <= R.x1; x++) {                          // floor: dark tiles, neon paths
-    const dx = x + .5, dz = z + .5, ax = Math.abs(dx);
-    let id = ((x >> 1) + (z >> 1)) & 1 ? BP : T; const h = hexD(dx, dz);
-    if (h > 11.5 && h < 12.6) id = SK;                                                               // ring round the console
-    if (ax < 1.1 && (z > 13 || z < -13)) id = GF;                             // lane from the doors to the hexagon
-    if (Math.abs(dz) < 1.1 && ax > 13 && dx < 38) id = (x & 3) < 2 ? SK : B.HULL;                    // cross lane
-    if (dx < -13 && (Math.abs(dz - 18) < .6 || Math.abs(dz + 18) < .6)) id = NEO('LIME');
+  STN_LEDS = [];
+  const R = RM.B, SK = NEO('TEAL'), T = IM('BRIDGE TRIM'), BP = IM('BRIDGE PLATE'), GF = IM('GRATED FLOOR'), WIRE = IM('CABLE BUNDLE'), LEDF = IM('SERVER LED'), AM = IM('AMBER LED');
+  // ---- floor: big dark panels with trim seams, cyan square rings and lanes
+  for (let z = R.z0; z <= R.z1; z++) for (let x = R.x0; x <= R.x1; x++) {
+    const dx = x + .5, dz = z + .5, ax = Math.abs(dx), az = Math.abs(dz), ch = Math.max(ax, az);
+    let id = ((x & 7) === 0 || (z & 7) === 0) ? T : (((x >> 3) + (z >> 3)) & 1 ? BP : IM('GREEBLE PLATE'));
+    if (((x & 7) === 0 || (z & 7) === 0) && ((x * 7 + z * 3) % 5 === 0)) id = BP;
+    if ((ch > 15.5 && ch < 16.5 && ax + az < 35) || (ch > 23.5 && ch < 24.5 && az < 30 && ax < 36)) id = SK;               // square rings of light
+    if (ax < 1.1 && (z > 8 || z < -8) && !(ch > 15.5 && ch < 16.5)) id = (z & 3) < 3 ? SK : T;                           // the lane through both doors
+    if (az < 1.1 && ax > 8 && ax < 30) id = (x & 3) < 3 ? SK : T;                                                        // the cross lane to the window
+    if (ax > 36 && ax < 39) id = T;
     stPut(x, SD, z, id);
   }
-  wallPaint(R, (u, ry, side) => ry <= 1 ? T : (ry === 4 || ry === R.h - 4) ? SK : (ry === 5 || ry === R.h - 5) ? T : ((u + 80) % 10 === 0 ? T : (ry > 5 && ry < 15 && ((u + 80) % 10) > 1 && ((u + 80) % 10) < 9) ? (ry === 6 || ry === 14 ? SK : T) : BP));
-  // ---- the hexagonal command console
-  const cx = HEX.x, cz = HEX.z;
-  for (let z = -14; z <= 14; z++) for (let x = -14; x <= 14; x++) {
-    const dx = x + .5, dz = z + .5, h = hexD(dx, dz);
-    if (h < 10.2) { stPut(x, SD + 1, z, h > 9.2 ? SK : B.HULL); if (h < 9.2) stPut(x, SD, z, T); }
-    if (h < 8.2) { stPut(x, SD + 1, z, B.HULL); stPut(x, SD + 2, z, h > 7.4 ? B.TECH : B.HULL); }
-    if (h < 6.8) { stPut(x, SD + 3, z, h > 6.1 ? SH(B.HULL, K.SLAB_B) : B.TECH); }
-    if (h < 5.9) { stPut(x, SD + 3, z, B.TECH); stPut(x, SD + 4, z, SH(B.HULL, K.SLAB_B)); }
-    if (h < 4.4) { stPut(x, SD + 4, z, h > 3.7 ? SK : B.HULL); }
-    if (h < 3.7) { stPut(x, SD + 4, z, 0); stPut(x, SD + 3, z, B.HULL); }
-    if (h < 2.0) stPut(x, SD + 3, z, NEO('WHITE'));                                                  // the projector disc
-    if (h >= 6.3 && h < 7.3) { const f = Math.abs(dx) * .8660254 + Math.abs(dz) * .5 > Math.abs(dz) ? (dx > 0 ? 0 : 1) : (dz > 0 ? 2 : 3); stPut(x, SD + 2, z, screenId((x + z + 8) % 4 < 2 ? 1 : 0, f)); }       // screens round the drum
+  // ---- walls: charcoal plates, trim bands, vertical light strips every 10, black cable looms along the middle
+  wallPaint(R, (u, ry, side) => {
+    const m = (u + 100) % 10; if (ry <= 1) return T; if (ry === 5 || ry === R.h - 5) return T; if (ry === 4 || ry === R.h - 4) return SK;
+    if (m === 0) return T; if (m === 5 && ry > 5 && ry < R.h - 5) return SK;
+    if (ry >= 9 && ry <= 11 && m > 0 && m < 10 && side !== 'e') return WIRE;
+    return (ry & 3) === 0 ? T : BP;
+  });
+  // ---- the ring console in the middle: an open hexagonal desk, operators inside, gaps north and south
+  for (let z = -12; z <= 12; z++) for (let x = -12; x <= 12; x++) {
+    const dx = x + .5, dz = z + .5, h = hexD(dx, dz), ax = Math.abs(dx);
+    if (h < 5.9) { stPut(x, SD, z, h > 5.2 ? SK : (h < 2.0 ? NEO('WHITE') : GF)); }
+    if (h >= 5.9 && h < 9.6) { stPut(x, SD, z, T); if (ax < 2.6 && h < 9.0) { stPut(x, SD, z, (z & 1) ? SK : T); continue; }          // (the gap you walk through)
+      const f = inwardFace(-dx, -dz);
+      stPut(x, SD + 1, z, T);
+      if (h < 7.0) { stPut(x, SD + 2, z, SH(T, K.SLAB_B)); stPut(x, SD + 1, z, BP); }
+      else if (h < 8.2) { stPut(x, SD + 2, z, h < 7.6 ? SH(T, K.STAIR, f === 0 ? 0 : f === 1 ? 1 : f === 2 ? 2 : 3) : BP); stPut(x, SD + 3, z, h < 7.6 ? 0 : SH(T, K.SLAB_B)); }
+      else { stPut(x, SD + 2, z, BP); stPut(x, SD + 3, z, h > 9.0 ? SK : BP); }
+      if (h >= 6.2 && h < 7.0 && ((x + z) & 3) === 0) stPut(x, SD + 3, z, screenId((x + z + 7) % 4, f)); }
   }
-  for (const [dx, dz, f] of [[0, -14, 'n'], [0, 14, 's']]) stConsole(dx, dz, f, SK, NEO('LIME'), 0, 4, 'quad');
-  for (let k = 0; k < 6; k++) { const a = k * Math.PI / 3 + Math.PI / 6, px = Math.round(Math.cos(a) * 10.4), pz = Math.round(Math.sin(a) * 10.4); for (let y = 2; y <= 3; y++) stPut(px, SD + y, pz, SK); }
-  // ---- the ceiling: neon rings, spokes, a cyan eye over the console
+  for (let z = -3; z <= 3; z++) for (let x = -3; x <= 3; x++) { const h = hexD(x + .5, z + .5); if (h < 1.6) { stPut(x, SD + 1, z, T); stPut(x, SD + 2, z, h < 1.0 ? NEO('WHITE') : SK); } }      // the hologram projector pedestal
+  // ---- ceiling: dark panels, nested squares of light, recessed light boxes
   const top = SD + R.h - 1;
   for (let z = R.z0; z <= R.z1; z++) for (let x = R.x0; x <= R.x1; x++) {
-    const d = dist2(x, z, 0, 0); let id = 0;
-    for (const r of [7, 13, 20, 27, 34]) if (Math.abs(d - r) < .55) id = SK;
-    if (!id && (Math.abs(x + .5) < .6 || Math.abs(z + .5) < .6) && d > 2 && d < 36) id = B.HULL;
-    if (d < 5.5) id = d > 4.2 ? NEO('WHITE') : (d > 3 ? SK : B.LAMP);
-    if (id) stPut(x, top, z, id);
+    const ax = Math.abs(x + .5), az = Math.abs(z + .5), ch = Math.max(ax, az * 1.15); let id = ((x & 3) === 0 || (z & 3) === 0) ? T : BP;
+    for (const k of [7, 13, 19, 25, 31]) if (Math.abs(ch - k) < .6 && (k < 25 || ax < 36)) id = SK;
+    if ((Math.abs(ax - 20) < 2 && Math.abs(az - 20) < 2) || (Math.abs(ax - 34) < 1.5 && az < 6)) id = SK;
+    stPut(x, top, z, id);
+    if (id === SK && ((x + z) & 1) === 0) stPut(x, top - 1, z, SH(T, K.SLAB_T));
   }
-  for (let a = 0; a < 6; a++) { const t = a * Math.PI / 3 + Math.PI / 6; for (let r = 3; r < 9; r += 1) stPut(Math.round(Math.cos(t) * r), top - 1, Math.round(Math.sin(t) * r), B.HULL); }
-  // ---- west wall: server racks with coloured cables, and a monitor bank above them
-  const cab = [IM('CABLE BUNDLE'), NEO('BLUE'), NEO('LIME'), IM('CABLE BUNDLE'), NEO('RED'), IM('AMBER LED'), NEO('YELLOW')];
+  for (let z = R.z0 + 2; z <= R.z1 - 2; z += 8) { stBox(R.x0, top - 1, z, R.x1, top - 1, z, SH(T, K.BEAMX)); }
+  for (let x = R.x0 + 2; x <= R.x1 - 2; x += 10) { stBox(x, top - 2, R.z0, x, top - 2, R.z1, SH(WIRE, K.BEAMZ)); }                 // black cable trays across the ceiling
+  // ---- west wall: server racks with LED faces, black wire looms down from the trays, a big wall screen in the gap
   for (let z = -36, n = 0; z <= 32; z += 8, n++) {
-    for (let dz = 0; dz < 5; dz++) { stBox(R.x0, SD + 1, z + dz, R.x0 + 1, SD + 10, z + dz, ((z + dz) & 1 ? IM('SERVER LED') : IM('SERVER RACK'))); if (dz === 0 || dz === 4) stBox(R.x0, SD + 1, z + dz, R.x0 + 1, SD + 11, z + dz, B.HULL); stPut(R.x0 + 2, SD + 4 + (dz & 1) * 3, z + dz, cab[(n + dz) % cab.length]); }
-    stBox(R.x0, SD + 11, z, R.x0 + 1, SD + 11, z + 4, B.TECH);
-    for (let c = 0; c < 3; c++) { const col = cab[(n * 3 + c) % cab.length], zz = z + 1 + c; for (let y = SD + 12; y < SD + R.h - 1; y++) stPut(R.x0 + 1, y, zz, col); for (let x = R.x0 + 2; x <= R.x0 + 2 + (n % 3) * 2 + 4; x++) stPut(x, SD + R.h - 2 - c, zz, col); }      // cables up the wall and along the ceiling
-    for (let c = 0; c < 4; c++) { const col = cab[(n + c * 2) % cab.length]; for (let x = R.x0 + 2; x < R.x0 + 8 + c * 2 + n % 4; x++) stPut(x, SD + 1, z + c, SH(col, K.SLAB_B)); }          // and across the floor
+    if (n === 4) { stBank(R.x0 + 1, SD + 6, -6, 'z', 8, 6, 0, 1); continue; }
+    for (let dz = 0; dz < 5; dz++) {
+      const edge = dz === 0 || dz === 4;
+      for (let y = SD + 1; y <= SD + 10; y++) { stPut(R.x0, y, z + dz, edge ? T : (y & 1 ? LEDF : IM('SERVER RACK'))); stPut(R.x0 + 1, y, z + dz, edge ? T : (y % 3 === 0 ? IM('SERVER RACK') : LEDF)); if (!edge && y % 3 !== 0) STN_LEDS.push([R.x0 + 2, y, z + dz]); }
+    }
+    stBox(R.x0, SD + 11, z, R.x0 + 1, SD + 11, z + 4, T);
+    for (let c = 0; c < 3; c++) { const zz = z + 1 + c; for (let y = SD + 12; y < top - 1; y++) stPut(R.x0 + 1, y, zz, SH(WIRE, K.PILLAR)); }                      // looms going up
+    for (let c = 0; c < 4; c++) for (let x = R.x0 + 2; x < R.x0 + 6 + c * 2; x++) stPut(x, SD + 1, z + c, SH(WIRE, K.SLAB_B));                          // and spilling over the floor
+    if (n % 2 === 0) { stPut(R.x0 + 2, SD + 11, z + 2, AM); stPut(R.x0 + 2, SD + 11, z + 3, SK); }
   }
-  stBank(R.x0 + 1, SD + 14, -20, 'z', 8, 5, 0, 0); stBank(R.x0 + 1, SD + 14, 12, 'z', 8, 5, 0, 2);
-  // ---- north and south walls: monitor banks beside the doors
-  for (const sx of [-1, 1]) { stBank(sx * 24 - 4, SD + 6, R.z1, 'x', 8, 6, 3, sx > 0 ? 1 : 3); stBank(sx * 24 - 4, SD + 6, R.z0, 'x', 8, 6, 2, sx > 0 ? 2 : 0); stBank(sx * 24 - 2, SD + 14, R.z1, 'x', 4, 5, 3, 2); stBank(sx * 24 - 2, SD + 14, R.z0, 'x', 4, 5, 2, 1); }
-  // ---- east side: the window desks
-  for (let z = -24; z <= 24; z += 12) stConsole(33, z, 'w', SK, NEO('LIME'), 0, 3, z === 0 ? 'quad' : (z / 12 + 2) & 3);
-  for (const z of [-33, 33]) stConsole(33, z, 'w', NEO('ORANGE'), NEO('YELLOW'), 0, 2, 1);
-  // the window itself: carve the tunnel, mullions, a lit frame
+  // ---- north and south walls: desks with monitor banks above, operators face the wall
+  for (const sx of [-1, 1]) for (const ox of [14, 28]) { stConsole(sx * ox, R.z1 - 4, 'n', SK, AM, 0, 3, (ox + sx) & 3); stConsole(sx * ox, R.z0 + 4, 's', SK, AM, 0, 3, (ox + 1) & 3); }
+  for (const sx of [-1, 1]) for (const ox of [14, 28]) { stBank(sx * ox - 3, SD + 9, R.z1, 'x', 6, 5, 3, ox & 3); stBank(sx * ox - 3, SD + 9, R.z0, 'x', 6, 5, 2, (ox >> 1) & 3); }
+  // ---- east side: window desks facing the glass, operators at their backs
+  for (let z = -24; z <= 24; z += 12) stConsole(33, z, 'w', SK, AM, 0, 3, z === 0 ? 'quad' : (z / 12 + 2) & 3);
+  for (const z of [-33, 33]) stConsole(33, z, 'w', SK, AM, 0, 2, 1);
+  // ---- the window: a deep stepped frame round the opening
   stBox(WIN.x0, WIN.y0, WIN.z0, WIN.x1, WIN.y1, WIN.z1, 0);
-  for (let z = WIN.z0; z <= WIN.z1; z += 10) stBox(WIN.x0, WIN.y0, z, WIN.x1, WIN.y1, z + (z === WIN.z1 ? 0 : 0), z === WIN.z0 || z === WIN.z1 ? B.HULL : B.TECH);
-  for (let z = WIN.z0; z <= WIN.z1; z++) { stPut(WIN.x0 - 1, WIN.y0 - 1, z, SK); stPut(WIN.x0 - 1, WIN.y1 + 1, z, SK); stPut(WIN.x0, WIN.y0 - 1, z, B.HULL); stPut(WIN.x0, WIN.y1 + 1, z, B.HULL); }
-  for (let y = WIN.y0; y <= WIN.y1; y++) { stPut(WIN.x0 - 1, y, WIN.z0, SK); stPut(WIN.x0 - 1, y, WIN.z1, SK); }
-  for (let z = -29; z <= 29; z += 10) for (let y = WIN.y0 + 1; y <= WIN.y1 - 1; y += 4) stPut(WIN.x0 - 1, y, z, NEO('WHITE'));
-  // ---- pillars and lamps down both long sides
-  for (let z = -36; z <= 36; z += 12) for (const x of [R.x0 + 4]) for (let y = SD + 1; y < SD + R.h - 1; y++) if (z % 12 === 0 && Math.abs(z) > 28) stPut(x, y, z, y % 5 === 0 ? SK : B.HULL);
+  for (let z = WIN.z0; z <= WIN.z1; z += 10) stBox(WIN.x0, WIN.y0, z, WIN.x1, WIN.y1, z, z === WIN.z0 || z === WIN.z1 ? T : BP);
+  for (let z = WIN.z0 - 2; z <= WIN.z1 + 2; z++) for (let k = 0; k < 3; k++) { stPut(WIN.x0 - 1 - (k === 2 ? 1 : 0), WIN.y0 - 1 - k, z, k === 1 ? SK : T); stPut(WIN.x0 - 1 - (k === 2 ? 1 : 0), WIN.y1 + 1 + k, z, k === 1 ? SK : T); }
+  for (let y = WIN.y0 - 3; y <= WIN.y1 + 3; y++) for (const z of [WIN.z0 - 1, WIN.z1 + 1, WIN.z0 - 2, WIN.z1 + 2]) stPut(WIN.x0 - 1, y, z, (z === WIN.z0 - 1 || z === WIN.z1 + 1) ? SK : T);
+  // ---- pillars in the corners
+  for (const [x, z] of [[-38, -40], [38, -40], [-38, 38], [38, 38]]) for (let y = SD + 1; y < top; y++) stPut(x, y, z, y % 5 === 0 ? SK : T);
 }
 // ---------------- the doors between the halls
 function stDoors() {
