@@ -19,17 +19,23 @@ const PLAYER_PARTS = (() => {
   add([0, 1.96, 0], [.66, .46, .6], PM_ST, { tl: G }); add([0, 1.63, -.01], [.58, .2, .54], PM_ST2, { tl: G });
   for (const sd of [-1, 1]) { add([sd * .14, 1.86, -.302], [.17, .17, .03], 0x000000); add([sd * .14, 1.86, -.318], [.13, .13, .03], PM_CY, { e: 1, pulse: { f: 2, ph: sd, amp: .05 } }); }
   add([0, 2.07, -.302], [.13, .13, .03], 0x000000); add([0, 2.07, -.318], [.095, .095, .03], PM_CY, { e: 1, pulse: { f: 3, ph: 0, amp: .08 } });
-  // the skull on the face plate: brow ridge, cheekbones, a nose cavity, and a toothed jaw over a dark mouth
-  add([0, 1.965, -.31], [.54, .035, .04], PM_ST3); for (const sd of [-1, 1]) { add([sd * .22, 1.755, -.312], [.12, .05, .05], PM_ST3); add([sd * .035, 1.745, -.306], [.05, .09, .03], 0x000000, { rz: sd * .12 }); }
-  add([0, 1.71, -.306], [.1, .03, .03], 0x000000); add([0, 1.64, -.286], [.46, .12, .03], 0x000000);
-  for (let k = 0; k < 7; k++) { const x = (k - 3) * .068; add([x, 1.66, -.3], [.05, .075, .03], 0x8a8aa0, { tl: TILE.BONEY }); add([x, 1.585, -.3], [.05, .05, .03], 0x6e6e84, { tl: TILE.BONEY }); }
+  // the face plate is half a skull: the -x half is pale bone (brow, socket round the eye, cheekbone, half a nose, teeth over a dark mouth), the +x half stays plain dark plate
+  const BONE = 0x6b6b80, BONE2 = 0x8a8aa0;
+  add([-.165, 1.96, -.296], [.31, .46, .03], BONE, { tl: TILE.BONEY }); add([-.15, 1.63, -.268], [.27, .2, .03], BONE, { tl: TILE.BONEY });       // bone over the upper face and the jaw
+  add([-.165, 1.97, -.322], [.31, .04, .03], BONE2, { tl: TILE.BONEY }); add([-.2, 1.745, -.322], [.17, .05, .03], BONE2, { tl: TILE.BONEY });     // brow ridge + cheekbone
+  add([-.14, 1.86, -.31], [.2, .2, .03], 0x000000);                                                                                              // the deep socket (the eye glows inside it)
+  add([-.035, 1.76, -.318], [.055, .1, .03], 0x000000, { rz: -.1 }); add([-.04, 1.7, -.318], [.07, .03, .03], 0x000000);                         // half a nose cavity at the seam
+  add([-.15, 1.625, -.287], [.27, .11, .03], 0x000000); for (let k = 0; k < 4; k++) { const x = -.05 - k * .065; add([x, 1.655, -.29], [.045, .07, .03], BONE2, { tl: TILE.BONEY }); add([x, 1.595, -.29], [.045, .05, .03], BONE2, { tl: TILE.BONEY }); }
+  add([0, 1.87, -.31], [.014, .62, .02], PM_CRK);                                                                                                // the seam between bone and plate
+  for (const [x, y] of [[.3, 2.14], [.3, 1.6], [.04, 1.6]]) add([x, y, -.298], [.03, .03, .02], PM_ST3);                                         // rivets on the plate half
+  add([.16, 1.625, -.287], [.24, .012, .02], PM_CYD, { e: 1 }); add([.16, 1.66, -.287], [.24, .012, .02], PM_CYD, { e: 1 }); add([.16, 1.59, -.287], [.24, .012, .02], PM_CYD, { e: 1 });   // vent slits
   add([.27, 2.17, -.31], [.012, .22, .01], PM_CRK, { rz: .4 }); add([.2, 1.98, -.31], [.012, .16, .01], PM_CRK, { rz: -.5 }); add([-.22, 1.72, -.31], [.012, .14, .01], PM_CRK, { rz: .35 }); add([-.1, 2.14, -.31], [.01, .12, .01], PM_CRK, { rz: -.35 });
   add([.332, 2.05, 0], [.01, .26, .012], PM_CRK, { rz: .5 }); add([-.332, 1.98, .06], [.01, .22, .012], PM_CRK, { rz: -.4 }); add([.14, 2.0, .302], [.012, .3, .01], PM_CRK, { rz: .3 }); add([-.18, 1.9, .302], [.012, .26, .01], PM_CRK, { rz: -.45 });
   add([-.3, 2.23, -.1], [.12, .08, .16], PM_ST3, { rz: .4 }); add([-.24, 2.27, .1], [.08, .08, .12], PM_ST3, { rz: -.3 }); add([-.33, 2.22, .12], [.07, .06, .1], PM_ST2, { rz: .8 });       // the chipped corner
   // ---- lyre horns: the +x one is whole (sweeps out, climbs, curls its tip back in); the -x one snapped off partway and ends in jagged shards
-  strand(.27, 2.2, 0, 1, [[15, .17], [40, .17], [70, .17], [100, .15], [125, .13]], .13, .045, PM_ST, { tl: G });
-  strand(-.27, 2.2, 0, -1, [[15, .17], [40, .17], [66, .1]], .13, .09, PM_ST, { tl: G });
-  add([-.585, 2.5, 0], [.1, .12, .1], PM_ST3, { rz: .35 }); add([-.65, 2.52, .03], [.055, .17, .055], PM_ST3, { rz: .7 }); add([-.55, 2.55, -.02], [.05, .2, .05], PM_ST3, { rz: -.2 }); add([-.62, 2.47, -.05], [.04, .1, .04], PM_ST2, { rz: 1.1 }); add([-.58, 2.46, 0], [.035, .035, .035], PM_CY, { e: 1, pulse: { f: 4, ph: 1, amp: .2 } });
+  strand(.27, 2.2, 0, 1, [[15, .17], [40, .17], [70, .17], [100, .15], [125, .13]], .21, .08, PM_ST, { tl: G });
+  strand(-.27, 2.2, 0, -1, [[15, .15], [45, .1]], .21, .17, PM_ST, { tl: G });
+  add([-.49, 2.34, 0], [.15, .1, .15], PM_ST3, { rz: .35 }); add([-.53, 2.4, .04], [.07, .14, .07], PM_ST3, { rz: .7 }); add([-.45, 2.42, -.03], [.06, .17, .06], PM_ST3, { rz: -.2 }); add([-.5, 2.36, -.07], [.05, .09, .05], PM_ST2, { rz: 1.1 }); add([-.47, 2.34, -.1], [.035, .035, .035], PM_CY, { e: 1, pulse: { f: 4, ph: 1, amp: .2 } });
   // ---- neck, flat shoulder line with square joints (a cyan marker on the right one)
   add([0, 1.62, .01], [.1, .09, .1], PM_ST2);
   add([0, 1.58, 0], [.62, .07, .2], PM_ST3, { tl: G });
