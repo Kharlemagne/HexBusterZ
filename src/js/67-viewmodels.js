@@ -29,10 +29,10 @@ function drawCannonArm() {
   const w = P.weapon, acc = MODE_ACC[w] || MODE_ACC[0];
   const spd = Math.hypot(P.vx, P.vz), gr = P.onGround ? 1 : .3, k = clamp(spd / 10, 0, 1.3) * gr;
   const bob = Math.sin(P.bobT + 1.2) * .012 * k, bobX = Math.cos(P.bobT * .5 + 1) * .01 * k, tt = performance.now() / 1000;
-  let ox = -.347 - bobX - P.swayX * .6, oy = -.208 + bob - P.kick * .1 + Math.sin(tt * 1.3) * .004, oz = -.761 + P.kick * .5, rx = .25 + P.kickRot * .4;
+  let ox = -.38 - bobX - P.swayX * .6, oy = -.22 + bob - P.kick * .1 + Math.sin(tt * 1.3) * .004, oz = -.45 + P.kick * .5, rx = .25 + P.kickRot * .4;
   if (P.sliding) { oy -= .06; ox += .03; } if (P.dashT > 0) oz += .04; if (P.slamming) oy -= .1;
   if (w === 4) { rx -= P.swing * 1.0; oz -= P.swing * .1; }
-  const R = mulR(mulR(rotY(-.38 - P.swayX), rotX(rx)), rotZ(.05)), VS_ = .45;
+  const R = mulR(mulR(rotY(-.38 - P.swayX), rotX(rx)), rotZ(.05)), VS_ = .6;
   const W = (lx, ly, lz) => [ox + (R[0] * lx + R[1] * ly + R[2] * lz) * VS_, oy + (R[3] * lx + R[4] * ly + R[5] * lz) * VS_, oz + (R[6] * lx + R[7] * ly + R[8] * lz) * VS_];
   for (const p of CANNON.concat(MODE_PARTS[w])) {
     const pu = p.pulse ? 1 + Math.sin(tt * 6) * .12 : 1, q = W(p.o[0], p.o[1], p.o[2]);
@@ -65,7 +65,7 @@ function holoText(text, cx, cy, z, px, c) {
 }
 function drawModeHolo(info) {
   const { W, acc, tt } = info, w = P.weapon, f = .85 + Math.sin(tt * 23) * .05 + (Math.random() < .03 ? -.4 : 0);
-  const cx = W(0, 0, 0)[0] + .057, cy = W(0, 0, 0)[1] + .253, cz = -.55, px = .0026;
+  const cx = W(0, 0, 0)[0] + .09, cy = W(0, 0, 0)[1] + .265, cz = -.55, px = .0026;
   const a = [acc[0] * f, acc[1] * f, acc[2] * f], dim = [acc[0] * .35 * f, acc[1] * .35 * f, acc[2] * .35 * f];
   const name = WNAMES[w], pw = (name.length * 6 + 4) * px, ph = P.weapon === 4 ? .092 : .07, pyo = P.weapon === 4 ? -.011 : 0;
   pushBox(cx, cy - .004 + pyo, cz + .002, pw + .02, ph, .002, acc[0] * .05, acc[1] * .06, acc[2] * .06, null, false, 0, TILE.GLOW);                 // faint glass
