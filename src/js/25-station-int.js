@@ -158,6 +158,30 @@ function stDoors() {
     for (let z = z0; z <= z1; z++) for (let x = -w; x <= w; x++) stPut(x, SD, z, (Math.abs(x) < 2) ? ((z & 1) ? NEO('SKY') : B.HULL) : B.TECH);
   }
 }
+// big sliding blast doors in the two hall openings: they open as you come near and shut behind you (drawn + collided dynamically)
+const STN_DOORS = [{ zc: 42.5, w: 9.5, y0: 1, h: 12, o: 0 }, { zc: -43.5, w: 9.5, y0: 1, h: 13, o: 0 }];
+function doorBoxes(d) { const gap = d.o * d.w, pw = d.w - gap, t = 1.3; return pw > .05 ? [[.5 - d.w, .5 - d.w + pw, d.zc - t, d.zc + t], [.5 + d.w - pw, .5 + d.w, d.zc - t, d.zc + t]] : []; }
+function updateStationDoors(dt) {
+  for (const d of STN_DOORS) { const near = Math.abs(P.z - d.zc) < 9 && Math.abs(P.x) < d.w + 5 && P.y < SD + d.h + 3; d.o = clamp(d.o + (near ? 1 : -1) * dt * .9, 0, 1); }
+}
+function stationDoorHit(x, y, z, hw, h) {
+  if (mode !== 'hub') return false;
+  for (const d of STN_DOORS) { if (d.o > .97 || y + h <= SD + d.y0 || y >= SD + d.y0 + d.h) continue; for (const b of doorBoxes(d)) if (x + hw > b[0] && x - hw < b[1] && z + hw > b[2] && z - hw < b[3]) return true; }
+  return false;
+}
+function drawStationDoors(t) {
+  for (const d of STN_DOORS) {
+    const bx = doorBoxes(d), yc = SD + d.y0 + d.h / 2;
+    for (const b of bx) {
+      const cx = (b[0] + b[1]) / 2, w = b[1] - b[0], cz = (b[2] + b[3]) / 2, th = b[3] - b[2];
+      pushBox(cx, yc, cz, w, d.h, th, .5, .56, .64, null, true, 0, TILE.PLATE);
+      for (let k = 1; k < 4; k++) pushBox(cx, SD + d.y0 + d.h * k / 4, cz, w + .05, .18, th + .06, .08, .09, .11, null, true, 0);       // seams
+      const hz = d.zc > 0 ? -1 : 1;
+      for (const sz of [-1, 1]) pushBox(cx, yc, cz + sz * (th / 2 + .02), w * .9, .16, .05, 1, .6, .1, null, false, 0, TILE.GLOW);            // amber hazard line
+    }
+    if (d.o < .98) for (const sx of [-1, 1]) pushBox(.5 + sx * (d.w + .2), yc, d.zc, .5, d.h, 2.9, .12, .14, .17, null, true, 0, TILE.PLATE);
+  }
+}
 // ---------------- C: the Hellgate chamber
 function stGateRing() {
   const cx = GATE_C.x, cy = GATE_C.y;

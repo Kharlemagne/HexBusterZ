@@ -1,6 +1,7 @@
 // ---------------- main loop ----------------
 let worldDt = 1 / 60;
 function update(dt) {
+  if (useChunks && OW.gen === 3 && mode === 'hub') updateStationDoors(dt);
   S.time += dt; P.btCd = Math.max(0, P.btCd - dt);
   const was = P.bt > 0; P.bt = Math.max(0, P.bt - dt); if (was && P.bt <= 0) { SFX.btEnd(); feed('BULLET TIME OVER', '#6ec8ff'); }
   const bt = P.bt > 0, wdt = bt ? dt * .1 : dt, pdt = bt ? dt * .5 : dt;      // bullet time: world at 10%, you at 50%

@@ -230,28 +230,6 @@ vec3 space(vec3 d){
     float t0=fract(r2+tm*(0.07+fl*0.035)),th0=pow(t0,1.7)*2.6,len=0.07+0.2*th0*th0;if(th<th0-len||th>th0)continue;
     float f=(th-(th0-len))/len;col+=mix(vec3(0.6,0.8,1.0),vec3(1.0,0.5,0.9),r1)*f*f*(1.0-dp/wdt*0.5)*(0.5+0.9*th0/2.6);
   }
-  { vec3 pd=normalize(vec3(1.0,0.16,-0.08));                      // a ringed gas giant and a small grey moon, off the east (window) side of the ship
-    if(dot(d,pd)>0.55){
-      float Rr=0.34,sR=sin(Rr);vec3 uu=normalize(cross(vec3(0.0,1.0,0.0),pd)),vv=cross(pd,uu);vec2 pp=vec2(dot(d,uu),dot(d,vv))/sR;float r2=dot(pp,pp);
-      vec3 rn=normalize(vec3(0.22,0.93,0.30));float den=dot(rn,d);float tt=den>0.001||den<-0.001?dot(rn,pd)/den:-1.0;vec3 hit=d*tt;vec3 rel=hit-pd;float rr=length(rel)/sR;float front=dot(rel,pd);
-      if(r2<1.0){
-        vec3 n=vec3(pp,sqrt(1.0-r2));vec3 L=normalize(vec3(-0.55,0.35,0.75));float df=max(dot(n,L),0.0)*0.95+0.06;
-        float bnd=sin(pp.y*11.0+sin(pp.x*3.0+tm*0.05)*0.7)*0.5+0.5,bn2=sin(pp.y*27.0+1.3)*0.5+0.5;
-        vec3 pc=mix(vec3(0.13,0.30,0.52),vec3(0.62,0.36,0.85),bnd);pc=mix(pc,vec3(0.85,0.7,0.95),bn2*0.18);
-        vec3 pl=pc*df+vec3(0.25,0.5,0.9)*pow(1.0-n.z,3.0)*0.55;
-        col=pl;
-      }
-      if(tt>0.0&&rr>1.45&&rr<2.5&&!(front>0.0&&r2<1.0)){
-        float rb=sin(rr*38.0)*0.5+0.5;float gap=smoothstep(0.0,0.1,abs(rr-1.95)-0.03);float ra=(0.28+0.4*rb)*gap*smoothstep(1.45,1.55,rr)*(1.0-smoothstep(2.35,2.5,rr));
-        col=mix(col,vec3(0.78,0.7,0.95)*(0.6+0.5*rb),ra);
-      }
-      float ad=1.0-r2;if(r2>=1.0)col+=vec3(0.2,0.4,0.9)*exp(-(sqrt(r2)-1.0)*14.0)*0.25;
-    }
-    vec3 pm=normalize(vec3(0.9,0.42,0.3));
-    if(dot(d,pm)>0.9){float Rm=0.055,sm=sin(Rm);vec3 um=normalize(cross(vec3(0.0,1.0,0.0),pm)),vm=cross(pm,um);vec2 q=vec2(dot(d,um),dot(d,vm))/sm;float q2=dot(q,q);
-      if(q2<1.0){vec3 n=vec3(q,sqrt(1.0-q2));float df=max(dot(n,normalize(vec3(-0.5,0.4,0.7))),0.0)*0.9+0.05;float cr=sin(q.x*14.0)*sin(q.y*11.0+2.0);col=vec3(0.62,0.6,0.64)*df*(0.8+0.2*cr);}
-    }
-  }
   float az=atan(d.x,d.z);vec3 hz=vec3(0.16,0.03,0.22);
   if(h<0.2){
     col=mix(col,vec3(0.01,0.0,0.025)+vec3(0.14,0.02,0.12)*pow(sp,4.0)+vec3(0.02,0.1,0.16)*pow(sp2,5.0)*0.6,smoothstep(0.08,-0.2,h)*0.9);

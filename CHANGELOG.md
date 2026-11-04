@@ -1,5 +1,6 @@
 # Changelog
 ## Unreleased
+- Shots and trails now leave from the left cannon's muzzle; the gas giant and moon outside the bridge window are gone; big sliding blast doors now close off the hall openings (open as you approach, solid when shut).
 - **Visor HUD**: health ("VITALS"), dash bars and bullet time are now one lit display cluster at top centre; location, shards, room code, style/score, prompts, mini-map, boss bar, weapon tabs and toasts are all digital display-window boxes.
 - **One gun arm**: the right arm is gone. The cyan cannon arm (rebuilt to match the player model: shoulder block, beaded chains, glowing muzzle cube, black tendrils) is the only arm; every weapon is a firing mode that bolts different parts onto it. A holographic mode display floats above it (mode, name, ready bar). Dig Kit is now the **OMNITOOL** (swings the cannon, shows the block shape in the holo).
 - **Bridge centre fixed**: the north and south gaps of the ring console were blocked by its outer rim, so you could not get in; they are open now. The ring desk is lower and built from console blocks (keyboard ramps facing the operators, slate and keys, monitors facing in, a sloped cap, a neon-topped outer shell), the operators stand closer to their desks, and the pedestal is smaller.
