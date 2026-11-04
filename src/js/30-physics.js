@@ -1,6 +1,7 @@
 
 // ---------------- physics ----------------
 function boxHits(x, y, z, hw, h) {
+  if (useChunks && OW.gen === 3) for (const g of STN_GLASS) if (x + hw > g.x0 && x - hw < g.x1 + 1 && z + hw > g.z0 && z - hw < g.z1 + 1 && y + h > g.y0 && y < g.y1 + 1) return true;      // the bridge window: nothing to see, a lot to walk into
   const x0 = Math.floor(x - hw + 1e-6), x1 = Math.floor(x + hw - 1e-6), y0 = Math.floor(y + 1e-6), y1 = Math.floor(y + h - 1e-6),
     z0 = Math.floor(z - hw + 1e-6), z1 = Math.floor(z + hw - 1e-6);
   for (let yy = y0; yy <= y1; yy++) for (let zz = z0; zz <= z1; zz++) for (let xx = x0; xx <= x1; xx++) {

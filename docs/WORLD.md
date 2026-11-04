@@ -66,3 +66,6 @@ See the header of `src/js/20-blocks.js`. Materials are defined once (ids 1-47 cl
 
 ## Monitors
 Ids 3000 + type*4 + facing (`K.SCREEN`). The mesher encodes the merged size in the tile number (`200 + type + 4*(W-1) + 32*(H-1)`) and gives the screen face uv in blocks across the whole group (`screenRun`); the fragment shader function `scr()` draws and animates it from that.
+
+## The Helicarrier interior (v4 layout)
+`src/js/25-station-int.js` replaces the open deck of v2/v3 (`25-station-hq.js` still supplies `MID/NEO/SH`, `stConsole`, `VATS`, `stVat`, `RIFT`). Halls (`RM`): A arrival and revival bay (z 44..112), B the bridge (z -42..40, hexagonal console at 0,0, window on the east wall `WIN`), C the Hellgate chamber (z -113..-46, portal centre `GATE_C`). Doors are carved at z 41..43 and -45..-43. `STN.gate` (0,-104) still triggers the dungeon; the Rift and its console are where they always were. `STN_GLASS` boxes are solid to `boxHits` only (the window). Moving parts and holograms live in `src/js/55-station-props.js` (`drawStationProps` in the solid pass, `drawStationGlass` in the blended pass after the vats). The planet and moon are in `space()` in `23-renderer.js`.

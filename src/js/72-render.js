@@ -50,7 +50,7 @@ function renderFrame(dt) {
   drawEnemies(); drawRemotePlayers(T, dt); drawDrops(); drawParticles(); drawEProjs(); drawBeams(state === 'play' ? dt : 0); drawBombs();
   if (state === 'play' && P.weapon === 4) { const h = targetBlock(); if (h) pushOutline(h.x, h.y, h.z); }
   flushDyn();
-  if (OW.gen === 3 && mode === 'hub') drawVatGlass(T);
+  if (OW.gen === 3 && mode === 'hub') { drawVatGlass(T); drawStationGlass(T); }
   if (state === 'play' || state === 'paused') {
     gl.clear(gl.DEPTH_BUFFER_BIT); gl.uniform1f(loc.amb, 1);
     gl.uniformMatrix4fv(loc.vp, false, perspective(1.05, asp, .01, 10)); gl.uniform3f(loc.cam, 0, 0, 0);

@@ -15,15 +15,15 @@ check('every material has its shapes, all ids unique, all with a colour', R.dup 
 check('the original slab, stair and rail ids still mean the same thing', JSON.stringify(R.legacy) === JSON.stringify([48, 64, 80 + 4 + 2, 11, 43]), JSON.stringify(R.legacy));
 check('49 materials (16 concrete, 16 neon, 8 industrial, 9 lab, cargo and vat) are in the palette', R.mats === 49);
 const T = await page.evaluate(() => {
-  const P = __g.P, o = {}; const clear = () => { for (let x = 40; x < 48; x++) for (let y = 81; y < 90; y++) for (let z = 98; z < 106; z++) __g.setBlock(x, y, z, 0); };
-  clear(); const walk = (id, n) => { clear(); for (let z = 99; z <= 101; z++) __g.setBlock(44, 81, z, id); P.x = 41.5; P.z = 100.5; P.y = 81.01; P.vx = P.vy = P.vz = 0; P.yaw = -Math.PI / 2; __g.keys.KeyW = true; let my = 0; for (let i = 0; i < n; i++) { __g.update(1 / 60); my = Math.max(my, P.y); } __g.keys.KeyW = false; return [+P.x.toFixed(2), +my.toFixed(2)]; };
+  const P = __g.P, o = {}; const clear = () => { for (let x = 10; x < 18; x++) for (let y = 81; y < 90; y++) for (let z = 98; z < 106; z++) __g.setBlock(x, y, z, 0); };
+  clear(); const walk = (id, n) => { clear(); for (let z = 99; z <= 101; z++) __g.setBlock(14, 81, z, id); P.x = 11.5; P.z = 100.5; P.y = 81.01; P.vx = P.vy = P.vz = 0; P.yaw = -Math.PI / 2; __g.keys.KeyW = true; let my = 0; for (let i = 0; i < n; i++) { __g.update(1 / 60); my = Math.max(my, P.y); } __g.keys.KeyW = false; return [+P.x.toFixed(2), +my.toFixed(2)]; };
   o.vslabHit = walk(__g.blockId(272, 4, 0), 120);                       // a vertical slab filling the far (+x) half of the cell
   o.wall = walk(__g.blockId(33, 5), 120); o.pillar = walk(__g.blockId(33, 6), 120); o.fence = walk(__g.blockId(33, 9), 120);
   o.pane = walk(__g.blockId(256, 10), 120);
   o.beam = walk(__g.blockId(260, 7), 120);
   return o;
 });
-check('walls, fences, pillars and panes stop you; a vertical slab stops you only after half a block', T.wall[0] < 44.0 && T.fence[0] < 44.15 && T.pillar[0] < 44.0 && T.pane[0] < 44.25 && T.vslabHit[0] > 44.1 && T.vslabHit[0] < 44.35 && T.beam[0] < 43.8, JSON.stringify(T));
+check('walls, fences, pillars and panes stop you; a vertical slab stops you only after half a block', T.wall[0] < 14.0 && T.fence[0] < 14.15 && T.pillar[0] < 14.0 && T.pane[0] < 14.25 && T.vslabHit[0] > 14.1 && T.vslabHit[0] < 14.35 && T.beam[0] < 13.8, JSON.stringify(T));
 const P2 = await page.evaluate(() => {
   const P = __g.P; const inv = __g.Inv; inv.creative = true; inv.slots[0] = { k: 33, n: 99 }; inv.sel = 0; __g.switchWeapon(4);
   const before = __g.P.shape; __g.cycleShape(); __g.cycleShape(); const names = [P.shape];
