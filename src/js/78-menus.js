@@ -70,7 +70,7 @@ const SCREENS = {
     for (const [k, label, min, max, step, fmt] of OPTS) { const v = optV(k); h += '<label class="msl"><span data-lab="' + k + '">' + label + ': ' + fmt(v) + '</span><input type="range" data-set="' + k + '" min="' + min + '" max="' + max + '" step="' + step + '" value="' + v + '"></label>'; }
     const st = SaveStore.doc.settings;
     h += btn('tinv', 'INVERT MOUSE Y: ' + (st.invertY ? 'ON' : 'OFF'), 'h') + btn('tclock', 'SHOW CLOCK: ' + (st.clock !== false ? 'ON' : 'OFF'), 'h') + btn('tmute', 'SOUND: ' + (muted ? 'MUTED' : 'ON'), 'h') + btn('full', 'FULLSCREEN', 'h')
-      + btn('pad', 'CONTROLLER SETUP…', 'h') + btn('ctl', 'CONTROLS…', 'h') + btn('back', 'DONE');
+      + btn('pad', 'CONTROLLER SETUP…', 'h') + btn('ctl', 'CONTROLS…', 'h') + (state === 'paused' ? btn('gunpose', 'GUN ARM POSITION…', 'h') : '') + btn('back', 'DONE');
     return h;
   },
   controls() { return '<div class="mh">CONTROLS</div>' + $('ctlsrc').innerHTML + btn('back', 'DONE'); },
