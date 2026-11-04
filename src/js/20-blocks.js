@@ -8,10 +8,11 @@
 //    256..        materials added in data/blocks.json "materials" (append only)
 //    1024 + i*16 + slot   the generated shapes of the i-th entry of SHAPABLE (append only), slot: 0 slab, 1 top slab, 2-5 stairs, 6-9 vertical slab, 10 wall, 11 pillar, 12/13 beam x/z, 14 fence, 15 pane
 // ============================================================
-const K = { SCREEN: 12, FULL: 0, SLAB_B: 1, SLAB_T: 2, STAIR: 3, VSLAB: 4, WALL: 5, PILLAR: 6, BEAMX: 7, BEAMZ: 8, FENCE: 9, PANE: 10, RAIL: 11 };
+const K = { SCREEN: 12, FULL: 0, SLAB_B: 1, SLAB_T: 2, STAIR: 3, VSLAB: 4, WALL: 5, PILLAR: 6, BEAMX: 7, BEAMZ: 8, FENCE: 9, PANE: 10, RAIL: 11, WEDGE: 13 };
 const SHAPE_NAMES = ['FULL BLOCK', 'SLAB', 'STAIRS', 'VERTICAL SLAB', 'WALL', 'PILLAR', 'BEAM', 'FENCE', 'PANE'];      // what the player cycles through (V)
 const MAT0 = 256, MATS = DATA.blocks.materials || [], REG_N = 4096;
 const BASE = new Uint16Array(REG_N), KIND = new Uint8Array(REG_N), DIR = new Uint8Array(REG_N), SHAPABLE = [], SHAPE_IDX = new Int16Array(REG_N).fill(-1);
+const WEDGE0 = 3100, wedgeId = (base, dir) => SHAPE_IDX[base] < 0 ? base : WEDGE0 + SHAPE_IDX[base] * 4 + dir;
 const RAIL_BASE = [14, 15, 41, 42, 43];
 for (let i = 0; i < 48; i++) BASE[i] = i;
 for (let i = 0; i < MATS.length; i++) BASE[MAT0 + i] = MAT0 + i;
@@ -24,6 +25,7 @@ SHAPABLE.forEach((b, i) => { SHAPE_IDX[b] = i; });
   SHAPABLE.forEach((b, i) => { for (let s = 0; s < 16; s++) { const id = 1024 + i * 16 + s; BASE[id] = b; KIND[id] = slotKind[s]; DIR[id] = s >= 2 && s <= 5 ? s - 2 : s >= 6 && s <= 9 ? s - 6 : 0; } });
   for (let i = 0; i < 16; i++) { BASE[48 + i] = BASE[64 + i] = 32 + i; KIND[48 + i] = K.SLAB_B; KIND[64 + i] = K.SLAB_T; }                 // the first slabs and stairs keep their original ids
   for (let i = 80; i < 144; i++) { BASE[i] = 32 + ((i - 80) >> 2); KIND[i] = K.STAIR; DIR[i] = (i - 80) & 3; }
+  SHAPABLE.forEach((b, i) => { for (let dd = 0; dd < 4; dd++) { const id = WEDGE0 + i * 4 + dd; if (id < REG_N) { BASE[id] = b; KIND[id] = K.WEDGE; DIR[id] = dd; } } });          // wedges: a 45 degree ramp in eight thin steps, rising towards +x, -x, +z, -z
   for (let i = 0; i < 5; i++) { BASE[144 + i] = RAIL_BASE[i]; KIND[144 + i] = K.RAIL; }
 })();
 // the id of material `base` made into shape `kind` (dir for stairs / vertical slabs); falls back to the full block when the material has no such shape
@@ -65,6 +67,7 @@ function partBoxes(id, x, y, z, mesh) {
     if (k === K.VSLAB) { B[1] = 0; return [B]; }
     return [[0, 0, 0, 1, .5, 1], B];
   }
+  if (k === K.WEDGE) { const r = []; for (let i = 0; i < 8; i++) { const a0 = i / 8, a1 = (i + 1) / 8, h = (i + 1) / 8; r.push(d === 0 ? [a0, 0, 0, a1, h, 1] : d === 1 ? [1 - a1, 0, 0, 1 - a0, h, 1] : d === 2 ? [0, 0, a0, 1, h, a1] : [0, 0, 1 - a1, 1, h, 1 - a0]); } return r; }
   if (k === K.PILLAR) return [[.1875, 0, .1875, .8125, 1, .8125]];
   if (k === K.BEAMX) return [[0, .375, .375, 1, .625, .625]];
   if (k === K.BEAMZ) return [[.375, .375, 0, .625, .625, 1]];

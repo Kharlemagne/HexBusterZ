@@ -260,3 +260,28 @@ function stExterior() {
   stDisc(84, -12, 0, 6, SD + 12, B.HULL); stDisc(84, -12, 0, 3, SD + 13, NEO('ORANGE'));
 }
 function stBuildAll() { ST = new Uint16Array(GW * GD * (GY1 - GY0)); stShell(); stHallA(); stHallB(); stHallC(); stRiftBay(); stDoors(); stExterior(); }
+// ---------------- the console, rebuilt from console blocks: a front lip, a keyboard WEDGE (real 45 degree ramp with its own collision), a trackpad slate,
+// a sloping riser into a bank of monitors, and winged sides with a wedge cap. face = the side the operator stands on.
+function stConsole(cx, cz, face, accent, screenCol, yb = 0, W = 3, stype = 0) {
+  CON_Y = yb; CON_W = W;
+  const T = (u, v) => face === 's' ? [cx + u, cz + v] : face === 'n' ? [cx - u, cz - v] : face === 'e' ? [cx + v, cz - u] : [cx - v, cz + u];
+  const back = face === 's' ? 3 : face === 'n' ? 2 : face === 'e' ? 1 : 0;                       // the wedge rises away from the operator
+  const P = (u, v, y, id) => { const [x, z] = T(u, v); stPut(x, SD + yb + y, z, id); };
+  const BODY = IM('CONSOLE BODY'), KEYS = IM('CONSOLE KEYS'), SLT = IM('CONSOLE SLATE'), WK = wedgeId(KEYS, back), WB = wedgeId(BODY, back);
+  const sf = face === 's' ? 2 : face === 'n' ? 3 : face === 'e' ? 0 : 1;
+  for (let u = -W; u <= W; u++) {
+    const alt = (u + W) & 1;
+    P(u, 2, 1, SH(BODY, K.SLAB_B));                                                                // the front lip
+    P(u, 1, 1, BODY); P(u, 1, 2, WK);                                                              // the keyboard ramp
+    P(u, 0, 1, BODY); P(u, 0, 2, alt ? SLT : KEYS);                                                // slate and keys, flush with the top of the ramp
+    P(u, -1, 1, BODY); P(u, -1, 2, BODY); P(u, -1, 3, WB);                                         // the riser
+    for (let y = 1; y <= 3; y++) P(u, -2, y, BODY);
+    for (let h = 0; h < 4; h++) {
+      if (stype === 'quad') { const q = (u === 0 || u === 1) && (h === 1 || h === 2); P(u, -2, 4 + h, q ? screenId(h === 1 ? u : 2 + u, sf) : BODY); }
+      else P(u, -2, 4 + h, (Math.abs(u) === W && W > 1) || h === 0 ? BODY : screenId(stype, sf));
+    }
+    P(u, -2, 8, WB);                                                                               // a sloped cap over the monitors
+  }
+  for (const u of [-W - 1, W + 1]) for (let v = -2; v <= 1; v++) { P(u, v, 1, BODY); P(u, v, 2, v === 0 ? accent : BODY); P(u, v, 3, v >= -1 ? WB : BODY); }
+  P(-W, 1, 2, accent); P(W, 1, 2, accent);
+}

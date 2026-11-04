@@ -6,7 +6,7 @@
 // ============================================================
 const TILE = { WHITE: 0, GRAIN: 64, PLATE: 65, FLESHY: 66, BONEY: 67, GLOW: 68, CLOTH: 69 };
 // ids 0..31 use tiles 0..63; the city blocks (32..47, and every slab made from them) use tiles 128..159
-const PAINT3_KEYS = ['perf', 'corr', 'diam', 'vent', 'rack', 'greeble', 'slate', 'marble', 'tile', 'crate', 'truss', 'lab', 'screen', 'vat', 'wire', 'ledface'];
+const PAINT3_KEYS = ['perf', 'corr', 'diam', 'vent', 'rack', 'greeble', 'slate', 'marble', 'tile', 'crate', 'truss', 'lab', 'screen', 'vat', 'wire', 'ledface', 'cskeys', 'csslate', 'csbody'];
 const MAT_TILES = MATS.map((m, i) => m.paint ? 160 + 2 * PAINT3_KEYS.indexOf(m.paint) : null);       // new materials either reuse an existing material's pattern (and just differ in colour) or have their own tile pair from 160
 const blockTile = (id, top) => { const b = BASE[id] || id; if (b >= MAT0) { const t = MAT_TILES[b - MAT0]; if (t !== null) return t + (top ? 1 : 0); return blockTile(MATS[b - MAT0].tile, top); } return b < 32 ? b * 2 + (top ? 1 : 0) : 128 + (((b - 32) & 15) * 2) + (top ? 1 : 0); };
 function tn(x, y, s) { let h = (Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263) ^ Math.imul(s | 0, 1274126177)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
@@ -74,6 +74,9 @@ const PAINT3 = {                                                                
   screen: (x, y, t, n, s) => { if (x === 0 || y === 0 || x === 15 || y === 15) return .5; const w = Math.sin(x * .7 + tn(0, 0, s) * 9) * 3.2 + 8; if (Math.abs(y - w) < 1.1) return [.6, 1.7, .9]; return (y % 5 === 2 && x % 3 !== 0 && tn(x, y, s) > .45) ? [.5, 1.2, .8] : .35 + (n - .5) * .08; },
   wire: (x, y, t, n, s) => { const k = (x + (y >> 3)) % 4, on = ((y + x * 3) % 7) < 5 && x % 2 === 0; if (!on) return .5 + (n - .5) * .15 + (x % 4 === 3 ? .1 : 0); return [[.35, .9, 2.8], [2.8, 2.3, .3], [2.8, .4, .35], [.4, 2.5, .7]][k]; },          // black loom: dark braided cable with a few coloured strands
   ledface: (x, y, t, n, s) => { if (x === 0 || y === 0 || x === 15) return .45; if (y % 4 === 0) return .6; const q = tn(x >> 1, y >> 2, s); if (x % 2 === 1 && y % 4 === 2) return q > .86 ? [2.6, 1.5, .1] : q > .3 ? [.1, 1.9, 2.2] : .8; return .85 + (n - .5) * .1; },
+  cskeys: (x, y, t, n, s) => { if (!t) return (y === 0 || y === 15 || x === 0 || x === 15) ? .5 : (y === 7 ? .6 : .85 + (n - .5) * .1); if (x === 0 || x === 15 || y === 0 || y === 15) return .55; const bx = x % 3, by = y % 4; if (bx === 2 || by === 3 || by === 0) return .7; const q = tn(x, y, s); return q > .9 ? [5, 1, .8] : q > .78 ? [1, 5, 1.5] : q > .12 ? [.4, 4, 5] : [.5, .5, .55]; },       // the keyboard: rows of cyan, green and red keys
+  csslate: (x, y, t, n, s) => { if (!t) return (y === 0 || y === 15 || x === 0 || x === 15) ? .5 : .85 + (n - .5) * .1; if (x === 0 || x === 15 || y === 0 || y === 15) return .55; if (x >= 3 && x <= 12 && y >= 5 && y <= 12) return (x === 3 || x === 12 || y === 5 || y === 12) ? [.4, 3, 3.6] : .18; if (y === 2 && x % 2 === 0) return [.4, 4, 5]; if (y === 3 && x % 5 === 1) return [6, 3.5, .3]; if (y === 14 && x % 4 === 1) return [.4, 4, 5]; return .8 + (n - .5) * .1; },       // the trackpad slate with dials and sliders
+  csbody: (x, y, t, n, s) => { if (t) return (x === 0 || x === 15 || y === 0 || y === 15) ? .55 : .9 + (n - .5) * .1; if (y === 0 || y === 15) return .5; if (x === 0 || x === 15) return .62; if (y >= 5 && y <= 9 && y % 2 === 1 && x > 2 && x < 13) return .3; if (y === 12 && x === 12) return [6, 3.5, .3]; return .9 + (n - .5) * .08; },      // the console's plated body: seams, vent slits, an amber light
   vat: (x, y, t, n) => { const bub = n > .93 ? 1.3 : 1; return (.85 + .3 * Math.sin(y * .6 + x * .25)) * bub + (n - .5) * .06; },
   marble: (x, y, t, n, s) => { const v = Math.abs(Math.sin(x * .45 + Math.sin(y * .3) * 2.4 + tn(0, 0, s) * 7)); return v < .1 ? .62 : 1.0 + (n - .5) * .08; }
 };
@@ -94,7 +97,7 @@ function makeAtlas() {
       let m = .625;                                                   // neutral
       if (ti >= 64 && ENT_PAINT[ti]) m = ENT_PAINT[ti](x, y, 0, tn(x, y, ti));
       else if (ti >= 128 && ti < 160) m = PAINT2[(ti - 128) >> 1](x, y, top, tn(x, y, ti), ti);
-      else if (ti >= 160 && ti < 192 && PAINT3[PAINT3_KEYS[(ti - 160) >> 1]]) m = PAINT3[PAINT3_KEYS[(ti - 160) >> 1]](x, y, top, tn(x, y, ti), ti);
+      else if (ti >= 160 && ti < 224 && PAINT3[PAINT3_KEYS[(ti - 160) >> 1]]) m = PAINT3[PAINT3_KEYS[(ti - 160) >> 1]](x, y, top, tn(x, y, ti), ti);
       else if (ti > 0 && ti < 64 && PAINT[id]) m = PAINT[id](x, y, top, tn(x, y, id * 7 + top), id * 31 + top);
       else if (ti > 0 && ti < 64) m = .95 + (tn(x, y, ti) - .5) * .2;    // unpainted block id: plain grain
       const rgb = typeof m === 'number' ? [m, m, m] : m, i = ((oy + y) * 256 + ox + x) * 4;

@@ -18,6 +18,22 @@ float lv(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(lh(
 float H1(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 // MONITOR BLOCKS: four kinds (alpha green, beta blue, gamma amber, delta violet), each cycling through three little programs. uv counts blocks across the whole merged screen, so
 // two or more identical monitors side by side share ONE picture that is stretched over all of them.
+vec3 holo(float ti,vec2 uv,float t){                                                  // glowing hologram scenes (drawn additively): they cycle through six pictures, different from the wall screens
+  float k=ti-600.0,sd=mod(k,10.0),Wi=mod(floor(k/10.0),40.0),Hh=floor(k/400.0)*0.5,W=Wi*0.5;float a=W/Hh;
+  vec2 q=vec2(uv.x/Hh+a*0.5,uv.y/Hh+0.5);vec3 c=sd<4.5?vec3(0.0,0.8,0.95):vec3(1.0,0.55,0.14);
+  float cyc=t/5.0+sd*1.37,m=mod(floor(cyc),6.0),ph=fract(cyc);float fade=smoothstep(0.0,0.1,ph)*(1.0-smoothstep(0.9,1.0,ph));
+  vec2 p=q-vec2(a*0.5,0.5);float rr=length(p),v=0.0;
+  if(m<0.5){float e=length(vec2(p.x/0.46,p.y/0.18));float ang=t*0.7+sd;vec2 mo=vec2(cos(ang)*0.46,sin(ang)*0.18);v=smoothstep(0.03,0.0,abs(rr-0.24))+step(rr,0.24)*(step(abs(fract(p.y*7.0)-0.5),0.05)+step(abs(fract(p.x*7.0+t*0.3)-0.5),0.04))*0.7+smoothstep(0.025,0.0,abs(e-1.0))*0.8+step(length(p-mo),0.03);}
+  else if(m<1.5){float col=floor(q.x*16.0),sp=0.4+H1(vec2(col,sd))*1.2,y=fract(q.y+t*sp*0.25+H1(vec2(col,4.0)));float cell=floor(q.y*14.0+t*sp*3.0);v=pow(1.0-y,2.0)*step(0.2,fract(q.x*16.0))*step(0.35,H1(vec2(col,cell)))*step(0.2,fract(q.y*14.0));}
+  else if(m<2.5){float an=atan(p.y,p.x),sw=fract(an/6.2832-t*0.45);v=(pow(1.0-sw,4.0)+step(abs(fract(rr*7.0)-0.5),0.04)*0.5+step(0.98,H1(floor(q*30.0)+sd))*(1.0-sw))*step(rr,0.46);v+=step(abs(p.x),0.003)*step(rr,0.46)*0.4+step(abs(p.y),0.003)*step(rr,0.46)*0.4;}
+  else if(m<3.5){float n=floor(q.x*(6.0+a*4.0)),h=0.15+0.7*abs(sin(t*1.6+n*2.1+sd)*cos(t*0.9+n));v=step(q.y,h)*step(0.2,fract(q.x*(6.0+a*4.0)))*(0.5+0.5*step(0.15,fract(q.y*12.0)));c=mix(c,vec3(1.0,0.8,0.3),step(0.7,H1(vec2(n,sd))));}
+  else if(m<4.5){float y1=0.5+0.2*sin(q.x*12.0-t*3.0+sd),y2=0.5+0.14*sin(q.x*23.0+t*2.0);v=smoothstep(0.03,0.0,abs(q.y-y1))+0.6*smoothstep(0.025,0.0,abs(q.y-y2))+0.15*step(q.y,y1);}
+  else{float rot=t*0.6;vec2 r2=vec2(cos(rot)*p.x-sin(rot)*p.y,sin(rot)*p.x+cos(rot)*p.y);float hx=max(abs(r2.y)*1.1547,abs(r2.x)*0.866+abs(r2.y)*0.5);v=smoothstep(0.03,0.0,abs(hx-0.3))+smoothstep(0.02,0.0,abs(hx-0.2))*0.7+step(abs(r2.x),0.01)*step(hx,0.3)*0.6;v+=step(0.8,fract(q.x*5.0-t*0.4))*step(q.y,0.12)*0.8;}
+  float ed=min(min(q.x,a-q.x),min(q.y,1.0-q.y));float br=step(ed,0.025)*step(0.0,ed)*(step(min(q.x,a-q.x),0.16)*step(min(q.y,1.0-q.y),0.16)+0.15);
+  vec3 col=c*(0.07+clamp(v,0.0,1.4)*1.15)*fade+c*br*1.2;col*=0.8+0.2*sin(q.y*Hh*90.0-t*6.0);
+  float gl=step(0.985,fract(t*0.37+sd*0.21));col*=1.0-gl*step(0.5,fract(q.y*20.0+t*30.0));
+  return col;
+}
 vec3 scr(float ti,vec2 uv,float t){
   float k=ti-200.0,ty=mod(k,4.0),r=floor(k/4.0),W=mod(r,10.0)+1.0,Hh=floor(r/10.0)+1.0;
   float d=min(min(uv.x,W-uv.x),min(uv.y,Hh-uv.y));
@@ -66,7 +82,7 @@ void main(){
   vec3 av=texture2D(avg,vec2((ti+0.5)/256.0,0.5)).rgb;
   tx=mix(tx,av,smoothstep(36.0,90.0,vd));
   vec3 col=vc.rgb*tx*1.6;
-  if(ti>199.5)col=scr(ti,vuv,tm);
+  if(ti>599.5)col=holo(ti,vuv,tm);else if(ti>199.5)col=scr(ti,vuv,tm);
   if((ti>7.5&&ti<9.5)||(ti>45.5&&ti<61.5)){float sd=step(0.5,mod(ti,2.0));col=lava(mix(vec3(vwp.x+vwp.z,0.0,vwp.y*1.3+tm*0.8),vwp,sd),tm,vd);}
   float lamp=0.62*(1.0-smoothstep(1.5,22.0,vd));
   col*=mix(max(amb,lamp),1.0,em);
@@ -324,6 +340,10 @@ function flushDyn() {
 // translucent things (glass, fluid): drawn after everything solid, blended, without writing depth, one flush per transparency level
 function flushDynA(a) {
   if (!dn) return; gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false); gl.uniform1f(loc.ga, a);
+  flushDyn(); gl.depthMask(true); gl.disable(gl.BLEND); gl.uniform1f(loc.ga, 1);
+}
+function flushDynAdd(a) {                                                   // glowing translucent things: added to what is behind them (black adds nothing)
+  if (!dn) return; gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE); gl.depthMask(false); gl.uniform1f(loc.ga, a);
   flushDyn(); gl.depthMask(true); gl.disable(gl.BLEND); gl.uniform1f(loc.ga, 1);
 }
 let camX = 0, camY = 20, camZ = 0, camFX = 0, camFZ = 1, cullR = 140;

@@ -6,7 +6,7 @@ for (let i = 0; i < MATS.length; i++) { const id = MAT0 + i; COL[id] = hx(parseI
 for (let id = 48; id < REG_N; id++) {
   const b = BASE[id]; if (!b || id === b) continue; COL[id] = COL[b]; DATA.blocks.colors[id] = DATA.blocks.colors[b]; if (EMIT.has(b)) EMIT.add(id);
   const k = KIND[id]; if (k === K.RAIL) { EMIT.add(id); DATA.blocks.names[id] = 'NEON RAIL ' + ['CYAN', 'MAGENTA', 'ORANGE', 'BLUE', 'GREEN'][id - 144]; DATA.blocks.build.push([id, DATA.blocks.names[id]]); }
-  else DATA.blocks.names[id] = (DATA.blocks.names[b] || 'BLOCK') + ' ' + ['', 'SLAB', 'TOP SLAB', 'STAIRS', 'VERTICAL SLAB', 'WALL', 'PILLAR', 'BEAM', 'BEAM', 'FENCE', 'PANE'][k];
+  else DATA.blocks.names[id] = (DATA.blocks.names[b] || 'BLOCK') + ' ' + ['', 'SLAB', 'TOP SLAB', 'STAIRS', 'VERTICAL SLAB', 'WALL', 'PILLAR', 'BEAM', 'BEAM', 'FENCE', 'PANE', '', '', 'WEDGE'][k];
 }
 for (let t = 0; t < 4; t++) for (let f = 0; f < 4; f++) { const id = SCR0 + t * 4 + f; DATA.blocks.names[id] = SCR_NAMES[t]; DATA.blocks.colors[id] = SCR_COLORS[t]; COL[id] = COL[32]; }
 for (let t = 0; t < 4; t++) DATA.blocks.build.push([SCR0 + t * 4, SCR_NAMES[t]]);
@@ -45,7 +45,21 @@ function emitBox(out, x, y, z, a, b, id, skip) {
     for (const k of [0, 1, 2, 0, 2, 3]) for (let j = 0; j < VF; j++) out.push(vs[k * VF + j]);
   }
 }
+function meshWedge(out, id, x, y, z) {                                         // one smooth 45 degree ramp (the collision is eight thin steps, see partBoxes)
+  const col = COL[id], d = DIR[id], em = EMIT.has(id), vr = .9 + hash(x * 7 + y * 13, z * 5 + y * 3) * .2; let l0 = 0, l1 = 0, l2 = 0;
+  if (LT && !em) { const c = lcell(x, y, z); if (c >= 0) { l0 = LT.R[c] / LMAX * LGAIN; l1 = LT.G[c] / LMAX * LGAIN; l2 = LT.B[c] / LMAX * LGAIN; } }
+  const tS = (em ? -1 : 1) * (blockTile(id, false) + 1), tT = (em ? -1 : 1) * (blockTile(id, true) + 1);
+  const M = (a, h, w) => d === 0 ? [x + a, y + h, z + w] : d === 1 ? [x + 1 - a, y + h, z + w] : d === 2 ? [x + w, y + h, z + a] : [x + w, y + h, z + 1 - a];
+  const V = (P, sh, u, v, t) => { const m = em ? 1 : sh * vr; return [P[0], P[1], P[2], col[0] * (m + l0), col[1] * (m + l1), col[2] * (m + l2), 1, u, v, t]; };
+  const push = (vs, idx) => { for (const k of idx) for (let j = 0; j < VF; j++) out.push(vs[k][j]); };
+  const fx = d === 0 ? 1 : d === 1 ? -1 : 0, fz = d === 2 ? 1 : d === 3 ? -1 : 0;
+  push([V(M(0, 0, 0), .95, 0, 0, tT), V(M(0, 0, 1), .95, 1, 0, tT), V(M(1, 1, 1), .95, 1, 1, tT), V(M(1, 1, 0), .95, 0, 1, tT)], [0, 1, 2, 0, 2, 3]);                  // the slope
+  if (!isFull(get(x + fx, y, z + fz))) push([V(M(1, 0, 0), .8, 0, 0, tS), V(M(1, 0, 1), .8, 1, 0, tS), V(M(1, 1, 1), .8, 1, 1, tS), V(M(1, 1, 0), .8, 0, 1, tS)], [0, 1, 2, 0, 2, 3]);   // the tall back
+  if (!isFull(get(x, y - 1, z))) push([V(M(0, 0, 0), .5, 0, 0, tS), V(M(0, 0, 1), .5, 1, 0, tS), V(M(1, 0, 1), .5, 1, 1, tS), V(M(1, 0, 0), .5, 0, 1, tS)], [0, 1, 2, 0, 2, 3]);
+  for (const w of [0, 1]) { const sx = d < 2 ? 0 : (w ? 1 : -1), sz = d < 2 ? (w ? 1 : -1) : 0; if (!isFull(get(x + sx, y, z + sz))) push([V(M(0, 0, w), .86, 0, 0, tS), V(M(1, 0, w), .86, 1, 0, tS), V(M(1, 1, w), .86, 1, 1, tS)], [0, 1, 2]); }
+}
 function meshPartial(out, id, x, y, z) {
+  if (KIND[id] === K.WEDGE) { meshWedge(out, id, x, y, z); return; }
   const k = KIND[id], same = (d, ss) => { const nb = get(x + (d === 0 ? ss : 0), y + (d === 1 ? ss : 0), z + (d === 2 ? ss : 0)); return KIND[nb] === k && BASE[nb] === BASE[id]; };
   const bx = partBoxes(id, x, y, z, true);
   bx.forEach((q, i) => {

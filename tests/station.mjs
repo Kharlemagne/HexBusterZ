@@ -39,6 +39,15 @@ const slab = await page.evaluate(() => {
 });
 check('a half block is half a block tall: you stand on it at +0.5 and walk up onto the next block', slab.dropA > 81.45 && slab.dropA < 81.6 && slab.maxY > 81.9, JSON.stringify(slab));
 check('slab kinds: 49 is a bottom slab, 65 a top slab, 33 a full block', slab.kind === 1 && slab.top === 2 && slab.full === 0);
+const wedge = await page.evaluate(() => {
+  const P = __g.P; P.alive = true; P.hp = 100; __g.OW.update([{ x: 10, z: 100 }], 9000); __g.OW.pump(9000);
+  for (let x = 9; x < 18; x++) for (let y = 81; y < 86; y++) for (let z = 98; z < 103; z++) __g.setBlock(x, y, z, 0);
+  const id = __g.wedgeId(256 + 20, 0); __g.setBlock(12, 81, 100, id); __g.setBlock(13, 81, 100, 33);
+  P.x = 10.5; P.z = 100.5; P.y = 81.01; P.yaw = -Math.PI / 2; P.vx = P.vy = P.vz = 0; __g.keys.KeyW = true; let my = 0, ys = []; for (let i = 0; i < 120; i++) { __g.update(1 / 60); my = Math.max(my, P.y); if (i % 10 === 0) ys.push(+P.y.toFixed(2)); } __g.keys.KeyW = false;
+  const out = { my, x: P.x, ys, kind: __g.KIND[id] };
+  P.x = 12.5; P.z = 100.5; P.y = 84; P.vx = P.vy = P.vz = 0; for (let i = 0; i < 60; i++) __g.update(1 / 60); out.mid = P.y;
+  return out; });
+check('a wedge is a real ramp: you walk up it smoothly, and standing on the middle you stand partway up', wedge.my > 81.9 && wedge.ys[1] > 81.2 && wedge.mid > 81.45 && wedge.mid < 81.95, JSON.stringify(wedge));
 const walkCat = await page.evaluate(() => { const P = __g.P; P.alive = true; P.hp = 100; P.x = 0.5; P.z = -20; P.y = 81.01; P.yaw = 0; P.vx = P.vy = P.vz = 0; __g.OW.update([{ x: 0, z: -40 }], 20000); __g.OW.pump(20000); __g.keys.KeyW = true; for (let i = 0; i < 420; i++) __g.update(1 / 60); __g.keys.KeyW = false; return { z: P.z, y: P.y, alive: P.alive }; });
 check('you can walk from the bridge through the door and down the grating to the Hellgate', walkCat.alive && walkCat.z < -80 && walkCat.y > 80, JSON.stringify(walkCat));
 const side = await page.evaluate(() => { const P = __g.P; P.alive = true; P.hp = 100; P.x = 30; P.z = -18; P.y = 81.01; P.yaw = -Math.PI / 2; P.vx = P.vy = P.vz = 0; __g.keys.KeyW = true; for (let i = 0; i < 300; i++) __g.update(1 / 60); __g.keys.KeyW = false; return { x: P.x, alive: P.alive }; });

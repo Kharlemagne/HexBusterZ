@@ -82,9 +82,8 @@ function drawPortal(t) {
   if (Math.random() < .6) { const a = Math.random() * TAU, r = Math.random() * R; emit(cx + Math.cos(a) * r, cy + Math.sin(a) * r, cz + 1.2, rnd(-.6, .6), rnd(.6, 2.2), rnd(.3, 1.4), rnd(.06, .12), Math.random() < .5 ? [1, .55, .1] : [1, .9, .4], rnd(.5, 1.4), 0); }
 }
 // ---------------- translucent things: holograms and the window
-function holoPanel(cx, cy, cz, w, h, axis, col, t, seed) {                     // a floating screen: a pale pane and rows of bright bars that scroll
-  const sx = axis === 'x' ? w : .06, sz = axis === 'x' ? .06 : w;
-  pushBox(cx, cy, cz, sx, h, sz, col[0] * .4, col[1] * .4, col[2] * .4, null, false);
+function holoPanel(cx, cy, cz, w, h, R, seed) {                              // a floating glowing screen showing the hologram scenes (see holo() in the shader); drawn additively
+  pushBox(cx, cy, cz, w, h, .05, 1, 1, 1, R, false, 1, 600 + seed + 10 * Math.round(w * 2) + 400 * Math.round(h * 2));
 }
 function drawStationGlass(t) {
   const BR = .85 + .15 * Math.sin(t * 3), gph = (t * 1.1) % 7, GL = gph < .18 ? .35 : 1, HJ = gph < .18 ? Math.sin(t * 90) * .25 : 0;                // breathing alpha, and a brief glitch every few seconds
@@ -103,8 +102,6 @@ function drawStationGlass(t) {
     const wy = (WIN.y0 + WIN.y1 + 1) / 2, wz = (WIN.z0 + WIN.z1 + 1) / 2;                       // the window: a faint blue pane with slow reflections
     pushBox(WIN.x0 + 1.5, wy, wz, .1, WIN.y1 - WIN.y0 + 1, WIN.z1 - WIN.z0 + 1, .1, .25, .4, null, false); flushDynA(.07);
     for (let k = 0; k < 4; k++) { const z = -26 + ((k * 17 + t * 2.5) % 54); pushBox(WIN.x0 + 1.4, wy + Math.sin(k * 2) * 3, z, .06, 16, .5, .5, .8, 1, rotX(.7), false); } flushDynA(.06);
-    for (const [x, z, f] of BRIDGE_CREW) { if (f !== 1) continue; holoPanel(x + 2.1, SD + 6.2, z, 2.8, 1.6, 'z', CY, t, z); }          // little holo screens over the desks
-    flushDynA(.22);
   }
   if (camZ < -20) {                                                             // ---- the Hellgate chamber: orange containment cubes and holo screens
     for (const sx of [-1, 1]) for (const [cx, cz] of [[sx * 14, -62], [sx * 24, -100]]) {
@@ -117,23 +114,22 @@ function drawStationGlass(t) {
       for (let k = 0; k < 6; k++) { const a = t * .7 + k * 1.05; pushBox(cx + .5 + Math.cos(a) * 2.6, y + Math.sin(a * 1.3) * 1.4, cz + .5 + Math.sin(a) * 2.6, .25, .25, .25, 1, .8, .4, rotY(a), false); }
     }
     flushDynA(.8);
-    for (const [x, z] of GATE_CREW) { const s = x < 0 ? -1 : 1; for (let k = 0; k < 3; k++) pushBox(x + s * 2.6, SD + 6 + k * .15, z, .06, 1.7, 3 - k * .5, OR[0], OR[1] * .8, OR[2], null, false); }
-    flushDynA(.26);
+    flushDynAdd(1); for (const [x, z] of GATE_CREW) { const s = x < 0 ? -1 : 1; holoPanel(x + s * 2.6, SD + 7, z, 3, 1.8, rotY(Math.PI / 2), 5 + ((z + 90) >> 1) % 5); }
+    flushDynAdd(.85 * BR * GL);
   }
 }
 
 // the ring console's holograms: a floating curved band of data over the desk, a wireframe globe over the pedestal, small screens above the desks
 function drawBridgeHolos(t, br, hj) {
   const cx = HEX.x + .5, cz = HEX.z + .5, C = [.2, .9, 1];
-  for (let k = 0; k < 28; k++) { const a = Math.PI * .6 + k / 28 * Math.PI * 1.55 + t * .08; if (a > TAU) continue; const x = cx + Math.cos(a) * 7.2 + hj, z = cz + Math.sin(a) * 7.2;
-    pushBox(x, SD + 15, z, 1.3, 3.2, .08, .12, .45, .55, rotY(-a - Math.PI / 2), false);
-    for (let r = 0; r < 4; r++) if (ih(k, r, Math.floor(t * 2 + r), 12) > .35) pushBox(x, SD + 13.8 + r * .75, z, .9 * (.4 + ih(k, r, 3, 9) * .6), .22, .1, .5, 1, 1, rotY(-a - Math.PI / 2), false); }
-  flushDynA(.34 * br);
-  for (let i = 0; i < 3; i++) for (let k = 0; k < 14; k++) { const a = k / 14 * TAU + t * (.5 + i * .2), r = 2.2; const ca = Math.cos(a), sa = Math.sin(a), tilt = i * 1.05;
-    pushBox(cx + ca * r * Math.cos(tilt) * .98, SD + 7 + sa * r, cz + ca * r * Math.sin(tilt), .3, .3, .3, .3, 1, 1, null, false); }
-  for (let k = 0; k < 8; k++) { const y = SD + 7 + Math.sin(k / 8 * Math.PI - Math.PI / 2 + Math.PI / 2) * 0; pushBox(cx, SD + 4.6 + k * .55, cz, 2.4 * Math.sin((k + .5) / 8 * Math.PI) + .1, .05, 2.4 * Math.sin((k + .5) / 8 * Math.PI) + .1, .3, .9, 1, rotY(t * .3 + k), false); }
-  flushDynA(.6 * br);
-  for (let k = 0; k < 6; k++) { const a = k * Math.PI / 3 + Math.PI / 6, x = cx + Math.cos(a) * 6.6, z = cz + Math.sin(a) * 6.6; pushBox(x, SD + 6.2 + Math.sin(t * 1.2 + k) * .15, z, 2.2, 1.4, .06, .1, .5, .6, rotY(-a - Math.PI / 2), false); }
-  for (const sx of [-1, 1]) for (const ox of [14, 28]) for (const sz of [-1, 1]) pushBox(sx * ox + .5, SD + 6.4, sz * 32.5 + .5, 2.6, 1.3, .06, .1, .5, .6, null, false);
-  flushDynA(.3 * br);
+  flushDynAdd(1);
+  for (let k = 0; k < 3; k++) for (let i = 0; i < 3; i++) { const a = k * 2.0944 + i * .6 + 1.0 + t * .06; holoPanel(cx + Math.cos(a) * 7.4 + hj, SD + 14.5, cz + Math.sin(a) * 7.4, 5.2, 3.2, rotY(-a - Math.PI / 2), (k * 3 + i) % 5); }        // the curved band
+  flushDynAdd(.9 * br);
+  for (let k = 0; k < 6; k++) { const a = k * Math.PI / 3 + Math.PI / 6, x = cx + Math.cos(a) * 6.2, z = cz + Math.sin(a) * 6.2; holoPanel(x, SD + 6.6 + Math.sin(t * 1.2 + k) * .15, z, 2.6, 1.7, rotY(-a - Math.PI / 2), k % 5); }
+  for (const sx of [-1, 1]) for (const ox of [14, 28]) for (const sz of [-1, 1]) holoPanel(sx * ox + .5, SD + 8.4, sz * 31.5 + .5, 3, 1.8, rotY(sz > 0 ? 0 : Math.PI), (ox + sx + 3) % 5);
+  for (const [x, z, f] of BRIDGE_CREW) if (f === 1) holoPanel(x + 2.1, SD + 7.2, z, 2.4, 1.5, rotY(Math.PI / 2), (z + 40) % 5);
+  flushDynAdd(.8 * br);
+  for (let i = 0; i < 3; i++) for (let k = 0; k < 14; k++) { const a = k / 14 * TAU + t * (.5 + i * .2), r = 2.2, ca = Math.cos(a), sa = Math.sin(a), tilt = i * 1.05; pushBox(cx + ca * r * Math.cos(tilt) * .98, SD + 7 + sa * r, cz + ca * r * Math.sin(tilt), .3, .3, .3, .3, 1, 1, null, false); }
+  for (let k = 0; k < 8; k++) pushBox(cx, SD + 4.6 + k * .55, cz, 2.4 * Math.sin((k + .5) / 8 * Math.PI) + .1, .05, 2.4 * Math.sin((k + .5) / 8 * Math.PI) + .1, .3, .9, 1, rotY(t * .3 + k), false);
+  flushDynAdd(.7 * br);
 }
