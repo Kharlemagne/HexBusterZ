@@ -15,23 +15,30 @@ const PLAYER_PARTS = (() => {
   // a curved strand of boxes: segs = [heading in degrees from +x (counter-clockwise), length]; sd mirrors it to the -x side; w0 -> w1 = thickness along the strand
   const strand = (x0, y0, z0, sd, segs, w0, w1, col, ex, sway) => { let x = x0, y = y0; segs.forEach(([deg, len], k) => { const hx = sd * Math.cos(deg * D2R), hy = Math.sin(deg * D2R), w = w0 + (w1 - w0) * k / Math.max(1, segs.length - 1);
     add([x + hx * len / 2, y + hy * len / 2, z0], [w, len * 1.12, w], col, { rz: Math.atan2(-hx, hy), ...(sway ? { sx: { f: 1.7 + (sway.f || 0) + k * .12, ph: (sway.ph || 0) + k * .55, amp: .004 + k * .011 } } : null), ...ex }); x += hx * len; y += hy * len; }); };
-  // ---- the head, built from solid pieces (no thin layers stacked on big faces, so nothing can flicker): a dark core cube, a front plate made of
-  // separate blocks around real recessed sockets, and a toothed jaw. The -x half of the face plate is pale bone (the skull half), the +x half is dark plate.
-  const BONE = 0x8c8ca2, BONE2 = 0xc4c4d6;
-  add([0, 1.945, .04], [.66, .49, .52], PM_ST, { tl: G });                                                                // core cube: front face at z -.22, back at +.30
-  add([0, 2.215, .02], [.5, .05, .4], PM_ST3, { tl: G });                                                                 // flat cap on top
-  const FZ = -.26;                                                                                                        // front-plate blocks are .08 deep: their faces sit at -.30
-  add([-.1725, 2.07, FZ], [.315, .24, .08], BONE, { tl: TILE.BONEY }); add([.1725, 2.07, FZ], [.315, .24, .08], PM_ST, { tl: G });   // forehead row
-  add([-.28, 1.86, FZ], [.1, .18, .08], BONE, { tl: TILE.BONEY }); add([-.0325, 1.86, FZ], [.035, .18, .08], BONE, { tl: TILE.BONEY });  // bone half, either side of the socket
-  add([.28, 1.86, FZ], [.1, .18, .08], PM_ST, { tl: G }); add([.0325, 1.86, FZ], [.035, .18, .08], PM_ST, { tl: G });                  // plate half
-  add([-.205, 1.735, FZ], [.25, .07, .08], BONE, { tl: TILE.BONEY }); add([.1725, 1.735, FZ], [.315, .07, .08], PM_ST, { tl: G });     // cheek row (the gap at the seam is half a nose)
-  for (const sd of [-1, 1]) { add([sd * .14, 1.86, -.23], [.18, .18, .02], 0x000000); add([sd * .14, 1.86, -.255], [.13, .13, .03], PM_CY, { e: 1, pulse: { f: 2, ph: sd, amp: .05 } }); }   // sockets + the eyes sunk in them
-  add([0, 2.07, -.315], [.12, .12, .03], 0x000000); add([0, 2.07, -.338], [.085, .085, .03], PM_CY, { e: 1, pulse: { f: 3, ph: 0, amp: .08 } });  // the third eye, standing proud of the forehead
-  add([0, 1.615, -.01], [.58, .17, .54], PM_ST2, { tl: G });                                                             // jaw
-  for (let k = 0; k < 4; k++) { const x = -.05 - k * .065; add([x, 1.655, -.3], [.05, .07, .04], BONE2, { tl: TILE.BONEY }); add([x, 1.57, -.3], [.05, .07, .04], BONE2, { tl: TILE.BONEY }); }   // teeth on the bone half
-  for (const y of [1.655, 1.62, 1.585]) add([.16, y, -.29], [.24, .015, .02], PM_CYD, { e: 1 });                         // vent slits on the plate half
-  add([.342, 2.0, -.05], [.02, .26, .012], PM_CRK, { rz: .5 }); add([-.342, 1.95, .1], [.02, .24, .012], PM_CRK, { rz: -.4 }); add([.14, 2.0, .312], [.012, .3, .02], PM_CRK, { rz: .3 });   // cracks standing just off the sides
-  add([-.27, 2.255, .1], [.12, .08, .14], PM_ST3, { rz: .3 }); add([-.2, 2.27, -.05], [.08, .1, .08], PM_ST3, { rz: -.3 });   // chipped chunks on the cap
+  // ---- the head, built from solid pieces (nothing thin stacked flat on a big face, so nothing can flicker).
+  // The face is a half-skull MASK in near-black bone: forehead, deep square sockets, a nasal bridge, cheekbones, a nose cavity and a row of upper teeth,
+  // with no lower jaw, so the bottom of the face is open. Behind it the cranium has a stepped crown, a crest, ear cups and a back plate.
+  const MK = 0x1b1c24, MK2 = 0x3a3c48, TOOTH = 0x9a9cb0;
+  add([0, 1.945, .04], [.66, .49, .52], PM_ST, { tl: G });                                                                // cranium core: front face at z -.22, back at +.30
+  const FZ = -.26;                                                                                                        // mask blocks are .08 deep: their faces sit at -.30
+  add([-.1725, 2.085, FZ], [.315, .21, .08], MK, { tl: G }); add([.1725, 2.085, FZ], [.315, .21, .08], MK, { tl: G });                    // forehead
+  add([-.28, 1.88, FZ], [.1, .2, .08], MK, { tl: G }); add([.28, 1.88, FZ], [.1, .2, .08], MK, { tl: G }); add([0, 1.88, FZ], [.08, .2, .08], MK2, { tl: G });   // outer sockets walls + nasal bridge
+  add([-.205, 1.74, FZ], [.25, .08, .08], MK, { tl: G }); add([.205, 1.74, FZ], [.25, .08, .08], MK, { tl: G });                           // cheek row, with the nose cavity between
+  for (const sd of [-1, 1]) {
+    add([sd * .135, 1.88, -.23], [.19, .2, .02], 0x000000); add([sd * .135, 1.88, -.255], [.13, .13, .03], PM_CY, { e: 1, pulse: { f: 2, ph: sd, amp: .05 } });   // sockets + the eyes sunk in them
+    add([sd * .14, 1.995, -.325], [.22, .04, .05], MK2); add([sd * .225, 1.775, -.325], [.2, .04, .05], MK2);                             // brow ridge + cheekbone ridge
+  }
+  add([0, 1.74, -.23], [.16, .08, .02], 0x000000);                                                                        // nose cavity
+  add([0, 2.085, -.315], [.12, .12, .03], 0x000000); add([0, 2.085, -.338], [.085, .085, .03], PM_CY, { e: 1, pulse: { f: 3, ph: 0, amp: .08 } });   // third eye, proud of the forehead
+  add([0, 1.675, -.2], [.5, .05, .16], MK2);                                                                              // upper jaw
+  for (let k = 0; k < 7; k++) add([(k - 3) * .07, 1.6125, -.27], [.05, .075, .04], TOOTH, { tl: TILE.BONEY });                            // upper teeth, nothing below them
+  add([.05, 2.15, -.31], [.012, .1, .012], PM_CYR, { e: 1, rz: .3 }); add([.02, 2.07, -.31], [.012, .08, .012], PM_CYR, { e: 1, rz: -.5 }); add([-.2, 1.745, -.31], [.012, .07, .012], PM_CYR, { e: 1, rz: .4 }); add([.24, 1.99, -.31], [.012, .12, .012], PM_CYR, { e: 1, rz: -.3 });   // glowing cracks
+  // the rest of the head, so it is not just a block
+  add([0, 2.22, .02], [.58, .06, .46], PM_ST3, { tl: G }); add([0, 2.275, .02], [.4, .05, .34], PM_ST2, { tl: G });             // stepped crown
+  add([0, 2.325, .02], [.07, .05, .44], PM_ST3); add([0, 2.356, .02], [.02, .012, .34], PM_CY, { e: 1 });                      // crest with a lit line
+  add([-.3, 2.27, .1], [.12, .08, .14], PM_ST3, { rz: .3 }); add([-.22, 2.31, -.05], [.08, .1, .08], PM_ST3, { rz: -.3 });      // chipped chunks on the crown
+  for (const sd of [-1, 1]) { add([sd * .37, 1.9, .02], [.08, .2, .2], PM_ST2, { tl: G }); add([sd * .42, 1.9, .02], [.02, .06, .06], PM_CY, { e: 1 }); }   // ear cups with a light
+  add([0, 1.97, .32], [.44, .3, .04], PM_ST3, { tl: G }); for (const sd of [-1, 1]) { add([sd * .12, 1.78, .36], [.06, .34, .06], PM_ST2); add([sd * .12, 1.7, .395], [.04, .04, .02], PM_CY, { e: 1 }); }   // back plate + two pipes down the neck
   // ---- lyre horns: the +x one is whole (sweeps out, climbs, curls its tip back in); the -x one snapped off partway and ends in jagged shards
   strand(.27, 2.2, 0, 1, [[15, .17], [40, .17], [70, .17], [100, .15], [125, .13]], .21, .08, PM_ST, { tl: G });
   strand(-.27, 2.2, 0, -1, [[15, .15], [45, .1]], .21, .17, PM_ST, { tl: G });
