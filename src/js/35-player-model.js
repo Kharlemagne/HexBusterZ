@@ -15,23 +15,23 @@ const PLAYER_PARTS = (() => {
   // a curved strand of boxes: segs = [heading in degrees from +x (counter-clockwise), length]; sd mirrors it to the -x side; w0 -> w1 = thickness along the strand
   const strand = (x0, y0, z0, sd, segs, w0, w1, col, ex, sway) => { let x = x0, y = y0; segs.forEach(([deg, len], k) => { const hx = sd * Math.cos(deg * D2R), hy = Math.sin(deg * D2R), w = w0 + (w1 - w0) * k / Math.max(1, segs.length - 1);
     add([x + hx * len / 2, y + hy * len / 2, z0], [w, len * 1.12, w], col, { rz: Math.atan2(-hx, hy), ...(sway ? { sx: { f: 1.7 + (sway.f || 0) + k * .12, ph: (sway.ph || 0) + k * .55, amp: .004 + k * .011 } } : null), ...ex }); x += hx * len; y += hy * len; }); };
-  // ---- skull: a huge cracked cube with a chipped corner, two big square eyes over a lower jaw block, a third eye above
-  add([0, 1.96, 0], [.66, .46, .6], PM_ST, { tl: G }); add([0, 1.63, -.01], [.58, .2, .54], PM_ST2, { tl: G });
-  for (const sd of [-1, 1]) { add([sd * .14, 1.86, -.302], [.17, .17, .03], 0x000000); add([sd * .14, 1.86, -.318], [.13, .13, .03], PM_CY, { e: 1, pulse: { f: 2, ph: sd, amp: .05 } }); }
-  add([0, 2.07, -.302], [.13, .13, .03], 0x000000); add([0, 2.07, -.318], [.095, .095, .03], PM_CY, { e: 1, pulse: { f: 3, ph: 0, amp: .08 } });
-  // the face plate is half a skull: the -x half is pale bone (brow, socket round the eye, cheekbone, half a nose, teeth over a dark mouth), the +x half stays plain dark plate
-  const BONE = 0x6b6b80, BONE2 = 0x8a8aa0;
-  add([-.165, 1.96, -.296], [.31, .46, .03], BONE, { tl: TILE.BONEY }); add([-.15, 1.63, -.268], [.27, .2, .03], BONE, { tl: TILE.BONEY });       // bone over the upper face and the jaw
-  add([-.165, 1.97, -.322], [.31, .04, .03], BONE2, { tl: TILE.BONEY }); add([-.2, 1.745, -.322], [.17, .05, .03], BONE2, { tl: TILE.BONEY });     // brow ridge + cheekbone
-  add([-.14, 1.86, -.31], [.2, .2, .03], 0x000000);                                                                                              // the deep socket (the eye glows inside it)
-  add([-.035, 1.76, -.318], [.055, .1, .03], 0x000000, { rz: -.1 }); add([-.04, 1.7, -.318], [.07, .03, .03], 0x000000);                         // half a nose cavity at the seam
-  add([-.15, 1.625, -.287], [.27, .11, .03], 0x000000); for (let k = 0; k < 4; k++) { const x = -.05 - k * .065; add([x, 1.655, -.29], [.045, .07, .03], BONE2, { tl: TILE.BONEY }); add([x, 1.595, -.29], [.045, .05, .03], BONE2, { tl: TILE.BONEY }); }
-  add([0, 1.87, -.31], [.014, .62, .02], PM_CRK);                                                                                                // the seam between bone and plate
-  for (const [x, y] of [[.3, 2.14], [.3, 1.6], [.04, 1.6]]) add([x, y, -.298], [.03, .03, .02], PM_ST3);                                         // rivets on the plate half
-  add([.16, 1.625, -.287], [.24, .012, .02], PM_CYD, { e: 1 }); add([.16, 1.66, -.287], [.24, .012, .02], PM_CYD, { e: 1 }); add([.16, 1.59, -.287], [.24, .012, .02], PM_CYD, { e: 1 });   // vent slits
-  add([.27, 2.17, -.31], [.012, .22, .01], PM_CRK, { rz: .4 }); add([.2, 1.98, -.31], [.012, .16, .01], PM_CRK, { rz: -.5 }); add([-.22, 1.72, -.31], [.012, .14, .01], PM_CRK, { rz: .35 }); add([-.1, 2.14, -.31], [.01, .12, .01], PM_CRK, { rz: -.35 });
-  add([.332, 2.05, 0], [.01, .26, .012], PM_CRK, { rz: .5 }); add([-.332, 1.98, .06], [.01, .22, .012], PM_CRK, { rz: -.4 }); add([.14, 2.0, .302], [.012, .3, .01], PM_CRK, { rz: .3 }); add([-.18, 1.9, .302], [.012, .26, .01], PM_CRK, { rz: -.45 });
-  add([-.3, 2.23, -.1], [.12, .08, .16], PM_ST3, { rz: .4 }); add([-.24, 2.27, .1], [.08, .08, .12], PM_ST3, { rz: -.3 }); add([-.33, 2.22, .12], [.07, .06, .1], PM_ST2, { rz: .8 });       // the chipped corner
+  // ---- the head, built from solid pieces (no thin layers stacked on big faces, so nothing can flicker): a dark core cube, a front plate made of
+  // separate blocks around real recessed sockets, and a toothed jaw. The -x half of the face plate is pale bone (the skull half), the +x half is dark plate.
+  const BONE = 0x8c8ca2, BONE2 = 0xc4c4d6;
+  add([0, 1.945, .04], [.66, .49, .52], PM_ST, { tl: G });                                                                // core cube: front face at z -.22, back at +.30
+  add([0, 2.215, .02], [.5, .05, .4], PM_ST3, { tl: G });                                                                 // flat cap on top
+  const FZ = -.26;                                                                                                        // front-plate blocks are .08 deep: their faces sit at -.30
+  add([-.1725, 2.07, FZ], [.315, .24, .08], BONE, { tl: TILE.BONEY }); add([.1725, 2.07, FZ], [.315, .24, .08], PM_ST, { tl: G });   // forehead row
+  add([-.28, 1.86, FZ], [.1, .18, .08], BONE, { tl: TILE.BONEY }); add([-.0325, 1.86, FZ], [.035, .18, .08], BONE, { tl: TILE.BONEY });  // bone half, either side of the socket
+  add([.28, 1.86, FZ], [.1, .18, .08], PM_ST, { tl: G }); add([.0325, 1.86, FZ], [.035, .18, .08], PM_ST, { tl: G });                  // plate half
+  add([-.205, 1.735, FZ], [.25, .07, .08], BONE, { tl: TILE.BONEY }); add([.1725, 1.735, FZ], [.315, .07, .08], PM_ST, { tl: G });     // cheek row (the gap at the seam is half a nose)
+  for (const sd of [-1, 1]) { add([sd * .14, 1.86, -.23], [.18, .18, .02], 0x000000); add([sd * .14, 1.86, -.255], [.13, .13, .03], PM_CY, { e: 1, pulse: { f: 2, ph: sd, amp: .05 } }); }   // sockets + the eyes sunk in them
+  add([0, 2.07, -.315], [.12, .12, .03], 0x000000); add([0, 2.07, -.338], [.085, .085, .03], PM_CY, { e: 1, pulse: { f: 3, ph: 0, amp: .08 } });  // the third eye, standing proud of the forehead
+  add([0, 1.615, -.01], [.58, .17, .54], PM_ST2, { tl: G });                                                             // jaw
+  for (let k = 0; k < 4; k++) { const x = -.05 - k * .065; add([x, 1.655, -.3], [.05, .07, .04], BONE2, { tl: TILE.BONEY }); add([x, 1.57, -.3], [.05, .07, .04], BONE2, { tl: TILE.BONEY }); }   // teeth on the bone half
+  for (const y of [1.655, 1.62, 1.585]) add([.16, y, -.29], [.24, .015, .02], PM_CYD, { e: 1 });                         // vent slits on the plate half
+  add([.342, 2.0, -.05], [.02, .26, .012], PM_CRK, { rz: .5 }); add([-.342, 1.95, .1], [.02, .24, .012], PM_CRK, { rz: -.4 }); add([.14, 2.0, .312], [.012, .3, .02], PM_CRK, { rz: .3 });   // cracks standing just off the sides
+  add([-.27, 2.255, .1], [.12, .08, .14], PM_ST3, { rz: .3 }); add([-.2, 2.27, -.05], [.08, .1, .08], PM_ST3, { rz: -.3 });   // chipped chunks on the cap
   // ---- lyre horns: the +x one is whole (sweeps out, climbs, curls its tip back in); the -x one snapped off partway and ends in jagged shards
   strand(.27, 2.2, 0, 1, [[15, .17], [40, .17], [70, .17], [100, .15], [125, .13]], .21, .08, PM_ST, { tl: G });
   strand(-.27, 2.2, 0, -1, [[15, .15], [45, .1]], .21, .17, PM_ST, { tl: G });
@@ -104,10 +104,23 @@ function playerParts(weapon) {
 // ---- character preview: a tiny software renderer on a 2D canvas (orthographic, painter's algorithm), like Minecraft's inventory doll
 const CHAR_FACES = [[[1, 0, 0], [[1, -1, -1], [1, 1, -1], [1, 1, 1], [1, -1, 1]]], [[-1, 0, 0], [[-1, -1, 1], [-1, 1, 1], [-1, 1, -1], [-1, -1, -1]]], [[0, 1, 0], [[-1, 1, -1], [-1, 1, 1], [1, 1, 1], [1, 1, -1]]], [[0, -1, 0], [[-1, -1, 1], [-1, -1, -1], [1, -1, -1], [1, -1, 1]]], [[0, 0, 1], [[1, -1, 1], [1, 1, 1], [-1, 1, 1], [-1, -1, 1]]], [[0, 0, -1], [[-1, -1, -1], [-1, 1, -1], [1, 1, -1], [1, -1, -1]]]];
 function drawCharPreview(cv, yaw, pitch, t, weapon, walk) {
-  const g = cv.getContext('2d'), W = cv.width, H_ = cv.height; g.clearRect(0, 0, W, H_);
+  // a tiny software renderer with a real depth buffer (orthographic, drawn at 2x and smoothed down), so overlapping blocks can never flick in front of or behind each other
+  const g = cv.getContext('2d'), W = cv.width, H_ = cv.height, S = 2, bw = W * S, bh = H_ * S; g.clearRect(0, 0, W, H_);
   const grd = g.createRadialGradient(W / 2, H_ * .55, 10, W / 2, H_ * .55, H_ * .6); grd.addColorStop(0, '#0e3a4a99'); grd.addColorStop(1, '#00000000'); g.fillStyle = grd; g.fillRect(0, 0, W, H_);
-  const sc = Math.min(H_ / 2.95, W / 2.6), cy = H_ * .94, c = Math.cos(yaw + Math.PI), s = Math.sin(yaw + Math.PI), cp = Math.cos(pitch), sp = Math.sin(pitch), quads = [];
-  const proj = (x, y, z) => { const x1 = x * c + z * s, z1 = -x * s + z * c, y2 = y * cp - z1 * sp, z2 = y * sp + z1 * cp; return [W / 2 + x1 * sc, cy - y2 * sc, z2]; };
+  let st = cv._st; if (!st || st.bw !== bw || st.bh !== bh) { const c1 = document.createElement('canvas'), c2 = document.createElement('canvas'); c1.width = c2.width = bw; c1.height = c2.height = bh; const x1 = c1.getContext('2d'), x2 = c2.getContext('2d'); st = cv._st = { bw, bh, c1, c2, x1, x2, zb: new Float32Array(bw * bh), i1: x1.createImageData(bw, bh), i2: x2.createImageData(bw, bh) }; }
+  const zb = st.zb, d1 = st.i1.data, d2 = st.i2.data; zb.fill(-1e9); d1.fill(0); d2.fill(0);
+  const sc = Math.min(H_ / 2.95, W / 2.6), cy = H_ * .94, c = Math.cos(yaw + Math.PI), s = Math.sin(yaw + Math.PI), cp = Math.cos(pitch), sp = Math.sin(pitch);
+  const proj = (x, y, z) => { const x1 = x * c + z * s, z1 = -x * s + z * c, y2 = y * cp - z1 * sp, z2 = y * sp + z1 * cp; return [(W / 2 + x1 * sc) * S, (cy - y2 * sc) * S, z2]; };
+  const tri = (a, b, cc, r, gr, bl, em) => {
+    const ax = a[0], ay = a[1], bx = b[0], by = b[1], cx = cc[0], cy2 = cc[1], d = (bx - ax) * (cy2 - ay) - (by - ay) * (cx - ax); if (Math.abs(d) < 1e-6) return; const inv = 1 / d;
+    const x0 = Math.max(0, Math.floor(Math.min(ax, bx, cx))), x1 = Math.min(bw - 1, Math.ceil(Math.max(ax, bx, cx))), y0 = Math.max(0, Math.floor(Math.min(ay, by, cy2))), y1 = Math.min(bh - 1, Math.ceil(Math.max(ay, by, cy2)));
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+      const px = x + .5, py = y + .5, w1 = ((px - ax) * (cy2 - ay) - (py - ay) * (cx - ax)) * inv, w2 = ((bx - ax) * (py - ay) - (by - ay) * (px - ax)) * inv, w0 = 1 - w1 - w2;
+      if (w0 < -1e-4 || w1 < -1e-4 || w2 < -1e-4) continue;
+      const z = w0 * a[2] + w1 * b[2] + w2 * cc[2], i = y * bw + x; if (z <= zb[i]) continue; zb[i] = z; const o = i * 4;
+      d1[o] = r; d1[o + 1] = gr; d1[o + 2] = bl; d1[o + 3] = 255; if (em) { d2[o] = r; d2[o + 1] = gr; d2[o + 2] = bl; d2[o + 3] = 255; } else d2[o + 3] = 0;
+    }
+  };
   for (const p of playerParts(weapon)) {
     let ox = p.o[0], oy = p.o[1], oz = p.o[2];
     if (p.sw) oz += Math.sin(walk + p.sw.ph) * p.sw.amp;
@@ -119,15 +132,13 @@ function drawCharPreview(cv, yaw, pitch, t, weapon, walk) {
     for (const [n0, vs] of CHAR_FACES) {
       const n = rot(n0[0], n0[1], n0[2]), nx = n[0] * c + n[2] * s, nz = -n[0] * s + n[2] * c, nz2 = n[1] * sp + nz * cp;
       if (nz2 <= 0.001) continue;                                                  // facing away from the viewer
-      const pts = vs.map(v => { const r = rot(v[0] * hx_, v[1] * hy_, v[2] * hz_); return proj(ox + r[0], oy + r[1], oz + r[2]); }), dz = (pts[0][2] + pts[1][2] + pts[2][2] + pts[3][2]) / 4;
+      const pts = vs.map(v => { const r = rot(v[0] * hx_, v[1] * hy_, v[2] * hz_); return proj(ox + r[0], oy + r[1], oz + r[2]); });
       const ny2 = n[1] * cp - nz * sp, lit = em ? 1.2 : .55 + .45 * Math.max(0, nx * .3 + ny2 * .8 + nz2 * .5);
-      quads.push([dz, pts, [Math.min(255, col[0] * 255 * lit) | 0, Math.min(255, col[1] * 255 * lit) | 0, Math.min(255, col[2] * 255 * lit) | 0], em]);
+      const R = Math.min(255, col[0] * 255 * lit) | 0, G_ = Math.min(255, col[1] * 255 * lit) | 0, B = Math.min(255, col[2] * 255 * lit) | 0;
+      tri(pts[0], pts[1], pts[2], R, G_, B, em); tri(pts[0], pts[2], pts[3], R, G_, B, em);
     }
   }
-  quads.sort((a, b) => a[0] - b[0]);
-  for (const [, pts, rgb, em] of quads) {
-    g.beginPath(); g.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < 4; i++) g.lineTo(pts[i][0], pts[i][1]); g.closePath();
-    g.fillStyle = 'rgb(' + rgb.join(',') + ')'; if (em) { g.shadowColor = 'rgb(' + rgb.join(',') + ')'; g.shadowBlur = 10; } g.fill(); g.shadowBlur = 0;
-    g.strokeStyle = em ? 'rgba(220,255,255,.4)' : 'rgba(90,120,150,.22)'; g.lineWidth = 1; g.stroke();
-  }
+  st.x1.putImageData(st.i1, 0, 0); st.x2.putImageData(st.i2, 0, 0);
+  g.imageSmoothingEnabled = true; g.drawImage(st.c1, 0, 0, W, H_);
+  g.save(); g.globalCompositeOperation = 'lighter'; g.filter = 'blur(5px)'; g.globalAlpha = .85; g.drawImage(st.c2, 0, 0, W, H_); g.restore();     // the glow
 }
