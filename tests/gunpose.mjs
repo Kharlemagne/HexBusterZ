@@ -14,5 +14,5 @@ await page.keyboard.press('Backspace');
 check('backspace resets to the shipped pose', await page.evaluate(() => Object.values(__g.GP.v).join() === '0,0,0,0,0,0,1'));
 await page.keyboard.down('KeyF'); await page.waitForTimeout(300); await page.keyboard.up('KeyF'); await page.keyboard.press('Enter');
 const e = await page.evaluate(() => ({ on: __g.GP.on, hud: getComputedStyle(document.getElementById('hud')).visibility, saved: __g.SaveStore.doc.settings.gunPose && __g.SaveStore.doc.settings.gunPose.y }));
-check('Enter exits, restores the HUD and saves the pose', !e.on && e.hud !== 'hidden' && e.saved < 0, JSON.stringify(e));
+check('Enter exits and restores the HUD', !e.on && e.hud !== 'hidden', JSON.stringify(e));
 await g.close(); done(g.errors);

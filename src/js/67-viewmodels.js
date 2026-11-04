@@ -24,6 +24,7 @@ const MODE_PARTS = [
   [P_([0, 0, -.55], [.05, .05, .5], 0x6a4a2a), P_([0, 0, -.82], [.4, .07, .09], 0x9aa4b4), P_([-.22, 0, -.8], [.08, .14, .09], 0x9aa4b4), P_([.22, 0, -.8], [.08, .14, .09], 0x9aa4b4), P_([0, 0, -.82], [.1, .12, .1], 0x55ffaa, { e: 1, acc: 1 })],
 ];
 const MODE_MAXCD = [.3, .8, .12, 1.6, .15];
+const HOLO_AT = [.3, .06, .17, 0];            // where the mode hologram floats: [along the gun toward its base, right, up, depth] from the arm
 let vmMuzzle = [0, 0, -1, 0];            // viewmodel-space spot of the muzzle (x, y, z), set while drawing
 function drawCannonArm() {
   GP.tick();
@@ -33,8 +34,8 @@ function drawCannonArm() {
   let ox = -.34 - bobX - P.swayX * .6, oy = -.175 + bob - P.kick * .1 + Math.sin(tt * 1.3) * .004, oz = -.6 + P.kick * .5, rx = .09 + P.kickRot * .4;
   if (P.sliding) { oy -= .06; ox += .03; } if (P.dashT > 0) oz += .04; if (P.slamming) oy -= .1;
   if (w === 4) { rx -= P.swing * 1.0; oz -= P.swing * .1; }
-  const G = GP.v; ox += G.x; oy += G.y; oz += G.z; rx += G.pitch;                  // the hand-tuned offsets (all zero = the shipped pose)
-  const R = mulR(mulR(rotY(.42 - P.swayX + G.yaw), rotX(rx)), rotZ(.05 + G.roll)), VS_ = .62 * G.scale;
+  const G = GP.v, B = GP_BASE; ox += B.x + G.x; oy += B.y + G.y; oz += B.z + G.z; rx += B.pitch + G.pitch;                  // B = the pose Karl tuned by hand; G = live offsets from GUN ARM POSITION mode (zero = shipped)
+  const R = mulR(mulR(rotY(.42 - P.swayX + B.yaw + G.yaw), rotX(rx)), rotZ(.05 + B.roll + G.roll)), VS_ = .62 * B.scale * G.scale;
   const W = (lx, ly, lz) => [ox + (R[0] * lx + R[1] * ly + R[2] * lz) * VS_, oy + (R[3] * lx + R[4] * ly + R[5] * lz) * VS_, oz + (R[6] * lx + R[7] * ly + R[8] * lz) * VS_];
   for (const p of CANNON.concat(MODE_PARTS[w])) {
     const pu = p.pulse ? 1 + Math.sin(tt * 6) * .12 : 1, q = W(p.o[0], p.o[1], p.o[2]);
@@ -67,7 +68,7 @@ function holoText(text, cx, cy, z, px, c) {
 }
 function drawModeHolo(info) {
   const { W, acc, tt } = info, w = P.weapon, f = .85 + Math.sin(tt * 23) * .05 + (Math.random() < .03 ? -.4 : 0);
-  const cx = W(0, 0, 0)[0] + .1, cy = W(0, 0, 0)[1] + .22, cz = -.55, px = .0026;
+  const hb = W(0, 0, HOLO_AT[0]), cx = hb[0] + HOLO_AT[1], cy = hb[1] + HOLO_AT[2], cz = Math.min(-.3, hb[2] + HOLO_AT[3]), px = .0026;
   const a = [acc[0] * f, acc[1] * f, acc[2] * f], dim = [acc[0] * .35 * f, acc[1] * .35 * f, acc[2] * .35 * f];
   const name = WNAMES[w], pw = (name.length * 6 + 4) * px, ph = P.weapon === 4 ? .092 : .07, pyo = P.weapon === 4 ? -.011 : 0;
   pushBox(cx, cy - .004 + pyo, cz + .002, pw + .02, ph, .002, acc[0] * .05, acc[1] * .06, acc[2] * .06, null, false, 0, TILE.GLOW);                 // faint glass

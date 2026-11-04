@@ -1,9 +1,10 @@
 // ---------------- GUN ARM POSITION MODE ----------------
 // Pause menu -> GUN ARM POSITION. The HUD is cleared and you steer the cannon arm by hand; the numbers are on screen so a screenshot says exactly where it sits.
 // All values are offsets ON TOP of the shipped pose (all zero = the pose as it is today), saved with the settings.
+const GP_BASE = { x: .094, y: .015, z: .044, yaw: -.392, pitch: -.088, roll: 0, scale: .905 };      // the shipped pose (hand-tuned in this mode and baked in)
 const GP = {
   on: false, hide: false, box: null,
-  v: Object.assign({ x: 0, y: 0, z: 0, yaw: 0, pitch: 0, roll: 0, scale: 1 }, (SaveStore.doc.settings || {}).gunPose || {}),
+  v: Object.assign({ x: 0, y: 0, z: 0, yaw: 0, pitch: 0, roll: 0, scale: 1 }, {}),
   last: 0,
   start() {
     this.on = true; this.hide = false; this.last = performance.now();
@@ -13,14 +14,14 @@ const GP = {
   },
   stop() {
     if (!this.on) return; this.on = false; const h = document.getElementById('hud'); if (h) h.style.visibility = ''; if (this.box) this.box.style.display = 'none';
-    SaveStore.doc.settings.gunPose = Object.assign({}, this.v); SaveStore.dirty = true;
+    delete SaveStore.doc.settings.gunPose; SaveStore.dirty = true;     // offsets are per-session now: the shipped pose is GP_BASE
   },
   reset() { this.v = { x: 0, y: 0, z: 0, yaw: 0, pitch: 0, roll: 0, scale: 1 }; },
   text() {
     if (!this.box) return; const v = this.v, f = n => (n >= 0 ? ' ' : '') + n.toFixed(3);
-    this.box.textContent = this.hide ? '' : 'GUN ARM POSITION  (offsets from shipped pose)\n' +
+    this.box.textContent = this.hide ? '' : 'GUN ARM POSITION  (offsets from the shipped pose)\n' +
       'x ' + f(v.x) + '  y ' + f(v.y) + '  z ' + f(v.z) + '\nyaw ' + f(v.yaw) + '  pitch ' + f(v.pitch) + '  roll ' + f(v.roll) + '  scale ' + v.scale.toFixed(3) + '\n' +
-      'A/D side  R/F height  W/S depth  Q/E yaw  T/G pitch  Z/X roll  [ ] scale\nHold SHIFT = fine   BACKSPACE = reset   H = hide this   ENTER = save & exit   1-5 = weapon';
+      'A/D side  R/F height  W/S depth  Q/E yaw  T/G pitch  Z/X roll  [ ] scale\nHold SHIFT = fine   BACKSPACE = reset   H = hide this   ENTER = exit   1-5 = weapon';
     if (this.hide) this.box.style.padding = '0', this.box.style.border = 'none'; else this.box.style.padding = '8px 10px', this.box.style.border = '1px solid #2cc';
   },
   key(e) {                                                       // returns true when the key is ours (everything except the weapon digits)
