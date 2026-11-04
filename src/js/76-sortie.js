@@ -54,7 +54,7 @@ const SRG = { bolt: { rate: .13, dmg: .9, sp: 70, r: .2 }, twin: { rate: .15, dm
 
 // ---------------- start / stop ----------------
 const Sortie = {
-  near() { return mode === 'hub' && OW.gen === 3 && typeof CRISIS !== 'undefined' && Math.hypot(P.x - CRISIS.tx, P.z - CRISIS.tz) < 4.6 && Math.abs(P.y - (CRISIS.y0 + 1)) < 3; },
+  near() { return mode === 'hub' && OW.gen === 3 && typeof CRISIS !== 'undefined' && Math.hypot(P.x - CRISIS.tx, P.z - CRISIS.tz) < 6 && Math.abs(P.y - (CRISIS.y0 + 1)) < 3; },
   tier() { return Math.max(0, Yard.store().tier | 0); },
   start(seed, tier) {
     if (state !== 'play' && !SR.on) return;

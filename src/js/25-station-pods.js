@@ -21,29 +21,37 @@ function stYard() {
     const ex = Math.abs(x - cx) === 8, ez = Math.abs(z - cz) === 9;
     stPut(x, y0, z, ex || ez ? NEO('SKY') : (x === cx || z === cz) ? NEO('ORANGE') : ((x + z) & 1) ? B.TECH : B.STREET);
   }
-  stBox(cx - 6, y0 + 1, -13, cx + 6, y0 + 12, -12, B.TECH);                                        // the backing wall with the sign
-  for (let x = cx - 6; x <= cx + 6; x++) { stPut(x, y0 + 1, -11, NEO('SKY')); stPut(x, y0 + 12, -11, NEO('SKY')); }
-  stSign3('SHIPYARD', cx, y0 + 6, -11, NEO('ORANGE'));
-  stBox(cx - 2, y0 + 1, -9, cx + 2, y0 + 2, -8, B.HULL); stBox(cx - 2, y0 + 3, -9, cx + 2, y0 + 3, -9, B.TECH); stBox(cx - 2, y0 + 4, -9, cx + 2, y0 + 5, -9, NEO('SKY'));   // the console and its glowing screen
-  stPut(cx - 3, y0 + 1, -9, B.LAMP); stPut(cx + 3, y0 + 1, -9, B.LAMP);
+  stTerminal(cx, -10, NEO('SKY'), NEO('LIME'), NEO('SKY'));                                        // a command-centre console: keyboard wedge, monitor bank, pylons
 }
-const CRISIS = { tx: 22, tz: -7, y0: Y0, cx: 22 };                                                   // the red holo terminal that launches a SORTIE
+// the command centre's recipe, scaled down: a console (wedge keys, slate, riser, screen bank) between two tapering pylons, with live holo panels over it (drawHangarHolo)
+function stTerminal(cx, cz, accent, screenCol, lineCol) {
+  stConsole(cx, cz, 's', accent, screenCol, -40, 3, 'quad');
+  for (const sx of [-1, 1]) {
+    const px = cx + sx * 7;
+    stBox(px - 1, Y0 + 1, cz - 2, px + 1, Y0 + 2, cz, B.HULL); stBox(px, Y0 + 3, cz - 1, px, Y0 + 8, cz - 1, B.TECH);
+    stBox(px, Y0 + 9, cz - 1, px, Y0 + 9, cz - 1, lineCol);
+    for (let y = Y0 + 3; y <= Y0 + 8; y += 2) stPut(px, y, cz, lineCol);
+  }
+}
+const CRISIS = { tx: 22, tz: -6, y0: Y0, cx: 22, cz: -10 };                                          // the red holo terminal that launches a SORTIE
 function stCrisis() {
   const y0 = Y0, cx = CRISIS.cx;
-  stBox(cx - 6, y0 + 1, -13, cx + 6, y0 + 12, -12, B.TECH);
-  for (let x = cx - 6; x <= cx + 6; x++) { stPut(x, y0 + 1, -11, NEO('MAGENTA')); stPut(x, y0 + 12, -11, NEO('MAGENTA')); }
-  stSign3('ALERT', cx, y0 + 6, -11, NEO('MAGENTA'));
-  for (let z = -9; z <= -4; z++) for (let x = cx - 4; x <= cx + 4; x++) if (z === -4 || ((x + z) & 3) < 2) stPut(x, y0, z, ((x + z) & 1) ? B.HAZ : B.TECH);      // hazard stripes in front
-  stBox(cx - 2, y0 + 1, -9, cx + 2, y0 + 2, -8, B.HULL); stBox(cx - 2, y0 + 3, -9, cx + 2, y0 + 3, -9, B.TECH); stBox(cx - 2, y0 + 4, -9, cx + 2, y0 + 5, -9, NEO('MAGENTA'));
-  stPut(cx - 3, y0 + 1, -9, B.LAMP); stPut(cx + 3, y0 + 1, -9, B.LAMP);
+  for (let z = -9; z <= -3; z++) for (let x = cx - 6; x <= cx + 6; x++) if (z === -3 || ((x + z) & 3) < 2) stPut(x, y0, z, ((x + z) & 1) ? B.HAZ : B.TECH);      // hazard stripes in front
+  stTerminal(cx, CRISIS.cz, NEO('BLOOD'), NEO('BLOOD'), NEO('BLOOD'));
+  for (const sx of [-1, 1]) stPut(cx + sx * 4, y0 + 1, -6, B.LAMP);
 }
-function drawCrisisHolo(t) {                                                                         // a red warning triangle turning over the console, flashing beacons and sweeping beams
-  if (camY > CRISIS.y0 + 40 || Math.abs(camX - CRISIS.cx) > 60) return;
-  const cx = CRISIS.cx, cy = CRISIS.y0 + 9.2, cz = -9.2, R = rotY(t * .9), p = .55 + .45 * Math.sin(t * 6), col = [1, .12 + .2 * p, .1];
-  const V = [[0, 1.9, 0], [-1.8, -1.1, 0], [1.8, -1.1, 0]].map(v => [cx + R[0] * v[0] + R[2] * v[2], cy + v[1], cz + R[6] * v[0] + R[8] * v[2]]);
-  for (let i = 0; i < 3; i++) { const a = V[i], b = V[(i + 1) % 3]; pushBeam(a[0], a[1], a[2], b[0], b[1], b[2], .22, col, 0); }
-  pushBeam(cx, cy + .9, cz, cx, cy - .1, cz, .26, col, 0); pushBox(cx, cy - .6, cz, .3, .3, .3, col[0], col[1], col[2], R, false, 0);
-  for (const s of [-1, 1]) { const f = (Math.sin(t * 5 + (s > 0 ? 3.14 : 0)) > 0) ? 1 : .15; pushBox(cx + s * 5.2, CRISIS.y0 + 12.8, -11.4, .9, .9, .9, 1 * f, .15 * f, .1 * f, null, false, 0); pushBeam(cx + s * 5.2, CRISIS.y0 + 12.8, -11, cx + s * 5.2 + Math.cos(t * 3) * 4 * s, CRISIS.y0 + 9, -3 + Math.sin(t * 3) * 2, .12, [1 * f, .2 * f, .15 * f], 0); }
+function drawHangarHolo(t) {                                                                         // translucent holograms over the two terminals; the crisis one is red, pulsing and turning
+  if (camY > Y0 + 40 || camZ > 40 || camX < -45 || camX > 46 || camY < Y0 - 6) return;
+  const near = typeof Sortie !== 'undefined' && Sortie.near(), pr = near ? 12 : 4, p = .55 + .45 * Math.sin(t * pr);
+  holoPanel(SHIPYARD.px, Y0 + 11.5, -10.5, 5.2, 3.2, rotY(0), 1); holoPanel(SHIPYARD.px - 6, Y0 + 9, -9.5, 2.8, 1.8, rotY(.5), 3); holoPanel(SHIPYARD.px + 6, Y0 + 9, -9.5, 2.8, 1.8, rotY(-.5), 4);
+  holoPanel(CRISIS.cx, Y0 + 11.5, CRISIS.cz - .5, 5.2, 3.2, rotY(0), 2);
+  flushDynAdd(.8);
+  const cx = CRISIS.cx, cy = Y0 + 10.2, cz = CRISIS.cz + 1.4, R = rotY(t * .9), col = [1, .1 + .3 * p, .08];
+  const V = [[0, 1.6, 0], [-1.5, -.9, 0], [1.5, -.9, 0]].map(v => [cx + R[0] * v[0] + R[2] * v[2], cy + v[1], cz + R[6] * v[0] + R[8] * v[2]]);
+  for (let i = 0; i < 3; i++) { const a = V[i], b = V[(i + 1) % 3]; pushBeam(a[0], a[1], a[2], b[0], b[1], b[2], .16, col, 0); }
+  pushBeam(cx, cy + .6, cz, cx, cy - .05, cz, .18, col, 0); pushBox(cx, cy - .45, cz, .22, .22, .22, col[0], col[1], col[2], R, false, 0);
+  for (const s of [-1, 1]) { const f = near || Math.sin(t * 5 + (s > 0 ? 3.14 : 0)) > 0 ? 1 : .15; pushBox(cx + s * 7, Y0 + 10.4, CRISIS.cz - 1, .7, .7, .7, f, .1 * f, .08 * f, null, false, 0); }
+  flushDynAdd(1);
 }
 function stHangar() {
   const y0 = Y0, H = HG.h;
@@ -66,7 +74,6 @@ function stHangar() {
   for (let z = -29; z <= 29; z++) { stPut(HG.x1 + 1, y0 + 2, z, NEO('ORANGE')); stPut(HG.x1 + 1, y0 + 18, z, NEO('ORANGE')); }
   for (let y = y0 + 2; y <= y0 + 18; y++) for (const z of [-29, 29]) stPut(HG.x1 + 1, y, z, NEO('ORANGE'));
   for (let z = -28; z <= 28; z += 14) stBox(HG.x1 + 1, y0 + 3, z, HG.x1 + 3, y0 + 17, z, B.HULL);                // window struts
-  stSign3('HANGAR', 0, y0 + 13, HG.z0, NEO('ORANGE'));
   // three docked ships on lit pads, and some cargo
   stShip(-22, -22, B.CONC, NEO('SKY')); stShip(-22, 0, B.TECH, NEO('ORANGE')); stShip(-22, 22, B.CONC, NEO('MAGENTA'));
   for (const zc of [-22, 0, 22]) for (let x = -34; x <= -10; x++) for (const dz of [-8, 8]) stPut(x, y0, zc + dz, NEO('SKY'));
