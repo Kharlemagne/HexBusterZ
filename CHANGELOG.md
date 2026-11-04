@@ -1,5 +1,6 @@
 # Changelog
 ## Unreleased
+- The eldritch space's tunnel centre (hyperspace streaks + glow) now sits dead ahead of the bridge window (east) instead of north.
 - Shots and trails now leave from the left cannon's muzzle; the gas giant and moon outside the bridge window are gone; big sliding blast doors now close off the hall openings (open as you approach, solid when shut).
 - **Visor HUD**: health ("VITALS"), dash bars and bullet time are now one lit display cluster at top centre; location, shards, room code, style/score, prompts, mini-map, boss bar, weapon tabs and toasts are all digital display-window boxes.
 - **One gun arm**: the right arm is gone. The cyan cannon arm (rebuilt to match the player model: shoulder block, beaded chains, glowing muzzle cube, black tendrils) is the only arm; every weapon is a firing mode that bolts different parts onto it. A holographic mode display floats above it (mode, name, ready bar). Dig Kit is now the **OMNITOOL** (swings the cannon, shows the block shape in the holo).

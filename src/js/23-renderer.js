@@ -211,7 +211,7 @@ void tent(float xc,float salt,float h,vec3 haze,float qa,float qb,inout vec3 col
 }
 
 // DEEP SPACE: the station hurtles toward -z through a dimensional tunnel: spiralling nebula, hyperspace streaks racing out of the rift ahead, and far below the swirling abyss with huge tentacles rising out of the miasma
-vec3 space(vec3 d){
+vec3 space(vec3 d0){vec3 d=vec3(d0.z,d0.y,-d0.x);   // the tunnel centre of the eldritch space sits dead ahead of the bridge window (east)
   float h=d.y;vec3 F=vec3(0.0,0.0,-1.0);float th=acos(clamp(dot(d,F),-1.0,1.0));float ph=atan(d.y,d.x);
   float sp=sin(ph*3.0+log(th+0.06)*4.5-tm*0.22)*0.5+0.5,sp2=sin(ph*5.0-log(th+0.1)*7.0+tm*0.15+2.0)*0.5+0.5;
   vec3 col=vec3(0.012,0.004,0.035)+vec3(0.16,0.03,0.2)*pow(sp,3.0)*smoothstep(2.6,0.2,th)+vec3(0.02,0.14,0.2)*pow(sp2,4.0)*smoothstep(2.4,0.6,th)*0.8;
