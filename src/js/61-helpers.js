@@ -3,7 +3,7 @@ const fwdV = () => { const cp = Math.cos(P.pitch); return [-Math.sin(P.yaw) * cp
 const rightV = () => [Math.cos(P.yaw), 0, -Math.sin(P.yaw)];
 function upV(f, r) { return [r[1] * f[2] - r[2] * f[1], r[2] * f[0] - r[0] * f[2], r[0] * f[1] - r[1] * f[0]]; }
 const eyePos = () => [P.x, P.y + P.eye, P.z];
-function muzzle() { const e = eyePos(), f = fwdV(), r = rightV(), u = upV(f, r); return [e[0] + f[0] * 1.0 + r[0] * -.17 + u[0] * -.19, e[1] + f[1] * 1.0 + r[1] * -.17 + u[1] * -.19, e[2] + f[2] * 1.0 + r[2] * -.17 + u[2] * -.19]; }
+function muzzle() { const e = eyePos(), f = fwdV(), r = rightV(), u = upV(f, r); return [e[0] + f[0] * 1.0 + r[0] * -.11 + u[0] * -.14, e[1] + f[1] * 1.0 + r[1] * -.11 + u[1] * -.14, e[2] + f[2] * 1.0 + r[2] * -.11 + u[2] * -.14]; }
 function spreadDir(s) {
   const f = fwdV(), r = rightV(), u = upV(f, r), a = rnd(-s, s), b = rnd(-s, s);
   const d = [f[0] + r[0] * a + u[0] * b, f[1] + r[1] * a + u[1] * b, f[2] + r[2] * a + u[2] * b], l = Math.hypot(...d);
