@@ -97,19 +97,21 @@ function stHallB() {
     if (ry >= 9 && ry <= 11 && m > 0 && m < 10 && side !== 'e') return WIRE;
     return (ry & 3) === 0 ? T : BP;
   });
-  // ---- the ring console in the middle: an open hexagonal desk, operators inside, gaps north and south
+  // ---- the ring console in the middle: an open hexagonal desk of console blocks, operators inside it facing out, a gap north and south
+  const KEYS = IM('CONSOLE KEYS'), SLT = IM('CONSOLE SLATE'), CB = IM('CONSOLE BODY');
   for (let z = -12; z <= 12; z++) for (let x = -12; x <= 12; x++) {
     const dx = x + .5, dz = z + .5, h = hexD(dx, dz), ax = Math.abs(dx);
-    if (h < 5.9) { stPut(x, SD, z, h > 5.2 ? SK : (h < 2.0 ? NEO('WHITE') : GF)); }
-    if (h >= 5.9 && h < 9.6) { stPut(x, SD, z, T); if (ax < 2.6 && h < 9.0) { stPut(x, SD, z, (z & 1) ? SK : T); continue; }          // (the gap you walk through)
-      const f = inwardFace(-dx, -dz);
-      stPut(x, SD + 1, z, T);
-      if (h < 7.0) { stPut(x, SD + 2, z, SH(T, K.SLAB_B)); stPut(x, SD + 1, z, BP); }
-      else if (h < 8.2) { stPut(x, SD + 2, z, h < 7.6 ? SH(T, K.STAIR, f === 0 ? 0 : f === 1 ? 1 : f === 2 ? 2 : 3) : BP); stPut(x, SD + 3, z, h < 7.6 ? 0 : SH(T, K.SLAB_B)); }
-      else { stPut(x, SD + 2, z, BP); stPut(x, SD + 3, z, h > 9.0 ? SK : BP); }
-      if (h >= 6.2 && h < 7.0 && ((x + z) & 3) === 0) stPut(x, SD + 3, z, screenId((x + z + 7) % 4, f)); }
+    if (h < 5.9) { stPut(x, SD, z, h > 5.2 ? SK : (h < 2.0 ? T : GF)); continue; }
+    if (h >= 9.8) continue;
+    if (ax < 2.6) { stPut(x, SD, z, (z & 1) ? SK : T); continue; }                                  // the gap you walk through
+    stPut(x, SD, z, T);
+    const out = Math.abs(dx) > Math.abs(dz) * 1.0 ? (dx > 0 ? 0 : 1) : (dz > 0 ? 2 : 3), inw = inwardFace(-dx, -dz);       // out = the way a ramp rises (away from the middle), inw = the monitor side
+    if (h < 6.8) { stPut(x, SD + 1, z, wedgeId(KEYS, out)); }
+    else if (h < 7.8) { stPut(x, SD + 1, z, ((x + z) & 1) ? SLT : KEYS); }
+    else if (h < 8.8) { stPut(x, SD + 1, z, CB); const sc = ((x + z + 8) & 3) === 0 ? CB : screenId((x + z + 8) & 3, inw); stPut(x, SD + 2, z, sc); stPut(x, SD + 3, z, sc); stPut(x, SD + 4, z, wedgeId(CB, out)); }
+    else { stPut(x, SD + 1, z, CB); stPut(x, SD + 2, z, CB); stPut(x, SD + 3, z, h < 9.4 ? SK : CB); }
   }
-  for (let z = -3; z <= 3; z++) for (let x = -3; x <= 3; x++) { const h = hexD(x + .5, z + .5); if (h < 1.6) { stPut(x, SD + 1, z, T); stPut(x, SD + 2, z, h < 1.0 ? NEO('WHITE') : SK); } }      // the hologram projector pedestal
+  for (let z = -3; z <= 3; z++) for (let x = -3; x <= 3; x++) { const h = hexD(x + .5, z + .5); if (h < 1.6) { stPut(x, SD + 1, z, CB); stPut(x, SD + 2, z, h < 0.9 ? NEO('WHITE') : T); } }      // the hologram projector pedestal
   // ---- ceiling: dark panels, nested squares of light, recessed light boxes
   const top = SD + R.h - 1;
   for (let z = R.z0; z <= R.z1; z++) for (let x = R.x0; x <= R.x1; x++) {

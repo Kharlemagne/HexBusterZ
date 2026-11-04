@@ -25,7 +25,7 @@ const DRONE = [
   P_([0, .2, 0], [.18, .04, .18], 0xffffff, { orb: { r: .85, y: .28, spd: 11, ph: 0 } }), P_([0, .2, 0], [.18, .04, .18], 0xffffff, { orb: { r: .85, y: .28, spd: 11, ph: 1.6 } }), P_([0, .2, 0], [.18, .04, .18], 0xffffff, { orb: { r: .85, y: .28, spd: 11, ph: 3.1 } }), P_([0, .2, 0], [.18, .04, .18], 0xffffff, { orb: { r: .85, y: .28, spd: 11, ph: 4.7 } })
 ];
 const BRIDGE_CREW = [[29.5, -33, 1], [29.5, -24, 1], [29.5, -12, 1], [29.5, 0, 1], [29.5, 12, 1], [29.5, 24, 1], [29.5, 33, 1], [14.5, 33.5, 0], [-14.5, 33.5, 0], [28.5, 33.5, 0], [-28.5, 33.5, 0], [14.5, -33.5, 2], [-14.5, -33.5, 2], [28.5, -33.5, 2], [-28.5, -33.5, 2]];     // x, z, facing: 1 east, 0 south, 2 north
-const RING_CREW = [0, 1, 2, 3, 4, 5].map(k => { const a = k * Math.PI / 3 + Math.PI / 6, ox = Math.cos(a), oz = Math.sin(a); return [ox * 4.6 + .5, oz * 4.6 + .5, Math.atan2(ox, oz)]; });
+const RING_CREW = [0, 1, 2, 3, 4, 5].map(k => { const a = k * Math.PI / 3 + Math.PI / 6, ox = Math.cos(a), oz = Math.sin(a); return [ox * 4.3 + .5, oz * 4.3 + .5, Math.atan2(ox, oz)]; });
 const GATE_CREW = [[-26.5, -72, -1], [-26.5, -86, -1], [27.5, -72, 1], [27.5, -86, 1]];
 const faceYaw = f => f === 1 ? Math.PI / 2 : f === -1 ? -Math.PI / 2 : f === 2 ? Math.PI : 0;
 const fire = (a, b) => { const k = Math.max(0, Math.min(1, a)); return [.25 + .75 * k, .02 + .6 * k * k * (.6 + .4 * b), .01 + .35 * k * k * k]; };
