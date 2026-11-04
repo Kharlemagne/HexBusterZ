@@ -75,17 +75,17 @@ function wallPaint(R, fn) {                                                     
 // ---------------- B: the bridge
 const HEX = { x: 0, z: 0 };
 function stHallB() {
-  const R = RM.B, T = IM('TECH TILE'), SK = NEO('SKY');
+  const R = RM.B, T = IM('BRIDGE TRIM'), SK = NEO('TEAL'), BP = IM('BRIDGE PLATE'), GF = IM('GRATED FLOOR');
   for (let z = R.z0; z <= R.z1; z++) for (let x = R.x0; x <= R.x1; x++) {                          // floor: dark tiles, neon paths
     const dx = x + .5, dz = z + .5, ax = Math.abs(dx);
-    let id = ((x >> 1) + (z >> 1)) & 1 ? B.STREET : T; const h = hexD(dx, dz);
+    let id = ((x >> 1) + (z >> 1)) & 1 ? BP : T; const h = hexD(dx, dz);
     if (h > 11.5 && h < 12.6) id = SK;                                                               // ring round the console
-    if (ax < 1.1 && (z > 13 || z < -13)) id = (z & 3) < 2 ? SK : B.HULL;                             // lane from the doors to the hexagon
+    if (ax < 1.1 && (z > 13 || z < -13)) id = GF;                             // lane from the doors to the hexagon
     if (Math.abs(dz) < 1.1 && ax > 13 && dx < 38) id = (x & 3) < 2 ? SK : B.HULL;                    // cross lane
     if (dx < -13 && (Math.abs(dz - 18) < .6 || Math.abs(dz + 18) < .6)) id = NEO('LIME');
     stPut(x, SD, z, id);
   }
-  wallPaint(R, (u, ry, side) => ry <= 1 ? B.TECH : (ry === 4 || ry === R.h - 4) ? SK : (ry === 5 || ry === R.h - 5) ? B.HULL : ((u + 80) % 10 === 0 ? B.HULL : (ry > 5 && ry < 15 && ((u + 80) % 10) > 1 && ((u + 80) % 10) < 9) ? (ry === 6 || ry === 14 ? B.TEAL : IM('LIGHT GRAY CONCRETE')) : IM('LAB PANEL')));
+  wallPaint(R, (u, ry, side) => ry <= 1 ? T : (ry === 4 || ry === R.h - 4) ? SK : (ry === 5 || ry === R.h - 5) ? T : ((u + 80) % 10 === 0 ? T : (ry > 5 && ry < 15 && ((u + 80) % 10) > 1 && ((u + 80) % 10) < 9) ? (ry === 6 || ry === 14 ? SK : T) : BP));
   // ---- the hexagonal command console
   const cx = HEX.x, cz = HEX.z;
   for (let z = -14; z <= 14; z++) for (let x = -14; x <= 14; x++) {
@@ -112,9 +112,9 @@ function stHallB() {
   }
   for (let a = 0; a < 6; a++) { const t = a * Math.PI / 3 + Math.PI / 6; for (let r = 3; r < 9; r += 1) stPut(Math.round(Math.cos(t) * r), top - 1, Math.round(Math.sin(t) * r), B.HULL); }
   // ---- west wall: server racks with coloured cables, and a monitor bank above them
-  const cab = [NEO('RED'), NEO('BLUE'), NEO('LIME'), NEO('MAGENTA'), NEO('ORANGE'), NEO('YELLOW'), NEO('CYAN')];
+  const cab = [IM('CABLE BUNDLE'), NEO('BLUE'), NEO('LIME'), IM('CABLE BUNDLE'), NEO('RED'), IM('AMBER LED'), NEO('YELLOW')];
   for (let z = -36, n = 0; z <= 32; z += 8, n++) {
-    for (let dz = 0; dz < 5; dz++) { stBox(R.x0, SD + 1, z + dz, R.x0 + 1, SD + 10, z + dz, IM('SERVER RACK')); if (dz === 0 || dz === 4) stBox(R.x0, SD + 1, z + dz, R.x0 + 1, SD + 11, z + dz, B.HULL); stPut(R.x0 + 2, SD + 4 + (dz & 1) * 3, z + dz, cab[(n + dz) % cab.length]); }
+    for (let dz = 0; dz < 5; dz++) { stBox(R.x0, SD + 1, z + dz, R.x0 + 1, SD + 10, z + dz, ((z + dz) & 1 ? IM('SERVER LED') : IM('SERVER RACK'))); if (dz === 0 || dz === 4) stBox(R.x0, SD + 1, z + dz, R.x0 + 1, SD + 11, z + dz, B.HULL); stPut(R.x0 + 2, SD + 4 + (dz & 1) * 3, z + dz, cab[(n + dz) % cab.length]); }
     stBox(R.x0, SD + 11, z, R.x0 + 1, SD + 11, z + 4, B.TECH);
     for (let c = 0; c < 3; c++) { const col = cab[(n * 3 + c) % cab.length], zz = z + 1 + c; for (let y = SD + 12; y < SD + R.h - 1; y++) stPut(R.x0 + 1, y, zz, col); for (let x = R.x0 + 2; x <= R.x0 + 2 + (n % 3) * 2 + 4; x++) stPut(x, SD + R.h - 2 - c, zz, col); }      // cables up the wall and along the ceiling
     for (let c = 0; c < 4; c++) { const col = cab[(n + c * 2) % cab.length]; for (let x = R.x0 + 2; x < R.x0 + 8 + c * 2 + n % 4; x++) stPut(x, SD + 1, z + c, SH(col, K.SLAB_B)); }          // and across the floor
