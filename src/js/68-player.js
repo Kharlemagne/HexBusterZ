@@ -1,6 +1,6 @@
 // ---------------- player ----------------
 function wishVec() {
-  let fx = 0, fz = 0; if (keys.KeyW) fz -= 1; if (keys.KeyS) fz += 1; if (keys.KeyA) fx -= 1; if (keys.KeyD) fx += 1;
+  let fx = 0, fz = 0; if (!GP.on && keys.KeyW) fz -= 1; if (!GP.on && keys.KeyS) fz += 1; if (!GP.on && keys.KeyA) fx -= 1; if (!GP.on && keys.KeyD) fx += 1;
   let l = Math.hypot(fx, fz); if (l) { fx /= l; fz /= l; }
   fx += gp.lx; fz += gp.ly; l = Math.hypot(fx, fz); if (l > 1) { fx /= l; fz /= l; l = 1; }
   const sy = Math.sin(P.yaw), cy = Math.cos(P.yaw);

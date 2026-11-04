@@ -76,7 +76,7 @@ const SCREENS = {
   controls() { return '<div class="mh">CONTROLS</div>' + $('ctlsrc').innerHTML + btn('back', 'DONE'); },
   pause() {
     const c = WorldStore.cur, online = Net.role !== 'offline';
-    let h = '<div class="mh">GAME MENU</div>' + btn('resume', 'BACK TO GAME') + btn('opt', 'OPTIONS', 'h') + btn('ctl', 'CONTROLS', 'h');
+    let h = '<div class="mh">GAME MENU</div>' + btn('resume', 'BACK TO GAME') + btn('opt', 'OPTIONS', 'h') + btn('ctl', 'CONTROLS', 'h') + btn('gunpose', 'GUN ARM POSITION', 'h');
     if (Net.role === 'host') h += '<div class="mroom">ROOM CODE: <b>' + esc(Coop.code || '…') + '</b> · ' + (players.length - 1) + ' FRIEND(S) CONNECTED</div>';
     else if (Net.role === 'offline' && COOP_ENABLED) h += btn('opencoop', 'OPEN TO CO-OP');
     h += btn('quit', online ? 'DISCONNECT AND QUIT TO TITLE' : 'SAVE AND QUIT TO TITLE', 'sm');
@@ -105,6 +105,7 @@ const ACT = {
     catch (e) { Menu.say(e.message); }
   },
   resume() { resumeGame(); },
+  gunpose() { resumeGame(); GP.start(); },
   async opencoop() { Menu.say('Opening a room…'); try { await hostCurrentWorld(); Menu.render(); } catch (e) { Menu.say(e.message); } },
   quit() { quitToTitle(); },
   tinv() { setSetting('invertY', !SaveStore.doc.settings.invertY); Menu.render(); },
@@ -145,7 +146,7 @@ async function hostCurrentWorld() {
 }
 function updateRoomHud() { const e = $('roomcode'); if (e) { const on = Net.role === 'host' && Coop.code; e.style.display = on ? 'block' : 'none'; if (on) e.textContent = 'ROOM ' + Coop.code; } }
 function openPause() {
-  if (state !== 'play') return;
+  if (state !== 'play') return; GP.stop();
   state = 'paused'; mouse.l = mouse.r = false; for (const k in keys) keys[k] = false; try { document.exitPointerLock(); } catch (e) { } Menu.msg = ''; Menu.show('pause'); el.menu.classList.remove('hide');
 }
 function resumeGame() {

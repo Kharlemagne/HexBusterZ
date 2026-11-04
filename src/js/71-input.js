@@ -4,6 +4,7 @@ addEventListener('keydown', e => {
   if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.code)) e.preventDefault();
   const first = !keys[e.code]; keys[e.code] = true;
   if (!first) return;
+  if (GP.on && GP.key(e)) return;
   if (e.code === 'Escape' && state === 'play' && fallback) { openPause(); return; }
   if (e.code === 'Escape' && state === 'paused') { Menu.back(); return; }
   if (state === 'builder') { Yard.keydown(e); return; }
