@@ -71,7 +71,7 @@ function invWeapon(i) { if (weaponOK(i)) { switchWeapon(i); renderInv(); } }
 function renderInv() {
   const st = Save.stats;
   let h = '<div class="sh-t">INVENTORY</div><div class="sh-g">◆ ' + Save.gems + ' GEMS · ' + Inv.count('shard') + ' SHARDS</div>';
-  h += '<div class="charrow"><div class="eqcol">' + ['HELM', 'CHEST', 'LEGS', 'BOOTS'].map(n => '<div class="eq"><em>' + n + '</em></div>').join('') + '</div><canvas id="charcv" width="190" height="300"></canvas>'
+  h += '<div class="charrow"><div class="eqcol">' + ['HELM', 'CHEST', 'LEGS', 'BOOTS'].map(n => '<div class="eq"><em>' + n + '</em></div>').join('') + '</div><canvas id="charcv" width="260" height="300"></canvas>'
     + '<div class="wcol"><div class="wh">LOADOUT</div>' + WNAMES.map((nm, i) => '<div class="wrow' + (P.weapon === i ? ' sel' : '') + (Save.unlocked[i] ? '' : ' lock') + '" onclick="invWeapon(' + i + ')"><b>' + (i + 1) + '</b> ' + nm + (Save.unlocked[i] ? '' : ' 🔒') + '</div>').join('')
     + '<div class="stats">HP ' + Math.max(0, Math.round(P.hp)) + ' · RUNS ' + Save.runs + ' · WINS ' + Save.wins + '<br>KILLS ' + st.kills + ' · BOSSES ' + st.bosses + '</div></div></div>';
   h += '<div class="ig">'; for (let i = 9; i < 36; i++) h += invCell(Inv.slots[i], i);

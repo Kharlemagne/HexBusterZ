@@ -4,75 +4,66 @@
 //    cracked black stone plates · open ribcage with a glowing cyan heart · cyan eyes + a square third eye · one whole horn, one broken
 //    neon-trimmed knees and shins · RIGHT arm bare, holds the weapon · LEFT arm is a cyan-lit cannon with black tendrils growing out of the shoulder
 // ============================================================
-const PM_ST = 0x2a2c34, PM_ST2 = 0x1b1c23, PM_ST3 = 0x3b3e49, PM_RIB = 0x22232b, PM_CY = 0x2fe6ff, PM_CYD = 0x1792b3, PM_CYR = 0x127a96, PM_CYW = 0xbafbff, PM_TEN = 0x08080c, PM_MET = 0x3a4b4d, PM_MET2 = 0x253234, PM_CRK = 0x0a0a0e, PM_TEETH = 0x5d5e72;
-const PM_K = .86;                                                                      // design units -> world units (keeps the old ~2 block height, horns included)
+const PM_ST = 0x2a2c34, PM_ST2 = 0x1b1c23, PM_ST3 = 0x3b3e49, PM_RIB = 0x1f2028, PM_CY = 0x2fe6ff, PM_CYD = 0x1792b3, PM_CYR = 0x127a96, PM_CYW = 0xbafbff, PM_TEN = 0x08080c, PM_MET = 0x2e3a3d, PM_MET2 = 0x20292b, PM_CRK = 0x0a0a0e, PM_TEETH = 0x5d5e72;
+const PM_K = .85;                                                                      // design units -> world units (keeps the ~2 block height, horns included)
 const PLAYER_PARTS = (() => {
-  const L = [], swing = (ph, amp) => ({ sw: { ph, amp } }), G = TILE.GRAIN;
+  const L = [], swing = (ph, amp) => ({ sw: { ph, amp } }), G = TILE.GRAIN, D2R = Math.PI / 180;
   const add = (o, s, c, x) => L.push(P_([o[0] * PM_K, o[1] * PM_K, o[2] * PM_K], [s[0] * PM_K, s[1] * PM_K, s[2] * PM_K], c, x));
   // a limb hangs from a pivot and leans (rx = forward, rz = outward); limb(...) returns a placer: d = distance down the limb, lx/lz = offset across it
   const limb = (X0, Y0, rx, rz, sw) => { const cx_ = Math.cos(rx), sx_ = Math.sin(rx), cz_ = Math.cos(rz), sz_ = Math.sin(rz);
     return (d, lx, lz, s, c, x) => { const y1 = -d * cx_ - sx_ * lz, z1 = -d * sx_ + cx_ * lz; add([X0 + cz_ * lx - sz_ * y1, Y0 + sz_ * lx + cz_ * y1, z1], s, c, { rx, rz, ...sw, ...x }); }; };
-  // ---- skull: one big cracked cube with square cyan eyes and a third eye (the sheet's chunky head)
-  add([0, 1.85, 0], [.5, .34, .46], PM_ST, { tl: G }); add([0, 1.61, -.01], [.44, .14, .42], PM_ST2, { tl: G });
-  for (const sd of [-1, 1]) { add([sd * .115, 1.75, -.232], [.13, .13, .03], 0x000000); add([sd * .115, 1.75, -.248], [.1, .1, .03], PM_CY, { e: 1, pulse: { f: 2, ph: sd, amp: .05 } }); }
-  add([0, 1.92, -.232], [.11, .11, .03], 0x000000); add([0, 1.92, -.248], [.08, .08, .03], PM_CY, { e: 1, pulse: { f: 3, ph: 0, amp: .08 } });
-  add([.2, 1.93, -.236], [.012, .17, .01], PM_CRK, { rz: .45 }); add([.15, 1.83, -.236], [.012, .12, .01], PM_CRK, { rz: -.5 }); add([-.17, 1.66, -.236], [.012, .1, .01], PM_CRK, { rz: .3 }); add([-.22, 1.9, -.236], [.01, .12, .01], PM_CRK, { rz: -.35 });
-  add([.252, 1.82, 0], [.01, .2, .012], PM_CRK, { rz: .5 }); add([-.252, 1.8, .05], [.01, .18, .012], PM_CRK, { rz: -.4 }); add([.1, 1.9, .232], [.012, .22, .01], PM_CRK, { rz: .3 }); add([-.14, 1.8, .232], [.012, .2, .01], PM_CRK, { rz: -.45 });
-  // ---- horns: +x whole, a thick crescent that sweeps out and curls back in; -x broken off into jagged shards
-  [[.21, 2.03, .17, .16, .17, -.45], [.31, 2.12, .15, .17, .15, -.7], [.4, 2.24, .13, .17, .13, -.45], [.45, 2.37, .11, .17, .11, -.1], [.44, 2.5, .085, .15, .085, .35], [.39, 2.6, .055, .1, .055, .8]].forEach(([x, y, a, b, c, r]) => add([x, y, 0], [a * 1.2, b, c * 1.2], PM_ST, { rz: r, tl: G }));
-  [[-.21, 2.03, .17, .16, .17, .45], [-.31, 2.12, .15, .17, .15, .7], [-.38, 2.22, .12, .12, .12, .55]].forEach(([x, y, a, b, c, r]) => add([x, y, 0], [a * 1.2, b, c * 1.2], PM_ST, { rz: r, tl: G }));
-  add([-.43, 2.33, 0], [.07, .17, .07], PM_ST3, { rz: .2 }); add([-.35, 2.34, .02], [.05, .13, .05], PM_ST3, { rz: -.25 }); add([-.47, 2.26, -.02], [.05, .09, .05], PM_ST3, { rz: .9 }); add([-.4, 2.28, -.06], [.03, .03, .03], PM_CY, { e: 1 });
-  // ---- neck, collarbone, round shoulder joints
-  add([0, 1.5, .01], [.08, .07, .08], PM_ST2); add([0, 1.45, .01], [.07, .06, .07], PM_ST3);
-  add([0, 1.48, 0], [.5, .06, .1], PM_ST3, { tl: G });
-  add([.35, 1.45, 0], [.17, .17, .17], PM_ST3, { tl: G });
-  // ---- spine + open ribcage whose ribs glow dim cyan (it tapers toward the waist), heart behind, glowing dots down the back
-  add([0, 1.24, .09], [.08, .5, .08], PM_ST2);
-  for (let i = 0; i < 5; i++) { const y = 1.4 - i * .075, w = .5 - .035 * i; add([0, y, -.13], [w, .04, .04], PM_RIB); add([0, y - .024, -.152], [w * .86, .01, .01], PM_CYR, { e: 1 }); for (const sd of [-1, 1]) add([sd * w / 2, y, -.01], [.04, .04, .24], PM_RIB); add([0, y, .13], [.03, .025, .02], PM_CYD, { e: 1 }); }
-  add([0, 1.26, -.15], [.05, .28, .04], PM_ST3);                                        // sternum
-  add([.04, 1.26, -.08], [.26, .3, .1], PM_CYD, { e: 1, pulse: { f: 5, ph: 0, amp: .07 } }); add([.04, 1.27, -.12], [.17, .2, .05], PM_CY, { e: 1, pulse: { f: 5, ph: .3, amp: .1 } }); add([.04, 1.28, -.15], [.07, .09, .02], PM_CYW, { e: 1 });
-  // cables looping from the ribs to the cannon shoulder
-  [[-.16, 1.43, -.12, .18, .3], [-.28, 1.37, -.1, .18, -.25], [-.2, 1.3, -.11, .22, .2], [-.34, 1.26, -.09, .16, -.3], [-.13, 1.2, -.1, .2, -.15], [-.27, 1.15, -.08, .16, .35]].forEach(([x, y, z, l, r]) => { add([x, y, z], [l, .026, .026], PM_MET2, { rz: r }); add([x, y + .016, z - .004], [l * .8, .012, .012], PM_CY, { e: 1, rz: r }); });
-  // ---- pelvis plate + hips
-  add([0, 1.19, .01], [.08, .1, .08], PM_ST2);
-  add([0, 1.08, 0], [.42, .09, .24], PM_ST3, { tl: G }); add([0, .99, 0], [.28, .1, .22], PM_ST2, { tl: G }); for (const sd of [-1, 1]) add([sd * .2, .97, -.125], [.04, .04, .03], PM_CY, { e: 1 });
-  // ---- legs: long and stout, big armoured shins and boots, a neon strip at each knee and shin
+  // a curved strand of boxes: segs = [heading in degrees from +x (counter-clockwise), length]; sd mirrors it to the -x side; w0 -> w1 = thickness along the strand
+  const strand = (x0, y0, z0, sd, segs, w0, w1, col, ex, sway) => { let x = x0, y = y0; segs.forEach(([deg, len], k) => { const hx = sd * Math.cos(deg * D2R), hy = Math.sin(deg * D2R), w = w0 + (w1 - w0) * k / Math.max(1, segs.length - 1);
+    add([x + hx * len / 2, y + hy * len / 2, z0], [w, len * 1.12, w], col, { rz: Math.atan2(-hx, hy), ...(sway ? { sx: { f: 1.7 + (sway.f || 0) + k * .12, ph: (sway.ph || 0) + k * .55, amp: .004 + k * .011 } } : null), ...ex }); x += hx * len; y += hy * len; }); };
+  // ---- skull: a huge cracked cube with a chipped corner, two big square eyes over a lower jaw block, a third eye above
+  add([0, 1.96, 0], [.66, .46, .6], PM_ST, { tl: G }); add([0, 1.63, -.01], [.58, .2, .54], PM_ST2, { tl: G });
+  for (const sd of [-1, 1]) { add([sd * .14, 1.86, -.302], [.17, .17, .03], 0x000000); add([sd * .14, 1.86, -.318], [.13, .13, .03], PM_CY, { e: 1, pulse: { f: 2, ph: sd, amp: .05 } }); }
+  add([0, 2.07, -.302], [.13, .13, .03], 0x000000); add([0, 2.07, -.318], [.095, .095, .03], PM_CY, { e: 1, pulse: { f: 3, ph: 0, amp: .08 } });
+  add([.27, 2.17, -.31], [.012, .22, .01], PM_CRK, { rz: .4 }); add([.2, 1.98, -.31], [.012, .16, .01], PM_CRK, { rz: -.5 }); add([-.22, 1.72, -.31], [.012, .14, .01], PM_CRK, { rz: .35 }); add([-.1, 2.14, -.31], [.01, .12, .01], PM_CRK, { rz: -.35 });
+  add([.332, 2.05, 0], [.01, .26, .012], PM_CRK, { rz: .5 }); add([-.332, 1.98, .06], [.01, .22, .012], PM_CRK, { rz: -.4 }); add([.14, 2.0, .302], [.012, .3, .01], PM_CRK, { rz: .3 }); add([-.18, 1.9, .302], [.012, .26, .01], PM_CRK, { rz: -.45 });
+  add([-.3, 2.23, -.1], [.12, .08, .16], PM_ST3, { rz: .4 }); add([-.24, 2.27, .1], [.08, .08, .12], PM_ST3, { rz: -.3 }); add([-.33, 2.22, .12], [.07, .06, .1], PM_ST2, { rz: .8 });       // the chipped corner
+  // ---- lyre horns: thin crescents that sweep out, climb, and curl their tips back in
+  for (const sd of [-1, 1]) strand(sd * .27, 2.2, 0, sd, [[15, .17], [40, .17], [70, .17], [100, .15], [125, .13]], .13, .045, PM_ST, { tl: G });
+  // ---- neck, flat shoulder line with square joints (a cyan marker on the right one)
+  add([0, 1.62, .01], [.1, .09, .1], PM_ST2);
+  add([0, 1.58, 0], [.62, .07, .2], PM_ST3, { tl: G });
+  add([.36, 1.52, 0], [.15, .15, .15], PM_ST3, { tl: G }); add([.36, 1.52, -.08], [.05, .05, .02], PM_CY, { e: 1 });
+  // ---- spine + the ribcage: a flat stack of dark bars with lit cyan lines between them (the right half burns brighter)
+  add([0, 1.36, .02], [.07, .5, .18], PM_ST2);
+  for (let i = 0; i < 6; i++) { const y = 1.52 - i * .08; add([0, y, 0], [.56 - i * .015, .045, .2], PM_RIB, { tl: G }); add([-.13, y - .042, -.102], [.25, .014, .012], PM_CYD, { e: 1 }); add([.14, y - .042, -.102], [.27, .014, .012], PM_CY, { e: 1 }); }
+  for (const sd of [-1, 1]) add([sd * .07, 1.4, .125], [.07, .28, .03], PM_CY, { e: 1 });                      // lit panels down the back of the spine
+  // ---- waist node + pelvis
+  add([0, 1.06, 0], [.14, .1, .12], PM_ST2); add([0, 1.06, -.065], [.06, .06, .02], PM_CY, { e: 1 });
+  add([0, .94, 0], [.42, .12, .22], PM_ST3, { tl: G });
+  // ---- legs: straight stone pillars, a bright strip across each knee and one down each shin, small boots with a neon tick
   for (const sd of [-1, 1]) {
-    const ph = sd < 0 ? 0 : Math.PI, x = sd * .17, sw = swing(ph, .2);
-    add([x, .92, 0], [.14, .14, .14], PM_ST3, sw);                                      // hip joint
-    add([x, .72, 0], [.2, .36, .2], PM_ST, { ...sw, tl: G });                           // thigh
-    add([x, .5, -.02], [.27, .15, .26], PM_ST3, { ...sw, tl: G }); add([x, .53, -.15], [.2, .03, .03], PM_CY, { e: 1, ...sw });      // knee guard + neon strip
-    add([x, .33, 0], [.24, .3, .22], PM_ST, { ...sw, tl: G });                          // shin armour
-    add([x, .32, -.13], [.2, .2, .04], PM_ST3, sw); add([x, .3, -.155], [.025, .16, .02], PM_CY, { e: 1, ...sw }); add([x + sd * .125, .38, -.02], [.02, .04, .05], PM_CY, { e: 1, ...sw });
-    add([x, .15, 0], [.15, .08, .15], PM_ST2, sw);                                      // ankle
-    add([x, .065, -.06], [.28, .13, .42], PM_ST2, { ...sw, tl: G }); add([x, .14, -.2], [.22, .06, .16], PM_ST3, sw); add([x + sd * .146, .12, -.1], [.02, .04, .06], PM_CY, { e: 1, ...sw });   // boot + toe plate
+    const ph = sd < 0 ? 0 : Math.PI, x = sd * .13, sw = swing(ph, .2);
+    add([x, .72, 0], [.2, .32, .2], PM_ST, { ...sw, tl: G });                           // thigh
+    add([x, .58, -.105], [.2, .045, .03], PM_CY, { e: 1, ...sw });                      // knee strip
+    add([x, .37, 0], [.19, .4, .19], PM_ST, { ...sw, tl: G }); add([x, .37, -.105], [.04, .15, .02], PM_CY, { e: 1, ...sw });   // shin + its strip
+    add([x, .16, 0], [.15, .06, .15], PM_ST2, sw);                                      // ankle
+    add([x, .08, -.06], [.21, .16, .34], PM_ST2, { ...sw, tl: G }); add([x + sd * .106, .18, -.02], [.02, .04, .05], PM_CY, { e: 1, ...sw });
   }
-  // ---- RIGHT arm: thin jointed stone and bone, leaning slightly out, ends in a claw (the weapon sits in this hand)
-  { const a = limb(.36, 1.45, 0, .08, swing(Math.PI, .16));
-    a(.17, 0, 0, [.11, .3, .11], PM_ST, { tl: G }); a(.37, 0, 0, [.14, .13, .14], PM_ST3); a(.37, 0, -.075, [.03, .05, .02], PM_CY, { e: 1 });
-    a(.57, 0, 0, [.1, .3, .1], PM_ST, { tl: G }); a(.68, 0, 0, [.14, .1, .14], PM_ST3); a(.8, 0, -.01, [.1, .1, .1], PM_ST2);
-    for (const f of [-.04, 0, .04]) a(.9, f, -.05, [.025, .12, .03], PM_ST3); }
-  // ---- LEFT arm: the cannon, in green-grey metal, hung from a shoulder gear ring, leaning out and forward
-  { const sw = swing(0, .06), c = limb(-.38, 1.45, .25, -.35, sw);
-    add([-.36, 1.43, 0], [.2, .2, .2], PM_ST3, { ...sw, tl: G });                                                     // shoulder mount
-    for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4; add([-.4 + Math.cos(a) * .12, 1.5 + Math.sin(a) * .12, -.09], [.06, .06, .07], PM_MET2, { rz: a + Math.PI / 2, ...sw }); }   // the gear ring
-    add([-.4, 1.5, -.1], [.1, .1, .05], PM_CY, { e: 1, ...sw });
-    c(.18, 0, 0, [.15, .3, .15], PM_MET, { tl: G }); c(.07, 0, 0, [.17, .02, .17], PM_CY, { e: 1 });                  // upper arm + ring
-    c(.38, 0, 0, [.2, .16, .2], PM_MET2); c(.38, 0, -.105, [.17, .03, .02], PM_CY, { e: 1 });                         // elbow + band
-    c(.68, 0, 0, [.3, .44, .28], PM_MET2, { tl: G });                                                                 // gun body
-    c(.68, -.17, 0, [.06, .34, .2], PM_MET); c(.68, .17, 0, [.06, .34, .2], PM_MET);                                  // side armour
-    c(.66, 0, -.145, [.03, .34, .02], PM_CY, { e: 1 }); c(.55, 0, -.145, [.22, .025, .02], PM_CY, { e: 1 }); c(.8, 0, -.145, [.22, .025, .02], PM_CY, { e: 1 }); c(.68, -.17, -.105, [.02, .3, .03], PM_CYD, { e: 1 });
-    for (const sd of [-1, 1]) c(1.0, sd * .19, -.08, [.035, .34, .035], PM_MET);                                      // claw rails round the barrel
-    c(.98, 0, 0, [.19, .2, .19], PM_MET); c(1.1, 0, 0, [.25, .05, .25], PM_MET2);                                     // barrel + muzzle ring
-    c(1.2, 0, 0, [.16, .14, .16], 0x8ff7ff, { e: 1, pulse: { f: 6, ph: 0, amp: .12 } });                              // the big glowing muzzle cube
-    c(.38, -.12, 0, [.04, .04, .04], PM_CY, { e: 1 });
-    // four thick black tendrils out of the shoulder: sway out of step, whipping more toward the tips
-    const tendril = (x0, y0, z0, steps, ph) => steps.forEach(([dx, dy, dz, w, h, r], i) => add([x0 + dx, y0 + dy, z0 + dz], [w * 1.3, h, w * 1.3], PM_TEN, { rz: r, sx: { f: 2.1 + i * .15, ph: ph + i * .5, amp: .008 + i * .012 } }));
-    tendril(-.4, 1.58, .02, [[-.03, .1, 0, .1, .16, .3], [-.08, .23, 0, .09, .16, .55], [-.15, .35, 0, .08, .15, .85], [-.24, .44, 0, .065, .14, 1.25], [-.35, .47, 0, .05, .13, 1.7], [-.45, .43, 0, .04, .12, 2.2]], 0);
-    tendril(-.38, 1.56, .06, [[-.06, .08, .03, .08, .14, .6], [-.16, .16, .05, .07, .14, .95], [-.27, .2, .07, .055, .13, 1.4], [-.37, .16, .09, .04, .12, 2.0], [-.43, .08, .1, .03, .1, 2.6]], 2);
-    tendril(-.4, 1.55, -.02, [[-.05, .06, -.04, .07, .12, .7], [-.15, .1, -.08, .055, .12, 1.1], [-.25, .08, -.12, .04, .1, 1.7]], 4);
-    tendril(-.36, 1.58, .1, [[-.04, .09, .07, .08, .14, .2], [-.08, .2, .12, .07, .14, .4], [-.1, .32, .16, .055, .13, .7], [-.12, .42, .2, .04, .12, 1.0]], 6);
+  // ---- RIGHT arm: long thin jointed column that reaches past the hip, a cyan square at mid-arm, ends in a claw (the weapon sits in this hand)
+  { const a = limb(.36, 1.52, 0, .06, swing(Math.PI, .16));
+    a(.2, 0, 0, [.1, .42, .1], PM_ST, { tl: G }); a(.44, 0, 0, [.13, .1, .13], PM_ST3); a(.48, 0, -.075, [.04, .04, .02], PM_CY, { e: 1 });
+    a(.7, 0, 0, [.095, .42, .095], PM_ST, { tl: G }); a(.9, 0, 0, [.12, .08, .12], PM_ST3);
+    a(1.0, 0, 0, [.09, .1, .09], PM_ST2); for (const f of [-.035, 0, .035]) a(1.1, f, -.04, [.022, .12, .03], PM_ST3); }
+  // ---- LEFT arm: a bulky shoulder block, then the cannon hanging long and straight, wrapped in beaded cyan chains, ending in a glowing cube
+  { const sw = swing(0, .06), c = limb(-.38, 1.52, .12, -.17, sw);
+    add([-.4, 1.52, 0], [.26, .22, .26], PM_ST3, { ...sw, tl: G }); add([-.4, 1.64, 0], [.2, .06, .2], PM_ST2, sw);
+    c(.22, 0, 0, [.16, .4, .16], PM_MET, { tl: G }); c(.45, 0, 0, [.2, .12, .2], PM_MET2); c(.45, 0, -.105, [.17, .03, .02], PM_CY, { e: 1 });
+    c(.74, 0, 0, [.34, .46, .3], PM_MET2, { tl: G }); c(.74, -.19, 0, [.05, .38, .22], PM_MET); c(.74, .19, 0, [.05, .38, .22], PM_MET);
+    c(.74, 0, -.155, [.03, .42, .02], PM_CY, { e: 1 }); for (const d of [.6, .74, .88]) c(d, 0, -.155, [.26, .024, .02], PM_CY, { e: 1 });         // the cross of lit lines on the front
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) for (let k = 0; k < 6; k++) c(.52 + k * .1 + (sx * sz > 0 ? .05 : 0), sx * (.18 + (k % 2) * .022), sz * (.16 + (k % 2) * .022), [.028, .1, .028], PM_CY, { e: 1 });   // beaded chains round the gun
+    c(1.04, 0, 0, [.2, .2, .2], PM_MET); c(1.16, 0, 0, [.26, .05, .26], PM_MET2);                                    // barrel + muzzle ring
+    c(1.27, 0, 0, [.2, .17, .2], 0x8ff7ff, { e: 1, pulse: { f: 6, ph: 0, amp: .1 } });                                // the big glowing muzzle cube
+    c(.2, 0, -.085, [.035, .035, .02], PM_CY, { e: 1 });
   }
+  // ---- the wings: two fans of long thin black strands off the shoulder blades, drooping and whipping; the -x side sweeps higher
+  for (const sd of [-1, 1]) [[44, .22, 6], [28, .25, 6], [12, .27, 6], [-4, .28, 6], [-22, .28, 6], [-42, .27, 6], [-60, .26, 5], [-76, .24, 5]].forEach(([deg, len, n], i) => {
+    const lift = sd < 0 ? 14 : 0, segs = []; let h = deg + lift; for (let k = 0; k < n; k++) { segs.push([h, len * (1 - k * .05)]); h += (-90 - h) * .2 + (k % 2 ? 8 : -8); }
+    strand(sd * .36, 1.6 - i * .02, .12 + i * .008, sd, segs, .09, .03, PM_TEN, null, { f: sd < 0 ? 0 : .3, ph: i * .7 + (sd < 0 ? 0 : 2) }); });
   return L;
 })();
 // what is in the right hand: a little silhouette per weapon
@@ -83,7 +74,7 @@ const PLAYER_HELD = [
 function playerParts(weapon) {
   const w = PLAYER_HELD[weapon]; if (!w) return PLAYER_PARTS;
   const out = PLAYER_PARTS.slice();
-  w.forEach(h => { const [sx, sy, sz, c, e, dz, dy] = h; out.push(P_([.5 * PM_K, weapon === 4 ? .84 + (dy || 0) : .62, -.2 + (dz || 0) - (weapon === 4 ? -.2 : sz * .3)], [sx, sy, sz], c, e ? { e: 1, sw: { ph: 0, amp: .16 } } : { sw: { ph: 0, amp: .16 } })); });
+  w.forEach(h => { const [sx, sy, sz, c, e, dz, dy] = h; out.push(P_([.46 * PM_K, weapon === 4 ? .8 + (dy || 0) : .58, -.2 + (dz || 0) - (weapon === 4 ? -.2 : sz * .3)], [sx, sy, sz], c, e ? { e: 1, sw: { ph: 0, amp: .16 } } : { sw: { ph: 0, amp: .16 } })); });
   return out;
 }
 // ---- character preview: a tiny software renderer on a 2D canvas (orthographic, painter's algorithm), like Minecraft's inventory doll
@@ -91,7 +82,7 @@ const CHAR_FACES = [[[1, 0, 0], [[1, -1, -1], [1, 1, -1], [1, 1, 1], [1, -1, 1]]
 function drawCharPreview(cv, yaw, pitch, t, weapon, walk) {
   const g = cv.getContext('2d'), W = cv.width, H_ = cv.height; g.clearRect(0, 0, W, H_);
   const grd = g.createRadialGradient(W / 2, H_ * .55, 10, W / 2, H_ * .55, H_ * .6); grd.addColorStop(0, '#0e3a4a99'); grd.addColorStop(1, '#00000000'); g.fillStyle = grd; g.fillRect(0, 0, W, H_);
-  const sc = H_ / 2.95, cy = H_ * .94, c = Math.cos(yaw + Math.PI), s = Math.sin(yaw + Math.PI), cp = Math.cos(pitch), sp = Math.sin(pitch), quads = [];
+  const sc = Math.min(H_ / 2.95, W / 2.6), cy = H_ * .94, c = Math.cos(yaw + Math.PI), s = Math.sin(yaw + Math.PI), cp = Math.cos(pitch), sp = Math.sin(pitch), quads = [];
   const proj = (x, y, z) => { const x1 = x * c + z * s, z1 = -x * s + z * c, y2 = y * cp - z1 * sp, z2 = y * sp + z1 * cp; return [W / 2 + x1 * sc, cy - y2 * sc, z2]; };
   for (const p of playerParts(weapon)) {
     let ox = p.o[0], oy = p.o[1], oz = p.o[2];
