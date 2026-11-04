@@ -37,6 +37,7 @@ function drawLeds(t) {                                                         /
 }
 function stationNear(rz0, rz1) { return camZ > rz0 && camZ < rz1; }
 function drawStationProps(t) {
+  drawPodSolids(t);
    drawStationDoors(t);
   if (stationNear(-125, 50)) {                                                  // ---- the bridge (visible from the door too)
     BRIDGE_CREW.forEach(([x, z, f], i) => drawParts(CREW, x, SD + 1, z, rotY(faceYaw(f)), 1, t, false, t * 5 + i * 1.7));
@@ -87,6 +88,7 @@ function holoPanel(cx, cy, cz, w, h, R, seed) {                              // 
   pushBox(cx, cy, cz, w, h, .05, 1, 1, 1, R, false, 1, 600 + seed + 10 * Math.round(w * 2) + 400 * Math.round(h * 2));
 }
 function drawStationGlass(t) {
+  drawPodGlass(t);
   const BR = .85 + .15 * Math.sin(t * 3), gph = (t * 1.1) % 7, GL = gph < .18 ? .35 : 1, HJ = gph < .18 ? Math.sin(t * 90) * .25 : 0;                // breathing alpha, and a brief glitch every few seconds
   const near = stationNear(-125, 50) || camZ < -20; if (!near) return;
   const CY = [.25, .85, 1], OR = [1, .5, .12];

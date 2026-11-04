@@ -56,6 +56,10 @@ const out = await page.evaluate(() => { const P = __g.P; P.x = 70; P.z = -40; P.
 check('outside the hull is open space: step off and you fall', out);
 const edge = await page.evaluate(() => { const P = __g.P; P.alive = true; P.hp = 100; __g.OW.update([{ x: 140, z: 0 }], 9000); P.x = 140; P.z = 0; P.y = 83; P.vy = 0; P.vx = 0; for (let i = 0; i < 400 && P.alive; i++) __g.update(1 / 60); return !P.alive || __g.mode() !== 'hub'; });
 check('stepping off the station into space is death', edge);
+const ride = await page.evaluate(() => { state = 'play'; const P = __g.P; P.alive = true; P.hp = 100; __g.OW.update([{ x: 31, z: 70 }, { x: 31, z: 34 }], 40000); P.x = 31.5; P.z = 70; P.y = 81.01; P.vx = P.vy = P.vz = 0; for (let i = 0; i < 6; i++) __g.update(1 / 60);
+  const a = P.y, o = { standsOnPod: a > 80.9 && a < 81.5, dbg: [state, mode, OW.gen, useChunks, __g.RIDE().cool, __g.RIDE().on] }; let low = 99; for (let i = 0; i < 60 * 60 && (i < 5 || __g.RIDE().on); i++) { __g.update(1 / 60); low = Math.min(low, P.y); } o.low = low; o.end = [P.x, P.y, P.z, P.alive]; o.ridingDone = !__g.RIDE().on;
+  for (let i = 0; i < 200; i++) __g.update(1 / 60); const h = P.y; P.x = 31.5; P.z = 34; P.y = 41.01; __g.RIDE().cool = 0; for (let i = 0; i < 60 * 60 && (i < 5 || __g.RIDE().on); i++) __g.update(1 / 60); o.back = [P.x, P.y, P.z, P.alive]; return o; });
+check('a pod ride drops you to the hangar, and the hangar pod brings you back up to the hall', ride.standsOnPod && ride.low < 42 && ride.end[1] < 42 && ride.end[2] < 40 && ride.ridingDone && ride.back[1] > 80 && ride.back[1] < 82 && ride.back[3], JSON.stringify(ride));
 await page.evaluate(() => __g.setProtect(true));
 const prot = await page.evaluate(() => {
   __g.P.alive = true; __g.P.hp = 100; __g.OW.update([{ x: 8, z: 0 }, { x: 4, z: 90 }], 30000);

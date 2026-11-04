@@ -1,5 +1,6 @@
 # Changelog
 ## Unreleased
+- **Pod ride + HANGAR**: four pods along the east wall of the arrival hall. Step into one: the glass door closes, the pod drops down a ringed neon shaft, races along a lit tunnel and opens into the new underground HANGAR (docked fighters on pads, cargo, a bay window onto the eldritch space). A pod at the tunnel mouth rides back up.
 - The eldritch space's tunnel centre (hyperspace streaks + glow) now sits dead ahead of the bridge window (east) instead of north.
 - Shots and trails now leave from the left cannon's muzzle; the gas giant and moon outside the bridge window are gone; big sliding blast doors now close off the hall openings (open as you approach, solid when shut).
 - **Visor HUD**: health ("VITALS"), dash bars and bullet time are now one lit display cluster at top centre; location, shards, room code, style/score, prompts, mini-map, boss bar, weapon tabs and toasts are all digital display-window boxes.

@@ -166,6 +166,7 @@ function updateStationDoors(dt) {
 }
 function stationDoorHit(x, y, z, hw, h) {
   if (mode !== 'hub') return false;
+  if (podPlatformHit(x, y, z, hw, h)) return true;
   for (const d of STN_DOORS) { if (d.o > .97 || y + h <= SD + d.y0 || y >= SD + d.y0 + d.h) continue; for (const b of doorBoxes(d)) if (x + hw > b[0] && x - hw < b[1] && z + hw > b[2] && z - hw < b[3]) return true; }
   return false;
 }
@@ -285,7 +286,7 @@ function stExterior() {
   for (let y = SD - 3; y < SD + 12; y++) for (let a = 0; a < 16; a++) { const t = a / 16 * TAU; stPut(Math.round(84 + Math.cos(t) * 6), y, Math.round(-12 + Math.sin(t) * 6), y % 4 === 0 ? SK : B.TECH); }          // a reactor drum
   stDisc(84, -12, 0, 6, SD + 12, B.HULL); stDisc(84, -12, 0, 3, SD + 13, NEO('ORANGE'));
 }
-function stBuildAll() { ST = new Uint16Array(GW * GD * (GY1 - GY0)); stShell(); stHallA(); stHallB(); stHallC(); stRiftBay(); stDoors(); stExterior(); }
+function stBuildAll() { ST = new Uint16Array(GW * GD * (GY1 - GY0)); stShell(); stHallA(); stHallB(); stHallC(); stRiftBay(); stDoors(); stExterior(); stPods(); }
 // ---------------- the console, rebuilt from console blocks: a front lip, a keyboard WEDGE (real 45 degree ramp with its own collision), a trackpad slate,
 // a sloping riser into a bank of monitors, and winged sides with a wedge cap. face = the side the operator stands on.
 function stConsole(cx, cz, face, accent, screenCol, yb = 0, W = 3, stype = 0) {
