@@ -290,3 +290,6 @@ h1.hx::after{color:#00f0ff;transform:translate(5px,-1px);animation:glb 2.3s infi
 #yard canvas{position:static;inset:auto}
 .yd-prev canvas,.yd-hexb canvas{width:100%;height:auto}
 #yd-cv{position:absolute!important;inset:0!important;width:100%!important;height:100%!important}
+/* ---- SORTIE (the crisis-alert shoot-em-up) ---- */
+#srt{display:none;position:fixed;inset:0;width:100%;height:100%;z-index:7;background:#000;cursor:crosshair}
+#srt.on{display:block}

@@ -391,6 +391,14 @@ function pushBox(cx, cy, cz, sx, sy, sz, r, g, b, R, lit, fog, tex) {
     }
   }
 }
+// push one convex polygon (world-space vertices) as a triangle fan, flat shaded from its normal. em = glowing (ignores night).
+function pushPoly(v, nx, ny, nz, r, g, b, em, fog) {
+  const n = v.length; if (n < 3 || dn + (n - 2) * 3 * VF > dyn.length) return;
+  const a = fog === undefined ? 1 : fog, sh = em ? 1 : .42 + .58 * Math.max(0, nx * LD[0] + ny * LD[1] + nz * LD[2]), vt = em ? -(TILE.WHITE + 1) : (TILE.WHITE + 1);
+  for (let i = 1; i < n - 1; i++) for (const q of [v[0], v[i], v[i + 1]]) {
+    dyn[dn++] = q[0]; dyn[dn++] = q[1]; dyn[dn++] = q[2]; dyn[dn++] = r * sh; dyn[dn++] = g * sh; dyn[dn++] = b * sh; dyn[dn++] = a; dyn[dn++] = 0; dyn[dn++] = 0; dyn[dn++] = vt;
+  }
+}
 // oriented beam between two points (axis aligned thin box along direction)
 function pushBeam(ax, ay, az, bx, by, bz, th, col, fog) {
   const dx = bx - ax, dy = by - ay, dz = bz - az, len = Math.hypot(dx, dy, dz) || 1e-4;

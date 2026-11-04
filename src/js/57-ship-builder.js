@@ -77,7 +77,7 @@ const Yard = {
   key: (i, j, k) => (j * YDP + k) * YW + i,
   unkey(n) { const i = n % YW, r = (n - i) / YW, k = r % YDP; return [i, (r - k) / YDP, k]; },
   inGrid: (i, j, k) => i >= 0 && j >= 0 && k >= 0 && i < YW && j < YH && k < YDP,
-  store() { const X = SaveStore.doc.extras; if (!X.ships || !Array.isArray(X.ships.slots)) X.ships = { active: -1, slots: [null, null, null, null, null, null], draft: null }; while (X.ships.slots.length < 6) X.ships.slots.push(null); return X.ships; },
+  store() { const X = SaveStore.doc.extras; if (!X.ships || !Array.isArray(X.ships.slots)) X.ships = { active: -1, slots: [null, null, null, null, null, null], draft: null, tier: 0, best: 0 }; while (X.ships.slots.length < 6) X.ships.slots.push(null); return X.ships; },
   // --- the design as numbers ---
   stats() {
     const s = { hp: 0, off: 0, pow: 0, mob: 0, rol: 0, spd: 0 }; let cost = 0, helm = 0;
@@ -282,20 +282,26 @@ const Yard = {
   }
 };
 
-// ---- the ship on the hangar pad ----
+// ---- the ship on the hangar pad: drawn from the very same meshes the builder uses ----
+function shipBlueprint() { const sh = Yard.store(); return sh.slots[sh.active] || null; }
 function shipDisplayItems() {
   const sh = Yard.store(), key = sh.active + '|' + (sh.slots[sh.active] ? sh.slots[sh.active].blocks.length : 0) + '|' + Yard.dispKey; if (Yard.dispCache && Yard.dispCache.key === key) return Yard.dispCache.items;
-  const b = sh.slots[sh.active], items = [];
-  if (b) for (const r of b.blocks) { const p = SPIDX[r[3]]; if (p === undefined) continue; const m = ShipMesh.mesh(SPARTS[p].shape, r[4], r[5], r[6], !!r[8]), c = [r[0] - (YW - 1) / 2, r[1] - (YH - 1) / 2, r[2] - (YDP - 1) / 2];
-    for (const g of m.groups) { const col = g.t === 'p' ? SCOL[Math.max(0, Math.min(SCOL.length - 1, r[7] | 0))] : STAGC[g.t]; items.push({ c: [c[0] + (g.lo[0] + g.hi[0]) / 2, c[1] + (g.lo[1] + g.hi[1]) / 2, c[2] + (g.lo[2] + g.hi[2]) / 2], s: [Math.max(.08, g.hi[0] - g.lo[0]), Math.max(.08, g.hi[1] - g.lo[1]), Math.max(.08, g.hi[2] - g.lo[2])], col: [Math.min(1, col[0] / 255 * 1.45), Math.min(1, col[1] / 255 * 1.45), Math.min(1, col[2] / 255 * 1.45)], em: g.t === 'e' || g.t === 'm' }); } }
+  const b = sh.slots[sh.active], items = b ? shipItemsFrom(b.blocks) : [];
   Yard.dispCache = { key, items }; return items;
+}
+function shipItemsFrom(blocks) {                                                     // blueprint rows -> [{x,y,z (cell centre), mesh, col, p}]
+  const items = [];
+  for (const r of blocks) { const p = SPIDX[r[3]]; if (p === undefined) continue; items.push({ x: r[0] - (YW - 1) / 2, y: r[1] - (YH - 1) / 2, z: r[2] - (YDP - 1) / 2, mesh: ShipMesh.mesh(SPARTS[p].shape, r[4], r[5], r[6], !!r[8]), col: SCOL[Math.max(0, Math.min(SCOL.length - 1, r[7] | 0))], p }); }
+  return items;
 }
 function drawShipDisplay(t) {
   if (typeof SHIPYARD === 'undefined' || camY > SHIPYARD.y0 + 40 || Math.abs(camX - SHIPYARD.px) > 70) return;
   const items = shipDisplayItems(); if (!items.length) return;
   const R = rotY(t * .3), ox = SHIPYARD.px, oy = SHIPYARD.y0 + 4 + YH / 2 + .15 * Math.sin(t * 1.2), oz = SHIPYARD.pz;
-  for (const it of items) {
-    const lx = it.c[0], ly = it.c[1], lz = it.c[2], wx = R[0] * lx + R[1] * ly + R[2] * lz, wy = R[3] * lx + R[4] * ly + R[5] * lz, wz = R[6] * lx + R[7] * ly + R[8] * lz;
-    pushBox(ox + wx, oy + wy, oz + wz, it.s[0], it.s[1], it.s[2], it.col[0], it.col[1], it.col[2], R, !it.em, 0);
+  const T = (x, y, z) => [R[0] * x + R[1] * y + R[2] * z + ox, R[3] * x + R[4] * y + R[5] * z + oy, R[6] * x + R[7] * y + R[8] * z + oz];
+  for (const it of items) for (const f of it.mesh.faces) {
+    const n = f.n, nx = R[0] * n[0] + R[1] * n[1] + R[2] * n[2], ny = R[3] * n[0] + R[4] * n[1] + R[5] * n[2], nz = R[6] * n[0] + R[7] * n[1] + R[8] * n[2];
+    const c = f.t === 'p' ? it.col : STAGC[f.t], em = f.t === 'e' || f.t === 'm';
+    pushPoly(f.v.map(v => T(it.x + v[0], it.y + v[1], it.z + v[2])), nx, ny, nz, c[0] / 255 * 1.3, c[1] / 255 * 1.3, c[2] / 255 * 1.3, em, 0);
   }
 }

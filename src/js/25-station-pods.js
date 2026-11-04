@@ -27,6 +27,24 @@ function stYard() {
   stBox(cx - 2, y0 + 1, -9, cx + 2, y0 + 2, -8, B.HULL); stBox(cx - 2, y0 + 3, -9, cx + 2, y0 + 3, -9, B.TECH); stBox(cx - 2, y0 + 4, -9, cx + 2, y0 + 5, -9, NEO('SKY'));   // the console and its glowing screen
   stPut(cx - 3, y0 + 1, -9, B.LAMP); stPut(cx + 3, y0 + 1, -9, B.LAMP);
 }
+const CRISIS = { tx: 22, tz: -7, y0: Y0, cx: 22 };                                                   // the red holo terminal that launches a SORTIE
+function stCrisis() {
+  const y0 = Y0, cx = CRISIS.cx;
+  stBox(cx - 6, y0 + 1, -13, cx + 6, y0 + 12, -12, B.TECH);
+  for (let x = cx - 6; x <= cx + 6; x++) { stPut(x, y0 + 1, -11, NEO('MAGENTA')); stPut(x, y0 + 12, -11, NEO('MAGENTA')); }
+  stSign3('ALERT', cx, y0 + 6, -11, NEO('MAGENTA'));
+  for (let z = -9; z <= -4; z++) for (let x = cx - 4; x <= cx + 4; x++) if (z === -4 || ((x + z) & 3) < 2) stPut(x, y0, z, ((x + z) & 1) ? B.HAZ : B.TECH);      // hazard stripes in front
+  stBox(cx - 2, y0 + 1, -9, cx + 2, y0 + 2, -8, B.HULL); stBox(cx - 2, y0 + 3, -9, cx + 2, y0 + 3, -9, B.TECH); stBox(cx - 2, y0 + 4, -9, cx + 2, y0 + 5, -9, NEO('MAGENTA'));
+  stPut(cx - 3, y0 + 1, -9, B.LAMP); stPut(cx + 3, y0 + 1, -9, B.LAMP);
+}
+function drawCrisisHolo(t) {                                                                         // a red warning triangle turning over the console, flashing beacons and sweeping beams
+  if (camY > CRISIS.y0 + 40 || Math.abs(camX - CRISIS.cx) > 60) return;
+  const cx = CRISIS.cx, cy = CRISIS.y0 + 9.2, cz = -9.2, R = rotY(t * .9), p = .55 + .45 * Math.sin(t * 6), col = [1, .12 + .2 * p, .1];
+  const V = [[0, 1.9, 0], [-1.8, -1.1, 0], [1.8, -1.1, 0]].map(v => [cx + R[0] * v[0] + R[2] * v[2], cy + v[1], cz + R[6] * v[0] + R[8] * v[2]]);
+  for (let i = 0; i < 3; i++) { const a = V[i], b = V[(i + 1) % 3]; pushBeam(a[0], a[1], a[2], b[0], b[1], b[2], .22, col, 0); }
+  pushBeam(cx, cy + .9, cz, cx, cy - .1, cz, .26, col, 0); pushBox(cx, cy - .6, cz, .3, .3, .3, col[0], col[1], col[2], R, false, 0);
+  for (const s of [-1, 1]) { const f = (Math.sin(t * 5 + (s > 0 ? 3.14 : 0)) > 0) ? 1 : .15; pushBox(cx + s * 5.2, CRISIS.y0 + 12.8, -11.4, .9, .9, .9, 1 * f, .15 * f, .1 * f, null, false, 0); pushBeam(cx + s * 5.2, CRISIS.y0 + 12.8, -11, cx + s * 5.2 + Math.cos(t * 3) * 4 * s, CRISIS.y0 + 9, -3 + Math.sin(t * 3) * 2, .12, [1 * f, .2 * f, .15 * f], 0); }
+}
 function stHangar() {
   const y0 = Y0, H = HG.h;
   stBox(HG.x0 - 3, y0 - 4, HG.z0 - 3, HG.x1 + 3, y0 + H + 2, HG.z1 + 3, B.HULL);
@@ -83,7 +101,7 @@ function stPods() {
     for (let y = SD + 2; y <= SD + 4; y++) stPut(33, y, pz, NEO('SKY'));
     stText(String(i + 1), 29, SD + 6, pz - 2, 'z', 1, NEO('ORANGE'));
   }
-  stHangar(); stTunnel(); stYard();
+  stHangar(); stTunnel(); stYard(); stCrisis();
   for (let i = 0; i < PODZ.length; i++) { const pz = PODZ[i]; stBox(30, Y0 + 1, pz - 1, 32, SD, pz + 1, 0); }     // re-open the shafts where the tunnel sleeve overlapped
 }
 // ---------------- the ride ----------------

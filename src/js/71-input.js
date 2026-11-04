@@ -7,6 +7,7 @@ addEventListener('keydown', e => {
   if (e.code === 'Escape' && state === 'play' && fallback) { openPause(); return; }
   if (e.code === 'Escape' && state === 'paused') { Menu.back(); return; }
   if (state === 'builder') { Yard.keydown(e); return; }
+  if (state === 'sortie') { Sortie.keydown(e); return; }
   if (state === 'padsetup') { if (e.code === 'Escape') closePadSetup(); return; }
   if (state === 'dead' && e.code === 'KeyR') { startGame(); return; }
   if (state === 'inv') { if (e.code === 'Escape' || e.code === 'KeyI' || e.code === 'Tab') closeInv(); else if (e.code.startsWith('Digit')) { const n = +e.code.slice(5) - 1; if (n >= 0 && n < 9) { Inv.sel = n; Inv.changed(); renderInv(); } } return; }
