@@ -34,6 +34,17 @@ vec3 holo(float ti,vec2 uv,float t){                                            
   float gl=step(0.985,fract(t*0.37+sd*0.21));col*=1.0-gl*step(0.5,fract(q.y*20.0+t*30.0));
   return col;
 }
+// THE RIFT: a flat 2D tear (drawn as a camera-facing quad): ragged blue rim, a swirling dark throat, drifting stars. uv in blocks from the quad centre; vc.r = openness, vc.g = charge
+vec4 riftfx(vec2 uv,float O,float I,float t){
+  vec2 Hh=vec2(0.5+2.3*O,2.4+3.4*O);vec2 p=uv/Hh;float r=length(p),a=atan(p.y,p.x);
+  float jag=1.0+0.17*sin(a*7.0+t*2.0)+0.09*sin(a*13.0-t*3.1)+0.05*sin(a*29.0+t*5.0)+0.03*I*sin(a*41.0+t*19.0);float q=r/jag;
+  vec3 hot=vec3(0.45,0.8,1.0),hot2=vec3(0.12,0.38,1.0);
+  float sw=sin(a*3.0+q*9.0-t*2.5)*0.5+0.5;vec3 th=mix(vec3(0.0,0.012,0.07),hot2*sw,smoothstep(0.1,0.95,q)*0.7);
+  th+=vec3(0.7,0.9,1.0)*step(0.985,H1(floor(p*14.0)+floor(t*0.7)))*0.6;
+  float ins=smoothstep(1.0,0.92,q);
+  vec3 gl=hot*exp(-pow((q-1.0)*7.0,2.0))*(1.5+I)+hot2*exp(-q*1.1)*(0.24+0.25*I);gl*=smoothstep(3.4,2.4,q);
+  vec3 c=th*ins+gl;return vec4(c,clamp(ins+max(gl.r,max(gl.g,gl.b)),0.0,1.0));
+}
 vec3 scr(float ti,vec2 uv,float t){
   float k=ti-200.0,ty=mod(k,4.0),r=floor(k/4.0),W=mod(r,10.0)+1.0,Hh=floor(r/10.0)+1.0;
   float d=min(min(uv.x,W-uv.x),min(uv.y,Hh-uv.y));
@@ -82,12 +93,13 @@ void main(){
   vec3 av=texture2D(avg,vec2((ti+0.5)/256.0,0.5)).rgb;
   tx=mix(tx,av,smoothstep(36.0,90.0,vd));
   vec3 col=vc.rgb*tx*1.6;
-  if(ti>599.5)col=holo(ti,vuv,tm);else if(ti>199.5)col=scr(ti,vuv,tm);
+  float rga=1.0;
+  if(ti>9999.5){vec4 rf=riftfx(vuv,vc.r,vc.g,tm);col=rf.rgb;rga=rf.a;}else if(ti>599.5)col=holo(ti,vuv,tm);else if(ti>199.5)col=scr(ti,vuv,tm);
   if((ti>7.5&&ti<9.5)||(ti>45.5&&ti<61.5)){float sd=step(0.5,mod(ti,2.0));col=lava(mix(vec3(vwp.x+vwp.z,0.0,vwp.y*1.3+tm*0.8),vwp,sd),tm,vd);}
   float lamp=0.62*(1.0-smoothstep(1.5,22.0,vd));
   col*=mix(max(amb,lamp),1.0,em);
   float fg=smoothstep(fogr.x,fogr.y,vd)*min(vc.a,1.0);
-  gl_FragColor=vec4(mix(col,fogc,fg),ga);
+  gl_FragColor=vec4(mix(col,fogc,fg),ga*rga);
 }`;
 // the sky: one full-screen triangle; every pixel works out its view direction and paints gradient, sun, moon (an eye), stars and the horizon band
 const SKY_VS = `attribute vec2 q;varying vec2 ndc;void main(){ndc=q;gl_Position=vec4(q,1.0,1.0);}`;

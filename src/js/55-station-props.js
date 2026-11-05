@@ -37,7 +37,7 @@ function drawLeds(t) {                                                         /
 }
 function stationNear(rz0, rz1) { return camZ > rz0 && camZ < rz1; }
 function drawStationProps(t) {
-  drawPodSolids(t); drawShipDisplay(t);
+  drawPodSolids(t); drawShipDisplay(t); drawCoreProps(t);
    drawStationDoors(t);
   if (stationNear(-125, 50)) {                                                  // ---- the bridge (visible from the door too)
     BRIDGE_CREW.forEach(([x, z, f], i) => drawParts(CREW, x, SD + 1, z, rotY(faceYaw(f)), 1, t, false, t * 5 + i * 1.7));

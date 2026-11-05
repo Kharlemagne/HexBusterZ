@@ -166,7 +166,7 @@ function updateStationDoors(dt) {
 }
 function stationDoorHit(x, y, z, hw, h) {
   if (mode !== 'hub') return false;
-  if (podPlatformHit(x, y, z, hw, h)) return true;
+  if (podPlatformHit(x, y, z, hw, h) || liftDoorHit(x, y, z, hw, h)) return true;
   for (const d of STN_DOORS) { if (d.o > .97 || y + h <= SD + d.y0 || y >= SD + d.y0 + d.h) continue; for (const b of doorBoxes(d)) if (x + hw > b[0] && x - hw < b[1] && z + hw > b[2] && z - hw < b[3]) return true; }
   return false;
 }
@@ -264,19 +264,6 @@ function stHallC() {
   // ---- pillars with orange strips, pipes along the back wall
   for (const x of [-50, -40, 40, 50]) for (let z of [-50, -108]) for (let y = SD + 1; y < SD + R.h - 1; y++) stPut(x, y, z, y % 4 === 0 ? O : B.OBS);
 }
-// ---------------- the Rift Stabilizer bay (east of the gate)
-function stRiftBay() {
-  const O = NEO('ORANGE');
-  for (let z = -112; z <= -92; z++) for (let x = 16; x <= 50; x++) { const dr = Math.hypot(x + .5 - RIFT.x, z + .5 - RIFT.z); if (dr > 12 && dr < 13.2) stPut(x, SD, z, NEO('SKY')); if (dr < 4.5 && dr > 3.8) stPut(x, SD, z, NEO('SKY')); }
-  stBox(RIFT.x - 3.5, SD + 1, RIFT.z - 1, RIFT.x + 3.5, SD + 1, RIFT.z + 1, B.OBS);
-  for (const c of RIFT.coils) {
-    const cx = Math.floor(c[0]), cz = Math.floor(c[2]);
-    stBox(cx - 2, SD + 1, cz - 2, cx + 2, SD + 2, cz + 2, B.HULL); for (const [dx, dz] of [[-2, -2], [2, -2], [-2, 2], [2, 2]]) stPut(cx + dx, SD + 2, cz + dz, NEO('SKY'));
-    for (let y = SD + 3; y <= SD + 15; y++) { stBox(cx - 1, y, cz - 1, cx + 1, y, cz + 1, (y % 3 === 0) ? NEO('SKY') : B.TECH); if (y % 3 === 0) stRing(cx - 2, y, cz - 2, cx + 2, y, cz + 2, SH(B.HULL, K.SLAB_B)); }
-    stBox(cx - 1, SD + 16, cz - 1, cx + 1, SD + 18, cz + 1, NEO('WHITE')); stBox(cx, SD + 19, cz, cx, SD + 25, cz, B.HULL);
-  }
-  stConsole(Math.floor(RIFT.console.x), Math.floor(RIFT.console.z), 'w', NEO('SKY'), NEO('LIME'), 0, 3, 'quad');
-}
 // ---------------- the hull outside the bridge window: a wing, masts and a docking spar, all seen from the panoramic window
 function stExterior() {
   const SK = NEO('SKY');
@@ -286,7 +273,7 @@ function stExterior() {
   for (let y = SD - 3; y < SD + 12; y++) for (let a = 0; a < 16; a++) { const t = a / 16 * TAU; stPut(Math.round(84 + Math.cos(t) * 6), y, Math.round(-12 + Math.sin(t) * 6), y % 4 === 0 ? SK : B.TECH); }          // a reactor drum
   stDisc(84, -12, 0, 6, SD + 12, B.HULL); stDisc(84, -12, 0, 3, SD + 13, NEO('ORANGE'));
 }
-function stBuildAll() { ST = new Uint16Array(GW * GD * (GY1 - GY0)); stShell(); stHallA(); stHallB(); stHallC(); stRiftBay(); stDoors(); stExterior(); stPods(); }
+function stBuildAll() { ST = new Uint16Array(GW * GD * (GY1 - GY0)); stShell(); stHallA(); stHallB(); stHallC(); stRiftBay(); stDoors(); stExterior(); stPods(); stLift(); }
 // ---------------- the console, rebuilt from console blocks: a front lip, a keyboard WEDGE (real 45 degree ramp with its own collision), a trackpad slate,
 // a sloping riser into a bank of monitors, and winged sides with a wedge cap. face = the side the operator stands on.
 function stConsole(cx, cz, face, accent, screenCol, yb = 0, W = 3, stype = 0) {

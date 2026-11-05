@@ -5,8 +5,8 @@
 // ============================================================
 const Rift = {
   phase: 'idle', t: 0, text: '', fade: 0, zapT: 0, sent: false, dest: '',
-  nearConsole() { return mode === 'hub' && OW.gen === 3 && Math.hypot(P.x - RIFT.console.x, P.z - RIFT.console.z) < 4.2 && Math.abs(P.y - (SD + 1)) < 3 && (this.phase === 'idle' || this.phase === 'open'); },
-  inRift() { const g = RIFT.gate; return OW.gen === 3 && this.phase === 'open' && P.x > g.x1 - 1 && P.x < g.x2 + 1 && Math.abs(P.z - RIFT.z) < 1.6 && P.y > g.y1 - 1.5 && P.y < g.y2; },
+  nearConsole() { return mode === 'hub' && OW.gen === 3 && Math.hypot(P.x - RIFT.console.x, P.z - RIFT.console.z) < 4.2 && Math.abs(P.y - (RC.fy + 1)) < 3 && (this.phase === 'idle' || this.phase === 'open'); },
+  inRift() { const g = RIFT.gate; return OW.gen === 3 && this.phase === 'open' && Math.hypot(P.x - RIFT.x, P.z - RIFT.z) < 2.6 && P.y > g.y1 - 1.5 && P.y < g.y2; },
   open() {
     if (state !== 'play') return; if (Net.role === 'client') { feed('ONLY THE HOST CAN OPERATE THE RIFT', '#ff8a3a'); SFX.empty(); return; }
     state = 'rift'; mouse.l = mouse.r = false; try { document.exitPointerLock(); } catch (e) { }
@@ -58,28 +58,17 @@ function drawRealmTear(t) {                                              // the 
   for (let yy = 1; yy <= 9; yy++) for (let k = 0; k < 2; k++) { const sw = .5 + .5 * Math.sin(t * 1.6 + yy * .9 + k * 2); pushBox(T.x + .5 + (k ? .12 : -.12), T.y + yy + .5, T.z + .5, .12, 1.02, 4.6, .35 + .35 * sw, .05, .55 + .4 * (1 - sw), null, false); }
   for (let k = 0; k < 14; k++) { const a = t * .9 + k * .45, y = T.y + 5 + Math.sin(a) * 3.6; pushBox(T.x + .5, y, T.z + .5 + Math.cos(a * 1.3) * 2, .2, .2, .2, .7, .9, 1, null, false); }
 }
+function drawRiftTear(t) {                                          // the tear itself: ONE flat 2D effect on a camera-facing quad (see riftfx in the shader), blue
+  if (OW.gen !== 3 || mode !== 'hub' || Math.hypot(camX - RIFT.x, camZ - RIFT.z) > 70 || camY > RC.fy + 40) return;
+  const O = Rift.openness(), I = Rift.intensity(), yaw = Math.atan2(camX - RIFT.x, camZ - RIFT.z), W = 2 * (.5 + 2.3 * O) * 3.6, H = 2 * (2.4 + 3.4 * O) * 3.6;
+  pushBox(RIFT.x, RIFT.y - (1 - O) * 2.2, RIFT.z, Math.min(W, 49.5), Math.min(H, 49.5), .05, O, I, 1, rotY(yaw), false, 0, 10000 + Math.round(Math.min(W, 49.5) * 2) + 100 * Math.round(Math.min(H, 49.5) * 2));
+  flushDynA(1);
+}
 function drawRift(t) {
   if (OW.gen === 4) { drawRealmTear(t); return; }
   if (OW.gen !== 3 || Math.hypot(camX - RIFT.x, camZ - RIFT.z) > 90) return;
   const I = Rift.intensity(), O = Rift.openness(), cx = RIFT.x, cy = RIFT.y, cz = RIFT.z, HX = .5 + 2.3 * O, HY = 2.4 + 3.4 * O, jit = Rift.phase === 'zap' ? .6 : Rift.phase === 'charge' ? .15 + .3 * (Rift.t / 2.6) : Rift.phase === 'stabilize' ? .18 : Rift.phase === 'open' ? .1 : .06;
   const seedT = Math.floor(t * 16), rr = (a, b) => ih(seedT, a, b, 4242) - .5;
-  const jag = a => 1 + .17 * Math.sin(a * 7 + t * 2) + .09 * Math.sin(a * 13 - t * 3.1) + .05 * Math.sin(a * 29 + t * 5);        // the same ragged edge as the tear in the sky
-  const rows = 11;
-  for (let i = 0; i < rows; i++) {                                                                      // the throat: dark violet with a slow swirl of blue
-    const v = (i + .5) / rows * 2 - 1, w = HX * 2 * Math.sqrt(Math.max(0, 1 - v * v)) * .96; if (w < .2) continue;
-    const sw = .5 + .5 * Math.sin(t * 1.6 + i * .8 + v * 3); pushBox(cx, cy + v * HY, cz, w, HY * 2 / rows + .02, .16, .02 + .1 * sw * I, .02 + .22 * sw * I, .12 + .5 * (1 - sw * .5) * I, null, false);
-  }
-  const N = 40; let px = 0, py = 0, pz = 0;
-  for (let k = 0; k <= N; k++) {                                                                        // the burning rim: bright blue-white, ragged
-    const a = k / N * TAU, j = jag(a) * (1 + rr(k, 1) * jit * 1.3), x = cx + Math.cos(a) * HX * j, y = cy + Math.sin(a) * HY * j;
-    if (k > 0) pushBeam(px, py, pz, x, y, cz, .13 + .08 * I, k % 3 === 0 ? [1, 1, 1] : [.3 + .3 * I, .7 + .2 * I, 1], 1);
-    px = x; py = y; pz = cz + rr(k, 2) * .15;
-  }
-  for (let k = 0; k < 6; k++) {                                                                         // swirling arms and drifting sparks inside
-    let ax = cx, ay = cy; const a0 = t * (.7 + k * .12) + k * 1.05;
-    for (let s = 1; s <= 6; s++) { const rad = s / 6, a = a0 + s * .55, x = cx + Math.cos(a) * HX * .85 * rad, y = cy + Math.sin(a) * HY * .85 * rad; pushBeam(ax, ay, cz + .02, x, y, cz + .02, .06, [.35, .55 + .3 * I, 1], 1); ax = x; ay = y; }
-  }
-  for (let k = 0; k < 9; k++) { const a = t * .5 + k * 2.4, rad = ((k * .37 + t * .12) % 1) * .8; pushBox(cx + Math.cos(a) * HX * rad, cy + Math.sin(a * 1.3) * HY * rad, cz + .05, .14, .14, .14, 1, 1, 1, null, false); }
   for (const c of RIFT.coils) {                                                                         // the coils glow and, while charging or zapping, throw bolts at the tear
     const g = 1.5 + 1.6 * I + .35 * Math.sin(t * 9); pushBox(c[0], c[1], c[2], g, g, g, .3, .9 + .1 * I, 1, null, false);
     if (Rift.phase === 'zap' || (Rift.phase === 'charge' && Rift.t > 1.2 && Math.random() < .25)) for (let b = 0; b < 2; b++) {

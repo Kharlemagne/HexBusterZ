@@ -7,7 +7,7 @@
 // ============================================================
 const SD = 80;                                                                  // deck level (the street surface block)
 const STN = { R: 96, zf: .87, gate: { x: 0, z: -104, y: SD, seed: 0x57A710 }, spawn: { x: .5, z: 103.5 }, npc: { x: -29.5, z: 68.5 }, RY: SD + 14, core: { x: 0, z: 0 } };
-const GX0 = -112, GX1 = 112, GZ0 = -124, GZ1 = 124, GY0 = 34, GY1 = 158, GW = GX1 - GX0, GD = GZ1 - GZ0;
+const GX0 = -112, GX1 = 112, GZ0 = -124, GZ1 = 124, GY0 = 8, GY1 = 158, GW = GX1 - GX0, GD = GZ1 - GZ0;
 const stOct = (x, z) => { const q = Math.abs(z) * STN.zf, a = Math.abs(x); return Math.max(a, q, (a + q) / 1.41421); };
 const onStation = (x, z) => stOct(x, z) <= STN.R + .5;
 let ST = null, STN_LOCK = true;                                                // the station is indestructible while STN_LOCK (tests switch it off)

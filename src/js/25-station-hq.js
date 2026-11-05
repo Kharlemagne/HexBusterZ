@@ -9,7 +9,9 @@
 const MID = name => { const i = MATS.findIndex(m => m.name === name); return i < 0 ? B.HULL : MAT0 + i; };      // a material by name
 const NEO = n => MID('NEON ' + n), CC = n => MID(n + ' CONCRETE'), SH = (b, k, d = 0) => blockId(b, k, d);
 const DAIS = { x: 0, z: 22 }, CAT = { z0: 4, z1: -97, hw: 3 };
-const RIFT = { x: 30.5, y: SD + 7, z: -100.5, coils: [[23.5, SD + 17.5, -100.5], [37.5, SD + 17.5, -100.5]], console: { x: 44.5, z: -98.5 }, arrive: { x: 30.5, z: -91.5 }, gate: { x1: 28, x2: 33, z: -100, y1: SD + 1, y2: SD + 10 } };
+const RC = { x0: -38, x1: 38, z0: -30, z1: 30, fy: 14, h: 19 };                                      // the REACTOR CORE room, deep under the hangar: floor surface y = fy, ceiling at fy + h
+const LIFT = { cx: -33.5, cz: .5, topBtn: { x: -27.5, z: .5 }, botBtn: { x: -27.5, z: .5 } };         // the hexagon lift shaft (bridge floor -> reactor floor) and its two red buttons
+const RIFT = { x: .5, y: RC.fy + 7, z: .5, coils: [0, 1, 2, 3, 4, 5].map(k => [.5 + Math.cos(k * 1.0472) * 15, RC.fy + 14.5, .5 + Math.sin(k * 1.0472) * 15]), console: { x: .5, z: -10.5 }, arrive: { x: .5, y: RC.fy + 1, z: 14.5 }, gate: { x1: -2, x2: 3, z: .5, y1: RC.fy + 1, y2: RC.fy + 13 } };
 const inCut = (x, z) => z < -2 && z > -96 && Math.abs(x) > CAT.hw + 1;                       // the open space either side of the catwalk
 // ---- hull and deck
 function stHullAndDeck() {

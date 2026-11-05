@@ -79,7 +79,7 @@ function enterHub(first, fromRun, arrive) {
   genHub(undefined, sx, sz); flushSave();
   enemies.length = 0; eprojs.length = 0; bombs.length = 0; beams.length = 0; drops.length = 0; PL.fill(0);
   Run.chests = []; Run.turrets = []; Run.smoke = []; Run.hasKey = false; Run.glyph = null; Run.cur = null; resetBossSystems(); sky = null;
-  Object.assign(P, { x: sx, y: topY(Math.floor(sx), Math.floor(sz)) + 1.01, z: sz, vx: 0, vy: 0, vz: 0, yaw: rt ? 0 : g4 ? 0 : arrive === 'rift' ? 0 : fromRun ? Math.PI : 0, pitch: 0, hp: 100, alive: true, sliding: false, slamming: false, slamT: null, lock: null, dashT: 0, dashF: 3, inv: 0, shake: 0, hurtFlash: 0, charge: 0, h: 1.75, eye: 1.6, airT: 0 });
+  Object.assign(P, { x: sx, y: g3 && arrive === 'rift' ? RIFT.arrive.y + .01 : topY(Math.floor(sx), Math.floor(sz)) + 1.01, z: sz, vx: 0, vy: 0, vz: 0, yaw: rt ? 0 : g4 ? 0 : arrive === 'rift' ? 0 : fromRun ? Math.PI : 0, pitch: 0, hp: 100, alive: true, sliding: false, slamming: false, slamT: null, lock: null, dashT: 0, dashF: 3, inv: 0, shake: 0, hurtFlash: 0, charge: 0, h: 1.75, eye: 1.6, airT: 0 });
   Object.assign(S, { style: 0, rank: 0, combo: 0, lastKill: -99, wHist: {}, time: 0 });
   P.weapon = -1; switchWeapon(0); refreshHotbar(); if (vi >= 0) { Vat.begin(vi); P.yaw = VATS[vi].face > 0 ? -Math.PI / 2 : Math.PI / 2; } else Vat.cur = -1;
   el.dead.classList.remove('on'); el.feed.innerHTML = '';

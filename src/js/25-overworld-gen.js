@@ -55,7 +55,7 @@ function baseHeight(x, z) {                                              // terr
 const HUB = { list: [], voidY: 0, deck: 0, gate: { x: 0, z: 0, y: 0, seed: 1 }, spawn: { x: 0, z: 0 }, npc: { x: 0, z: 0 }, lifts: [] };
 function hubSet(gen) {
   if (gen === 4) { const L = realmLayout(OWG.S); Object.assign(HUB, { voidY: REALM_VOID, deck: L.tear.y, gate: null, list: L.gates, spawn: L.spawn, npc: { x: 0, z: -99999 }, lifts: [], tear: L.tear }); }
-  else if (gen === 3) Object.assign(HUB, { list: [STN.gate], tear: null, voidY: 24, deck: SD, gate: STN.gate, spawn: STN.spawn, npc: STN.npc, lifts: [] });
+  else if (gen === 3) Object.assign(HUB, { list: [STN.gate], tear: null, voidY: 6, deck: SD, gate: STN.gate, spawn: STN.spawn, npc: STN.npc, lifts: [] });
   else if (gen === 2) Object.assign(HUB, { list: [CAR_GATE], tear: null, voidY: VOID_Y, deck: CAR.deck, gate: CAR_GATE, spawn: CAR_SPAWN, npc: CAR_NPC, lifts: LIFTS.map(l => ({ x: l.x, z: l.z, y0: 36, y1: CAR.deck + 1.5 })) });
 }
 // ---- Hellgates: one candidate per REGION x REGION cell, deterministic from the seed
@@ -102,6 +102,7 @@ function stDistrict(x, z) {
 function realmCoords() { const o = Net.hubOverride; if (o) return o.coords || ''; const m = WorldStore.cur && WorldStore.cur.data.map; return m ? m.coords : ''; }
 function biomeAt(x, z, y) {
   if (OW.gen === 4) { const I = realmColumn(x, z, OWG.S), c = realmCoords(); return (I.solid ? BIOME_NAMES[I.bi] : 'THE ABYSS') + (c ? ' · RIFT ' + c.toUpperCase().slice(0, 18) : ''); }
+  if (OW.gen === 3 && y !== undefined && y < RC.fy + RC.h + 3 && y > RC.fy - 3 && onStation(x, z) && x > RC.x0 - 2 && x < RC.x1 + 2 && z > RC.z0 - 2 && z < RC.z1 + 2) return 'THE HELICARRIER · REACTOR CORE';
   if (OW.gen === 3) return onStation(x, z) && (y === undefined || y > 44) ? 'THE HELICARRIER · ' + stDistrict(x, z) : 'DEEP SPACE';
   if (OW.gen === 2) { if (onCarrier(x, z) && (y === undefined || y > carrierBottom(x, z) - 6)) return 'THE HELICARRIER'; const I = islandRaw(x, z); return I.solid ? BIOME_NAMES[I.bi] : 'THE ABYSS'; }
   return villageD(x, z) <= 30 ? 'EMBER VILLAGE' : BIOME_NAMES[baseHeight(x, z).bi];
