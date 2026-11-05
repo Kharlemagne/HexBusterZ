@@ -7,7 +7,7 @@ function owFogTarget(x, z) {                                  // biome tint (dar
   return c.map((v, k) => lerp(v, FOG[k], vs));
 }
 function drawGatePortals(t) {
-  if (OW.gen === 3) return;                                   // the station draws its own portal (drawPortal in 55-station-props.js)
+  if (OW.gen === 3 || OW.gen === 4) return;                   // the station draws its own portal; realms use the 2D blue tears (drawRealmTears) (drawPortal in 55-station-props.js)
   for (const g of gatesNear(camX, camZ, 150)) {
     for (let iy = 0; iy < 8; iy++) for (let ix = 0; ix < 5; ix++) {
       const x = g.x - 2 + ix + .5, y = g.y + 1.5 + iy, a = Math.sin(t * 2.2 + ix * .7 + iy * .5) * .5 + .5, b = Math.sin(t * 3.1 - iy * .8 + ix * .4) * .5 + .5;

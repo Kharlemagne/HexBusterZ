@@ -42,14 +42,13 @@ function realmColumn(x, z, S) {
   const thick = (stone ? 5 + 9 * (1 - bu) : 7 + 36 * Math.pow(1 - bu, 1.1)) + (vn2(x / 8, z / 8, S + 924) - .5) * 8 * (1 - bu);
   return { solid: true, top, bot: Math.max(REALM_VOID + 2, Math.floor(top - thick)), bi: best.bi, stone, isl: best, u: bu };
 }
-function buildTear(put, T) {                                              // the dimensional tear back to the Helicarrier: a ring of voidstone around a glowing violet rip
+function buildTear(put, T) {                                              // a flat hexagonal plinth under a dimensional tear (the tear itself is a 2D shader effect, see drawRealmTears); no frame, no gate
   const x = T.x, y = T.y, z = T.z;
-  for (let dz = -4; dz <= 4; dz++) for (let dx = -6; dx <= 6; dx++) put(x + dx, y, z + dz, (Math.abs(dx) === 6 || Math.abs(dz) === 4) ? 19 : 3);
-  for (const sx of [-1, 1]) for (let yy = 1; yy <= 11; yy++) for (let dx = 3; dx <= 4; dx++) for (let dz = -1; dz <= 1; dz++) put(x + sx * dx, y + yy, z + dz, (dx === 3 && dz === 1 && yy % 3 === 0) ? 15 : 12);
-  for (let dx = -4; dx <= 4; dx++) for (let dz = -1; dz <= 1; dz++) for (let yy = 10; yy <= 12; yy++) put(x + dx, y + yy, z + dz, (yy === 12 && dz === 1) ? 19 : 12);
-  for (let dx = -2; dx <= 2; dx++) for (let yy = 1; yy <= 9; yy++) put(x + dx, y + yy, z, 0);
-  for (let dx = -2; dx <= 2; dx++) { put(x + dx, y, z, 19); put(x + dx, y, z + 1, 15); }
-  put(x, y + 13, z, 15); put(x - 2, y + 13, z, 19); put(x + 2, y + 13, z, 19);
+  for (let dz = -7; dz <= 7; dz++) for (let dx = -7; dx <= 7; dx++) {
+    const h = Math.max(Math.abs(dz), Math.abs(dx) * .8660254 + Math.abs(dz) * .5); if (h > 5.6) continue;
+    put(x + dx, y, z + dz, h > 4.6 ? 19 : (h > 3.4 && h < 3.9 ? 15 : 3));
+    if (h <= 5.6) for (let yy = 1; yy <= 16; yy++) put(x + dx, y + yy, z + dz, 0);
+  }
 }
 OWG.gen4 = function (cx, cz) {
   const S = OWG.S, L = realmLayout(S), b = new Uint16Array(256 * WORLD_H), x0 = cx * CS, z0 = cz * CS;
@@ -90,6 +89,6 @@ OWG.gen4 = function (cx, cz) {
     else { if (r < .006) boneSpire(put, ox, h, oz, 3 + Math.floor(q * 5)); else if (r < .009) outcrop(put, ox, h, oz, q); else if (r < .0105) charredTree(put, ox, h, oz, 4 + Math.floor(q * 4)); }
   }
   if (Math.abs(x0 + 8) < 30 && Math.abs(z0 + 8) < 30) buildTear(put, L.tear);
-  for (const g of L.gates) if (Math.abs(g.x - x0 - 8) < 24 && Math.abs(g.z - z0 - 8) < 24) buildGate(put, g);
+  for (const g of L.gates) if (Math.abs(g.x - x0 - 8) < 24 && Math.abs(g.z - z0 - 8) < 24) buildTear(put, g);
   return b;
 };

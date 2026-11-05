@@ -11,7 +11,7 @@ const SKY_KEYS = [                      // [tod, zenith colour, horizon colour]
 // There is no smooth cycle. The sky holds one group of bodies (two suns = DAY, four moons = NIGHT). After a while a dimensional gate rips open
 // on the horizon, the other group climbs out of it, charges, and fires beams that destroy the group that was there. Then it is the new time of day.
 const nz = d => { const l = Math.hypot(d[0], d[1], d[2]) || 1; return [d[0] / l, d[1] / l, d[2] / l]; };
-const DN_SUN = [nz([.75, .55, .35]), nz([.3, .42, -.85])];
+const DN_SUN = [nz([.2, .96, .12]), nz([-.17, .97, -.13])];       // where the suns come to rest: high noon, almost overhead
 const DN_MOON = [nz([-.75, .5, .3]), nz([-.4, .3, -.85]), nz([-.1, .78, .45]), nz([-.92, .24, -.28])];
 const DN_GATE = [nz([.95, .13, -.1]), nz([-.95, .15, .06])];           // [sun gate, moon gate]
 const EV_T = 16;                                                              // seconds a changeover takes

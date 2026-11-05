@@ -53,19 +53,21 @@ function leaveRealm() {                                                  // the 
   flushSave(); c.data.map = null; OW.returnTo = null; Rift.fade = 1; enterHub(false, false, 'rift'); saveGame();
 }
 // ---- drawing: the tear, the coils' glow and the bolts (called every frame while the station is in view)
-function drawRealmTear(t) {                                              // the violet rip inside the tear's frame in a realm
-  const T = HUB.tear; if (!T || Math.hypot(camX - T.x, camZ - T.z) > 90) return;
-  for (let yy = 1; yy <= 9; yy++) for (let k = 0; k < 2; k++) { const sw = .5 + .5 * Math.sin(t * 1.6 + yy * .9 + k * 2); pushBox(T.x + .5 + (k ? .12 : -.12), T.y + yy + .5, T.z + .5, .12, 1.02, 4.6, .35 + .35 * sw, .05, .55 + .4 * (1 - sw), null, false); }
-  for (let k = 0; k < 14; k++) { const a = t * .9 + k * .45, y = T.y + 5 + Math.sin(a) * 3.6; pushBox(T.x + .5, y, T.z + .5 + Math.cos(a * 1.3) * 2, .2, .2, .2, .7, .9, 1, null, false); }
+function tearQuad(cx, cy, cz, O, I) {                               // ONE flat 2D tear on a camera-facing quad (see riftfx in the shader): blue ragged rim, swirling throat
+  const yaw = Math.atan2(camX - cx, camZ - cz), W = Math.min(49.5, 2 * (.5 + 2.3 * O) * 3.6), H = Math.min(49.5, 2 * (2.4 + 3.4 * O) * 3.6);
+  pushBox(cx, cy - (1 - O) * 2.2, cz, W, H, .05, O, I, 1, rotY(yaw), false, 0, 10000 + Math.round(W * 2) + 100 * Math.round(H * 2));
 }
-function drawRiftTear(t) {                                          // the tear itself: ONE flat 2D effect on a camera-facing quad (see riftfx in the shader), blue
+function drawRealmTears(t) {                                         // in a realm: the way home (centre) and the gates are all the same blue tear, and every one leads back to the ship
+  const T = HUB.tear, list = (T ? [T] : []).concat(HUB.list || []); let any = false;
+  for (const g of list) { if (Math.hypot(camX - g.x, camZ - g.z) > 90) continue; tearQuad(g.x + .5, g.y + 1 + 5.8, g.z + .5, 1, .6 + .2 * Math.sin(t * 2 + g.x)); any = true; }
+  if (any) flushDynA(1);
+}
+function drawRiftTear(t) {                                          // the Rift in the reactor core
   if (OW.gen !== 3 || mode !== 'hub' || Math.hypot(camX - RIFT.x, camZ - RIFT.z) > 70 || camY > RC.fy + 40) return;
-  const O = Rift.openness(), I = Rift.intensity(), yaw = Math.atan2(camX - RIFT.x, camZ - RIFT.z), W = 2 * (.5 + 2.3 * O) * 3.6, H = 2 * (2.4 + 3.4 * O) * 3.6;
-  pushBox(RIFT.x, RIFT.y - (1 - O) * 2.2, RIFT.z, Math.min(W, 49.5), Math.min(H, 49.5), .05, O, I, 1, rotY(yaw), false, 0, 10000 + Math.round(Math.min(W, 49.5) * 2) + 100 * Math.round(Math.min(H, 49.5) * 2));
-  flushDynA(1);
+  tearQuad(RIFT.x, RIFT.y, RIFT.z, Rift.openness(), Rift.intensity()); flushDynA(1);
 }
 function drawRift(t) {
-  if (OW.gen === 4) { drawRealmTear(t); return; }
+  if (OW.gen === 4) return;
   if (OW.gen !== 3 || Math.hypot(camX - RIFT.x, camZ - RIFT.z) > 90) return;
   const I = Rift.intensity(), O = Rift.openness(), cx = RIFT.x, cy = RIFT.y, cz = RIFT.z, HX = .5 + 2.3 * O, HY = 2.4 + 3.4 * O, jit = Rift.phase === 'zap' ? .6 : Rift.phase === 'charge' ? .15 + .3 * (Rift.t / 2.6) : Rift.phase === 'stabilize' ? .18 : Rift.phase === 'open' ? .1 : .06;
   const seedT = Math.floor(t * 16), rr = (a, b) => ih(seedT, a, b, 4242) - .5;

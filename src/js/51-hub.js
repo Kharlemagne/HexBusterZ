@@ -90,11 +90,12 @@ function updateHub(dt) {
   NPC.t += dt;
   const d = Math.hypot(P.x - NPC.x, P.z - NPC.z); NPC.yaw = d < 14 ? Math.atan2(P.x - NPC.x, P.z - NPC.z) : Math.PI;
   Rift.tick(dt);
-  if (OW.gen === 4 && HUB.tear) { const T = HUB.tear, dx = P.x - T.x - .5, dz = P.z - T.z - .5; if (Math.hypot(dx, dz) < 2.4 && P.y > T.y && P.y < T.y + 9 && Net.role !== 'client' && Rift.phase === 'idle') { leaveRealm(); return; } if (Math.random() < dt * 60) emit(T.x + .5 + rnd(-2, 2), T.y + rnd(1, 9), T.z + .5 + rnd(-.3, .3), rnd(-.5, .5), rnd(0, 1), rnd(-.5, .5), rnd(.06, .12), Math.random() < .5 ? [.7, .3, 1] : [.3, .9, 1], rnd(.6, 1.3), 0); }
+  if (OW.gen === 4 && HUB.tear) { const T = HUB.tear, dx = P.x - T.x - .5, dz = P.z - T.z - .5; if (Math.hypot(dx, dz) < 2.4 && P.y > T.y && P.y < T.y + 9 && Net.role !== 'client' && Rift.phase === 'idle') { leaveRealm(); return; } if (Math.random() < dt * 60) emit(T.x + .5 + rnd(-2, 2), T.y + rnd(1, 9), T.z + .5 + rnd(-.3, .3), rnd(-.5, .5), rnd(0, 1), rnd(-.5, .5), rnd(.06, .12), Math.random() < .5 ? [.3, .6, 1] : [.3, .9, 1], rnd(.6, 1.3), 0); }
   if (OW.gen === 4 ? (HUB.tear && Math.hypot(P.x - HUB.tear.x, P.z - HUB.tear.z) < 18) : OW.gen === 3 ? (onStation(P.x, P.z) && P.y > SD - 3) : OW.gen === 2 ? (onCarrier(P.x, P.z) && P.y > CAR.deck - 3) : villageD(P.x, P.z) < 34) P.hp = Math.min(100, P.hp + 12 * dt);       // home heals you; the wild doesn't
   if (OW.gen >= 2) for (const L of HUB.lifts) { const dx = P.x - L.x, dz = P.z - L.z; if (Math.hypot(dx, dz) < 2.7 && P.y > L.y0 - 1 && P.y < L.y1) { P.vy = Math.min(Math.max(P.vy, 0) + 70 * dt, 24); P.onGround = false; P.vx -= dx * 4 * dt; P.vz -= dz * 4 * dt; } }     // tractor beams
   if (Net.role !== 'client') {
     if (OW.gen === 1 && P.x > GATE.x0 && P.x < GATE.x1 && P.z > GATE.z0 && P.z < GATE.z1 && P.y > GATE.y0 - 1 && P.y < GATE.y1) { OW.returnTo = null; enterDungeon(); }
+    else if (OW.gen === 4) { for (const g of HUB.list) if (Math.hypot(P.x - g.x - .5, P.z - g.z - .5) < 2.4 && P.y > g.y && P.y < g.y + 10 && Rift.phase === 'idle') { leaveRealm(); return; } }
     else { const g = gateAtPlayer(P.x, P.y, P.z); if (g) { OW.returnTo = { x: g.x + .5, z: g.z + 7.5 }; enterDungeon(g.seed); } }
   }
   if (Math.random() < dt * 40) { const x = rnd(29.3, 35.7); emit(x, rnd(9, 13), 10.5 + rnd(-.3, .3), rnd(-.3, .3), rnd(1, 4), rnd(-.3, .3), rnd(.08, .16), Math.random() < .5 ? [.7, .2, 1] : [1, .2, .3], rnd(.5, 1.2), 2); }
