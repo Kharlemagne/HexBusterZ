@@ -12,16 +12,17 @@ const SKY_KEYS = [                      // [tod, zenith colour, horizon colour]
 // on the horizon, the other group climbs out of it, charges, and fires beams that destroy the group that was there. Then it is the new time of day.
 const nz = d => { const l = Math.hypot(d[0], d[1], d[2]) || 1; return [d[0] / l, d[1] / l, d[2] / l]; };
 const DN_SUN = [nz([.2, .96, .12]), nz([-.17, .97, -.13])];       // where the suns come to rest: high noon, almost overhead
-const DN_MOON = [nz([-.75, .5, .3]), nz([-.4, .3, -.85]), nz([-.1, .78, .45]), nz([-.92, .24, -.28])];
+const DN_MOON = [nz([-.3, .93, .12]), nz([.12, .95, -.25]), nz([-.12, .97, .2]), nz([-.28, .9, -.2])];   // the moons come to rest overhead too
 const DN_GATE = [nz([.95, .13, -.1]), nz([-.95, .15, .06])];           // [sun gate, moon gate]
-const EV_T = 16;                                                              // seconds a changeover takes
+const EV_T = Math.max(16, (DATA.tuning.dayLengthSeconds || 600) * .5), EV_D = EV_T - 16;   // a changeover lasts half a cycle: the new bodies climb slowly from their gate on the horizon to the top of the sky, then the 16 s fight plays out
 const lerp3n = (a, b, k) => nz([lerp(a[0], b[0], k), lerp(a[1], b[1], k), lerp(a[2], b[2], k)]);
+const evT = a => a < 3.5 ? a : a < 3.5 + EV_D ? 3.5 : a - EV_D;                   // event clock with the long climb squeezed out: the fight and sounds keep their original 16 s timing
 const DayNight = {
   t: .5, phase: 'day', idle: 90, ev: null, len: (DATA.tuning.dayLengthSeconds || 600),
   sunP: [], moonP: [], sv: [1, 1], mv: [0, 0, 0, 0], die: [0, 0, 0, 0, 0, 0], gate: [0, 0, 0, 0], gk: 0, bk: 0, beams: [],
   tick(dt) {
     if (OW.gen === 3) return;                                                  // the station hurtles through deep space: no suns, no moons, no night and day
-    if (this.ev) { const was = this.ev.age; this.ev.age += dt; this.cues(was, this.ev.age); if (this.ev.age >= EV_T) this.finish(); }
+    if (this.ev) { const was = this.ev.age; this.ev.age += dt; this.cues(evT(was), evT(this.ev.age)); if (this.ev.age >= EV_T) this.finish(); }
     else { this.idle -= dt; if (this.idle <= 0 && Net.role !== 'client') this.start(); }
     this.pose();
   },
@@ -38,7 +39,7 @@ const DayNight = {
     } catch (e) { }
   },
   pose() {
-    const ev = this.ev, a = ev ? ev.age : 0, toDay = ev ? ev.to === 'day' : this.phase === 'day', day = this.phase === 'day';
+    const ev = this.ev, a0 = ev ? ev.age : 0, a = evT(a0), pr = ev ? clamp((a0 - 3.5) / (EV_D + 3), 0, 1) : 0, toDay = ev ? ev.to === 'day' : this.phase === 'day', day = this.phase === 'day';
     this.sunP = []; this.moonP = []; this.beams = [];
     const sunG = toDay ? DN_SUN : DN_SUN, moonG = DN_MOON;
     let sv = [day ? 1 : 0, day ? 1 : 0], mv = [day ? 0 : 1, day ? 0 : 1, day ? 0 : 1, day ? 0 : 1], die = [0, 0, 0, 0, 0, 0], L = day ? 1 : 0, gate = [0, 0, 0, 0], sp = DN_SUN.slice(), mp = DN_MOON.slice();
@@ -46,7 +47,7 @@ const DayNight = {
       const gi = toDay ? 0 : 1, gd = DN_GATE[gi], open = sstep(clamp(a / 3.5, 0, 1)) * (1 - sstep(clamp((a - 12) / 2.5, 0, 1)));
       gate = [gd[0], gd[1], gd[2], .2 * open]; this.gk = gi;
       const incoming = toDay ? DN_SUN : DN_MOON;
-      const pos = incoming.map((f, i) => { const e = sstep(clamp((a - 3.5 - i * .45) / 3, 0, 1)); return { e, p: lerp3n(gd, f, e) }; });
+      const pos = incoming.map((f, i) => { const e = clamp((pr * 1.06 - i * .015), 0, 1); return { e: Math.min(1, e * 8), p: lerp3n(gd, f, e) }; });   // straight, steady climb from the horizon gate to the rest point
       if (toDay) { sp = pos.map(o => o.p); sv = pos.map(o => o.e); mv = [1, 1, 1, 1]; for (let j = 0; j < 4; j++) die[2 + j] = clamp((a - 9.4 - j * .22) / 1.3, 0, 1); }
       else { mp = pos.map(o => o.p); mv = pos.map(o => o.e); sv = [1, 1]; for (let j = 0; j < 2; j++) die[j] = clamp((a - 9.4 - j * .3) / 1.3, 0, 1); }
       const str = a < 9 ? 0 : 1 - sstep(clamp((a - 11.2) / .8, 0, 1)), n = toDay ? 4 : 4;
@@ -55,7 +56,7 @@ const DayNight = {
         const from = toDay ? sp[k >> 1] : mp[k], to = toDay ? mp[k] : sp[k >> 1];
         this.beams.push({ a: from, b: to, p: clamp((a - 9 - k * .08) / .45, 0, 1), s: str });
       }
-      L = toDay ? sstep(clamp((a - 10) / 3.5, 0, 1)) : 1 - sstep(clamp((a - 10) / 3.5, 0, 1));
+      L = toDay ? sstep(pr) : 1 - sstep(pr);                          // the sky brightens (or darkens) as the new bodies climb
       this.t = toDay ? .5 * L : 1 - .5 * L;
     } else this.t = day ? .5 : 0;
     this.sv = sv; this.mv = mv; this.die = die; this.gate = gate; this.sunP = sp; this.moonP = mp; this.L = L;

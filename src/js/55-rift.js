@@ -55,7 +55,13 @@ function leaveRealm() {                                                  // the 
 // ---- drawing: the tear, the coils' glow and the bolts (called every frame while the station is in view)
 function tearQuad(cx, cy, cz, O, I) {                               // ONE flat 2D tear on a camera-facing quad (see riftfx in the shader): blue ragged rim, swirling throat
   const yaw = Math.atan2(camX - cx, camZ - cz), W = Math.min(49.5, 2 * (.5 + 2.3 * O) * 3.6), H = Math.min(49.5, 2 * (2.4 + 3.4 * O) * 3.6);
-  pushBox(cx, cy - (1 - O) * 2.2, cz, W, H, .05, O, I, 1, rotY(yaw), false, 0, 10000 + Math.round(W * 2) + 100 * Math.round(H * 2));
+  if (dn + 6 * VF > dyn.length) return;                              // ONE flat quad (not a box: a box's thin side faces smeared the tear's bright centre along the edges)
+  const vt = -(10000 + Math.round(W * 2) + 100 * Math.round(H * 2) + 1), ccx = Math.cos(yaw), ccz = -Math.sin(yaw), y0 = cy - (1 - O) * 2.2, hw = W / 2, hh = H / 2;
+  for (const k of QI) {
+    const sx = k === 0 || k === 3 ? -1 : k === 1 ? 1 : k === 2 ? 1 : -1, sy = k === 0 || k === 1 ? -1 : 1;
+    dyn[dn++] = cx + ccx * sx * hw; dyn[dn++] = y0 + sy * hh; dyn[dn++] = cz + ccz * sx * hw; dyn[dn++] = O; dyn[dn++] = I; dyn[dn++] = 1; dyn[dn++] = 1;
+    dyn[dn++] = sx * hw; dyn[dn++] = sy * hh; dyn[dn++] = vt;
+  }
 }
 function drawRealmTears(t) {                                         // in a realm: the way home (centre) and the gates are all the same blue tear, and every one leads back to the ship
   const T = HUB.tear, list = (T ? [T] : []).concat(HUB.list || []); let any = false;
