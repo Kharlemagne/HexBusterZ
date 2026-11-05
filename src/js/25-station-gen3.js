@@ -11,7 +11,7 @@ const GX0 = -112, GX1 = 112, GZ0 = -124, GZ1 = 124, GY0 = 8, GY1 = 158, GW = GX1
 const stOct = (x, z) => { const q = Math.abs(z) * STN.zf, a = Math.abs(x); return Math.max(a, q, (a + q) / 1.41421); };
 const onStation = (x, z) => stOct(x, z) <= STN.R + .5;
 let ST = null, STN_LOCK = true;                                                // the station is indestructible while STN_LOCK (tests switch it off)
-const stProtected = (x, y, z) => STN_LOCK && OW.gen === 3 && !!ST && !!stGet(x, y, z);
+const stProtected = (x, y, z) => STN_LOCK && !GOD.on && OW.gen === 3 && !!ST && !!stGet(x, y, z);
 const stPut = (x, y, z, id) => { if (x < GX0 || x >= GX1 || z < GZ0 || z >= GZ1 || y < GY0 || y >= GY1) return; ST[((y - GY0) * GD + (z - GZ0)) * GW + (x - GX0)] = id; };
 const stGet = (x, y, z) => (x < GX0 || x >= GX1 || z < GZ0 || z >= GZ1 || y < GY0 || y >= GY1) ? 0 : ST[((y - GY0) * GD + (z - GZ0)) * GW + (x - GX0)];
 const stBox = (x1, y1, z1, x2, y2, z2, id) => { for (let y = y1; y <= y2; y++) for (let z = z1; z <= z2; z++) for (let x = x1; x <= x2; x++) stPut(x, y, z, id); };

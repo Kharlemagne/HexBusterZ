@@ -1,5 +1,6 @@
 # Changelog
 ## Unreleased
+- **DEV GOD MODE** (Options -> DEV GOD MODE): fly (Space up, C / Ctrl down, Shift boost, hover when you let go), cannot be hurt or killed (no void, lava or boss damage), the Helicarrier hull can be broken and built on, free blocks (turns creative inventory on), and the omnitool places a block in open air 4.5 blocks ahead when nothing is in reach (no stacking). COPY GAME STATE… shows and copies one block of JSON: every block change in the current world (grouped by block id, runs as [x,y,z,length]), a legend of block names, and where you stand, to paste to Claude. New tests/god.mjs.
 - Day/night is back to the original gate-and-beam changeover (the high-noon and slow-climb experiments were reverted at Karl's request).
 - **Rift tear edge glitch fixed**: the tear was drawn on a thin box whose side faces smeared the bright centre along the edges; it is now one flat quad, so no box outline shows.
 - **Realm gates are blue rift tears now, and they bring you home**: inside a realm the 3D gate frames are gone. The centre tear and every gate are flat hex plinths with the same blue 2D rift-tear effect as the reactor room. Walking into any of them no longer kills you: it carries you back to the Rift tear on the ship, in the reactor room.

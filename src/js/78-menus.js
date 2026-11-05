@@ -69,7 +69,7 @@ const SCREENS = {
     let h = '<div class="mh">OPTIONS</div>';
     for (const [k, label, min, max, step, fmt] of OPTS) { const v = optV(k); h += '<label class="msl"><span data-lab="' + k + '">' + label + ': ' + fmt(v) + '</span><input type="range" data-set="' + k + '" min="' + min + '" max="' + max + '" step="' + step + '" value="' + v + '"></label>'; }
     const st = SaveStore.doc.settings;
-    h += btn('tinv', 'INVERT MOUSE Y: ' + (st.invertY ? 'ON' : 'OFF'), 'h') + btn('tclock', 'SHOW CLOCK: ' + (st.clock !== false ? 'ON' : 'OFF'), 'h') + btn('tmute', 'SOUND: ' + (muted ? 'MUTED' : 'ON'), 'h') + btn('full', 'FULLSCREEN', 'h')
+    h += btn('tinv', 'INVERT MOUSE Y: ' + (st.invertY ? 'ON' : 'OFF'), 'h') + btn('tclock', 'SHOW CLOCK: ' + (st.clock !== false ? 'ON' : 'OFF'), 'h') + btn('tmute', 'SOUND: ' + (muted ? 'MUTED' : 'ON'), 'h') + btn('full', 'FULLSCREEN', 'h') + btn('god', 'DEV GOD MODE: ' + (st.god ? 'ON' : 'OFF'), 'h') + (st.god ? btn('godcopy', 'COPY GAME STATE…', 'h') : '')
       + btn('pad', 'CONTROLLER SETUP…', 'h') + btn('ctl', 'CONTROLS…', 'h') + (state === 'paused' ? btn('gunpose', 'GUN ARM POSITION…', 'h') : '') + btn('back', 'DONE');
     return h;
   },
@@ -108,6 +108,7 @@ const ACT = {
   gunpose() { resumeGame(); GP.start(); },
   async opencoop() { Menu.say('Opening a room…'); try { await hostCurrentWorld(); Menu.render(); } catch (e) { Menu.say(e.message); } },
   quit() { quitToTitle(); },
+  god() { GOD.set(!GOD.on); Menu.render(); }, godcopy() { GOD.openBox(); },
   tinv() { setSetting('invertY', !SaveStore.doc.settings.invertY); Menu.render(); },
   tclock() { setSetting('clock', SaveStore.doc.settings.clock === false); Menu.render(); },
   tmute() { muted = !muted; setSetting('muted', muted); Menu.render(); },

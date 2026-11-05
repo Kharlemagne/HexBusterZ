@@ -111,13 +111,14 @@ function updatePlayer(dt) {
     if (acc > 0) { const tx = w.moving ? w.x * maxSp : 0, tz = w.moving ? w.z * maxSp : 0; P.vx += (tx - P.vx) * Math.min(1, acc * dt); P.vz += (tz - P.vz) * Math.min(1, acc * dt); }
     P.vy -= 32 * dt;
   }
+  if (GOD.on) GOD.fly(dt, w, k, gp);
   if (P.vy < -70) P.vy = -70;
   P.coyote = P.onGround ? .1 : P.coyote - dt;
   if ((k.Space || gp.a) && P.coyote > 0 && !P.slamming && P.dashT <= 0) { P.vy = 10.2; P.coyote = 0; P.onGround = false; SFX.jump(); }
   if (inLava) { P.vy = Math.max(P.vy, -3); P.hp -= 30 * dt; P.hurtFlash = Math.max(P.hurtFlash, .5); if (k.Space || gp.a) P.vy = 7; if (P.hp <= 0) die(); }
   // wall climb: keep tapping/holding jump against a wall to go up (also gives the native wall slow-fall); otherwise a granted double jump
   P.wallCd = Math.max(0, P.wallCd - dt);
-  if (!P.onGround && !P.slamming && !P.latch && P.dashT <= 0 && !inLava) {
+  if (!P.onGround && !P.slamming && !P.latch && P.dashT <= 0 && !inLava && !GOD.on) {
     const hh = P.h - .4, yy = P.y + .2, pr = P.hw + .07;
     const wall = boxHits(P.x + pr, yy, P.z, .02, hh) || boxHits(P.x - pr, yy, P.z, .02, hh) || boxHits(P.x, yy, P.z + pr, .02, hh) || boxHits(P.x, yy, P.z - pr, .02, hh);
     if (wall) {
@@ -139,6 +140,7 @@ function updatePlayer(dt) {
   } else P.airT += dt;
   P.wasGround = P.onGround;
   if (P.y < -3) { P.y = 20; }
+  if (GOD.on && useChunks && OW.gen >= 2 && P.y < HUB.voidY + 1) P.y = HUB.voidY + 1;
   P.landDip = Math.max(0, P.landDip - dt * .6);
   P.bobT += Math.hypot(P.vx, P.vz) * dt * 1.1;
   P.shake = Math.max(0, P.shake - dt * 2.2); P.hurtFlash = Math.max(0, P.hurtFlash - dt * 2.2); P.hitT = Math.max(0, P.hitT - dt);

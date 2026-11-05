@@ -25,7 +25,7 @@ function reflectProj(p) {
 }
 function hurtPlayer(d, nx, nz, kb, src, who) {
   if (who && who.remote) { if (who.alive && d > 0 && who.inv <= 0) { who.inv = .18; Net.send('hurt', [who.id, d, nx, nz, kb === undefined ? 3 : kb], who.id); } return; }   // the owner applies damage to themselves
-  if (!P.alive || d <= 0) return;
+  if (!P.alive || d <= 0 || GOD.on) return;
   if (src !== 'self' && shieldOn()) { reflectDamage(d, src); return; }
   if (P.dashT > 0 || P.inv > 0) return;
   P.hp -= d; P.inv = .18; P.hurtFlash = 1; P.shake = Math.max(P.shake, .3 + d * .01);
@@ -91,6 +91,7 @@ function drawSlashes() {
   }
 }
 function die() {
+  if (GOD.on) { P.hp = 100; P.alive = true; return; }                       // god mode: unkillable
   P.alive = false; state = 'dead'; Save.stats.deaths++; saveGame();
   bloodBurst(P.x, P.y + 1, P.z, 40, null, 1.5);
   try { document.exitPointerLock(); } catch (e) { }

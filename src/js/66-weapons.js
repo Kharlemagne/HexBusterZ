@@ -65,7 +65,9 @@ function updateWeapons(dt) {
         SFX.dig(); digCd = .12; P.swing = 1;
       } else if (stProtected(h.x, h.y, h.z)) { feed('HELICARRIER HULL — INDESTRUCTIBLE', '#7af0ff'); SFX.shink && SFX.shink(); digCd = .45; }
     }
-    if (R && digCd <= 0 && h) {
+    const ph = h || (R && GOD.on ? GOD.air() : null);                  // god mode: with nothing in reach the block goes into the air in front of you
+    if (R && digCd <= 0 && ph) {
+      const h = ph;
       const px = h.x + h.nx, py = h.y + h.ny, pz = h.z + h.nz;
       if (get(px, py, pz) === 0 || isLava(get(px, py, pz))) {
         let bid = Inv.selBlock();
