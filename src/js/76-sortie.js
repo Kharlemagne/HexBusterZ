@@ -145,8 +145,8 @@ const Sortie = {
   steer(dt, intro) {
     const s = SR.ship; let ax = 0, ay = 0;
     if (SR.auto) { const tg = this.botTarget(); ax = Math.max(-1, Math.min(1, (tg[0] - s.x) * 2)); ay = Math.max(-1, Math.min(1, (tg[1] - s.y) * 2)); }
-    else { if (SRK.KeyA || SRK.ArrowLeft) ax -= 1; if (SRK.KeyD || SRK.ArrowRight) ax += 1; if (SRK.KeyW || SRK.ArrowUp) ay += 1; if (SRK.KeyS || SRK.ArrowDown) ay -= 1; }
-    const sp = s.spd * ((SRK.ShiftLeft || SRK.ShiftRight) ? .45 : 1), len = Math.hypot(ax, ay) || 1, k = Math.min(1, Math.hypot(ax, ay));
+    else { if (SRK.KeyA || SRK.ArrowLeft) ax -= 1; if (SRK.KeyD || SRK.ArrowRight) ax += 1; if (SRK.KeyW || SRK.ArrowUp) ay += 1; if (SRK.KeyS || SRK.ArrowDown) ay -= 1; ax += gp.lx + gp.dx; ay -= gp.ly + gp.dy; }
+    const sp = s.spd * ((SRK.ShiftLeft || SRK.ShiftRight || gp.lt > .3 || gp.slide) ? .45 : 1), len = Math.hypot(ax, ay) || 1, k = Math.min(1, Math.hypot(ax, ay));
     const tvx = ax / len * sp * k, tvy = ay / len * sp * k, a = Math.min(1, dt * 14); s.vx += (tvx - s.vx) * a; s.vy += (tvy - s.vy) * a;
     s.x = Math.max(-SRB.BX + .7, Math.min(SRB.BX - .7, s.x + s.vx * dt)); s.y = Math.max(-SRB.BY + .55, Math.min(SRB.BY - .55, s.y + s.vy * dt)); s.inv = Math.max(0, s.inv - dt);
     SR.cam.x += (s.x * .55 - SR.cam.x) * Math.min(1, dt * 4); SR.cam.y += (s.y * .5 + 2.1 - SR.cam.y) * Math.min(1, dt * 4);
@@ -161,7 +161,7 @@ const Sortie = {
     return [tx, ty];
   },
   fireGuns(dt) {
-    const s = SR.ship, firing = SR.autoFire || SRK.Space || SRK.fire || SR.auto; if (!firing) return;
+    const s = SR.ship, firing = SR.autoFire || SRK.Space || SRK.fire || SR.auto || gp.rt > .3 || gp.a; if (!firing) return;
     const guns = SR.sh.guns; for (let i = 0; i < guns.length; i++) {
       const g = guns[i], d = SRG[g.kind] || SRG.bolt; s.cd[i] -= dt; if (s.cd[i] > 0) continue; s.cd[i] += d.rate / (1 + SR.sh.st.off / 400);
       const gx = s.x + g.x * SR.sh.s, gy = s.y + g.y * SR.sh.s, gz = g.z * SR.sh.s - .3, dm = d.dmg * s.dmgM;

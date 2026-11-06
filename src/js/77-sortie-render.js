@@ -130,7 +130,7 @@ Object.assign(Sortie, {
     const bn = SR.banner; if (bn) { const k = bn.t / bn.dur, a = Math.min(1, bn.t * 4) * Math.min(1, (bn.dur - bn.t) * 3), flash = bn.txt === 'CRISIS ALERT' || bn.txt === 'WARNING';
       c.textAlign = 'center'; c.textBaseline = 'middle'; if (flash) { c.fillStyle = 'rgba(255,40,40,' + (.1 + .1 * Math.sin(SR.T * 14)) * a + ')'; c.fillRect(0, 0, W, H); }
       c.fillStyle = 'rgba(0,0,0,' + .45 * a + ')'; c.fillRect(0, H * .3 - 40 * u, W, 100 * u); c.font = F(flash ? 54 : 38); c.fillStyle = rgb(bn.col, a); c.fillText(bn.txt, W / 2, H * .3 + 2 * u); c.font = F(14); c.fillStyle = 'rgba(255,255,255,' + a * .8 + ')'; c.fillText(bn.sub, W / 2, H * .3 + 40 * u); c.textBaseline = 'top'; }
-    if (SR.phase === 'intro') { c.textAlign = 'center'; c.font = F(11); c.fillStyle = 'rgba(255,255,255,.6)'; c.fillText('WASD / ARROWS MOVE   ·   SHIFT FOCUS   ·   X BOMB   ·   F AUTO-FIRE   ·   ESC PAUSE', W / 2, H - 60 * u); }
+    if (SR.phase === 'intro') { c.textAlign = 'center'; c.font = F(11); c.fillStyle = 'rgba(255,255,255,.6)'; c.fillText('WASD / ARROWS MOVE   ·   SHIFT FOCUS   ·   X BOMB   ·   F AUTO-FIRE   ·   ESC PAUSE   ·   PAD: STICK MOVE · A / RT FIRE · LT FOCUS · X BOMB · Y AUTO · START PAUSE', W / 2, H - 60 * u); }
     if (SR.pause) { c.fillStyle = 'rgba(0,0,10,.72)'; c.fillRect(0, 0, W, H); c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = F(40); c.fillStyle = rgb(A, 1); c.fillText('PAUSED', W / 2, H * .42); c.font = F(14); c.fillStyle = '#fff'; c.fillText('ESC — RESUME      Q — ABORT SORTIE AND RETURN TO THE HANGAR', W / 2, H * .52); c.textBaseline = 'top'; }
     if (SR.phase === 'result' && SR.result) this.resultCard(c, W, H, u, F, rgb, A, B);
   },

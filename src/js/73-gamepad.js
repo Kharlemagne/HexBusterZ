@@ -1,5 +1,5 @@
 // ---------------- gamepad ----------------
-const gp = { on: false, active: false, slide: false, lx: 0, ly: 0, rx: 0, ry: 0, lt: 0, rt: 0, a: false, b: false, prevD: {}, prevRaw: [], blocked: false, idx: 0, lastRaw: '' };
+const gp = { dx: 0, dy: 0, on: false, active: false, slide: false, lx: 0, ly: 0, rx: 0, ry: 0, lt: 0, rt: 0, a: false, b: false, prevD: {}, prevRaw: [], blocked: false, idx: 0, lastRaw: '' };
 let lastRumble = 0;
 function rumble(strong, weak, ms) {
   if (!gp.on || performance.now() - lastRumble < 70) return; lastRumble = performance.now();
@@ -88,7 +88,7 @@ function pollGamepad() {
   let pads = []; try { pads = navigator.getGamepads ? (navigator.getGamepads() || []) : []; gp.blocked = false; } catch (e) { pads = []; gp.blocked = true; }
   const pad = pickPad(pads);
   padStatus(pad);
-  if (!pad) { gp.on = false; gp.lx = gp.ly = gp.rx = gp.ry = gp.lt = gp.rt = 0; gp.a = gp.b = gp.slide = false; if (state === 'padsetup') padSetupPoll(null); return; }
+  if (!pad) { gp.on = false; gp.lx = gp.ly = gp.rx = gp.ry = gp.lt = gp.rt = 0; gp.a = gp.b = gp.slide = false; gp.dx = gp.dy = 0; if (state === 'padsetup') padSetupPoll(null); return; }
   gp.on = true; gp.idx = pad.index;
   if (state === 'padsetup') { padSetupPoll(pad); return; }
   const dz = (x, y) => { const m = Math.hypot(x, y); if (m < .18) return [0, 0]; const k = Math.min(1, (m - .18) / .82) / m; return [x * k, y * k]; };
@@ -96,6 +96,7 @@ function pollGamepad() {
   const bi = i => { const bb = pad.buttons[i]; return !!bb && (bb.pressed || bb.value > .5); };
   const down = {}; for (const n of PAD_NAMES) down[n] = dval(pad, padMap[n]) > .5;
   if (!padCustom) { down.dash = down.dash || bi(10); down.xcross = down.xcross || bi(11); down.next = down.next || bi(12); down.prev = down.prev || bi(13); down.dl = bi(14); down.dr = bi(15); }
+  gp.dx = (bi(15) ? 1 : 0) - (bi(14) ? 1 : 0); gp.dy = (bi(13) ? 1 : 0) - (bi(12) ? 1 : 0);          // d-pad as a second steering input (crisis sortie)
   const pr = n => down[n] && !gp.prevD[n];
   gp.slide = down.dash; gp.lt = dval(pad, padMap.alt); gp.rt = dval(pad, padMap.fire); gp.a = down.jump;
   // any raw button counts as activity (so START / any button works even on an unmapped layout)
@@ -114,6 +115,8 @@ function pollGamepad() {
   } else if (state === 'inv') padInv(rose, nav);
   else if (state === 'menu' || state === 'paused') padMenu(rose, nav);
   else if (state === 'dead') { if (rawRise) startGame(); }
+  else if (state === 'sortie') padSortie(rose);
+  else if (state === 'builder') padBuilder(rose, nav);
   else if (state !== 'play') { /* pad setup, etc. */ }
   else {
     if (rose.has(8)) { openInv(); for (const n in down) gp.prevD[n] = down[n]; return; }               // BACK / SELECT = backpack + character
@@ -167,4 +170,26 @@ function padInvMark() {
   const c = Inv.pc || { r: 3, c: 0 }, idx = c.r === 3 ? c.c : 9 + c.r * 9 + c.c;
   document.querySelectorAll('#inv .ic.pc').forEach(e => e.classList.remove('pc'));
   const cell = document.querySelector('#inv .ic[data-i="' + idx + '"]'); if (cell) { cell.classList.add('pc'); const r = cell.getBoundingClientRect(); mpos.x = r.left + r.width * .6; mpos.y = r.top + r.height * .6; updateInvCursor(); }
+}
+
+
+// ---- crisis sortie: sticks / d-pad fly, A or RT fires, LT / LB focus (slow), X or B bomb, Y auto-fire, START pause ----
+function padSortie(rose) {
+  if (!SR.on) return; const K = c => Sortie.keydown({ code: c });
+  if (SR.phase === 'result') { if (rose.has(0) || rose.has(9)) K('Enter'); else if (rose.has(2) || rose.has(3)) K('KeyR'); return; }
+  if (rose.has(9)) { K('Escape'); return; }
+  if (SR.pause) { if (rose.has(1) || rose.has(8)) K('KeyQ'); return; }
+  if (rose.has(2) || rose.has(1) || rose.has(5)) K('KeyX'); if (rose.has(3)) K('KeyF');
+}
+// ---- ship builder: stick / d-pad move the cursor, R-stick orbits, LB / RB depth, LT / RT part, A place, B remove, X turn, Y group, SELECT undo, START exit ----
+function padBuilder(rose, nav) {
+  const Y_ = Yard; if (!Y_ || state !== 'builder') return; const now = performance.now(), dt = Math.min(.05, (now - (gp.tB || now)) / 1000); gp.tB = now;
+  if (Math.abs(gp.rx) + Math.abs(gp.ry) > .05) { Y_.yaw += gp.rx * dt * 2.4; Y_.pitch = Math.max(-1.45, Math.min(1.45, Y_.pitch + gp.ry * dt * 1.7)); }
+  if (nav.left) Y_.move('l'); if (nav.right) Y_.move('r'); if (nav.up) Y_.move('u'); if (nav.down) Y_.move('d');
+  const K = c => Y_.keydown({ code: c });
+  if (rose.has(4)) Y_.move('f'); if (rose.has(5)) Y_.move('n');
+  if (rose.has(6)) Y_.step(-1); if (rose.has(7)) Y_.step(1);
+  if (rose.has(0)) Y_.place(); if (rose.has(1)) Y_.remove(); if (rose.has(2)) K('KeyE');
+  if (rose.has(3)) { const c = SPD.cats, i = c.findIndex(x => x.id === Y_.cat); Y_.setCat(c[(i + 1) % c.length].id); }
+  if (rose.has(8)) Y_.doUndo(true); if (rose.has(9)) K('Escape');
 }
