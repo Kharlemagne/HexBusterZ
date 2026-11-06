@@ -4,8 +4,8 @@ function resize() {
   canvas.width = Math.max(2, Math.floor((innerWidth || 640) * r)); canvas.height = Math.max(2, Math.floor((innerHeight || 360) * r)); if (gl) gl.viewport(0, 0, canvas.width, canvas.height);
 }
 addEventListener('resize', resize);
-function pushOutline(x, y, z) {
-  const t = .035, c = [1, 1, .85];
+function pushOutline(x, y, z, c, t) {
+  c = c || [1, 1, .85]; t = t || .035;
   for (let a = 0; a < 2; a++) for (let b = 0; b < 2; b++) {
     const ox = a - .5, oy = b - .5;
     pushBox(x + .5 + ox * 1.01, y + .5 + oy * 1.01, z + .5, t, t, 1.04, c[0], c[1], c[2], null, false);
@@ -48,7 +48,8 @@ function renderFrame(dt) {
   drawHaz(T);
   drawLockOn(); drawSlashes(); drawLatchFx();
   drawEnemies(); drawRemotePlayers(T, dt); drawDrops(); drawParticles(); drawEProjs(); drawBeams(state === 'play' ? dt : 0); drawBombs();
-  if (state === 'play' && P.weapon === 4) { const h = targetBlock(); if (h) pushOutline(h.x, h.y, h.z); }
+  if (state === 'play' && P.weapon === 4) { const h = targetBlock(); if (h) pushOutline(h.x, h.y, h.z);
+    if (GOD.on) { const g = h ? { x: h.x + h.nx, y: h.y + h.ny, z: h.z + h.nz } : GOD.air(); if (g && get(g.x, g.y, g.z) === 0) pushOutline(g.x, g.y, g.z, [1, .25, .85], .05); } }     // god mode: a pink cage where the next block will land
   flushDyn();
   if (OW.gen === 3 && mode === 'hub') { drawVatGlass(T); drawStationGlass(T); drawHangarHolo(T); drawCoreGlass(T); drawRiftTear(T); }
   if (OW.gen === 4 && mode === 'hub') drawRealmTears(T);
