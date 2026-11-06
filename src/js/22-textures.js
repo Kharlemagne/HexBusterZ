@@ -4,6 +4,7 @@
 //  data/blocks.json still decides the colour and the texture adds the pattern (the shader scales by 1.6, which leaves headroom for
 //  bright accents like neon traces). Tile index = block id * 2 (+1 for the top face); tiles 64+ are for entities.
 // ============================================================
+let ATLAS_CV = null, ATLAS_PX = null;                           // the painted texture atlas (canvas + pixels), read by the item icons
 const TILE = { WHITE: 0, GRAIN: 64, PLATE: 65, FLESHY: 66, BONEY: 67, GLOW: 68, CLOTH: 69 };
 // ids 0..31 use tiles 0..63; the city blocks (32..47, and every slab made from them) use tiles 128..159
 const PAINT3_KEYS = ['perf', 'corr', 'diam', 'vent', 'rack', 'greeble', 'slate', 'marble', 'tile', 'crate', 'truss', 'lab', 'screen', 'vat', 'wire', 'ledface', 'cskeys', 'csslate', 'csbody'];

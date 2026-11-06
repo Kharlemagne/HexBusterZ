@@ -66,7 +66,7 @@ function closeInv() {
   saveSoon();
 }
 const invCell = (s, i, extra) => '<div data-i="' + i + '" class="ic' + (i < 9 ? ' hb' : '') + (i === Inv.sel ? ' sel' : '') + (extra || '') + '" onclick="Inv.click(' + i + ',false,event.shiftKey)" oncontextmenu="Inv.click(' + i + ',true,event.shiftKey);return false">'
-  + (s ? '<u style="background:' + itemColor(s.k) + '"></u><em>' + itemName(s.k) + '</em><b>' + s.n + '</b>' : '') + (i < 9 ? '<small>' + (i + 1) + '</small>' : '') + '</div>';
+  + (s ? iconTag(s.k) + '<em>' + itemName(s.k) + '</em><b>' + s.n + '</b>' : '') + (i < 9 ? '<small>' + (i + 1) + '</small>' : '') + '</div>';
 function invWeapon(i) { if (weaponOK(i)) { switchWeapon(i); renderInv(); } }
 function renderInv() {
   const st = Save.stats;
@@ -76,7 +76,7 @@ function renderInv() {
     + '<div class="stats">HP ' + Math.max(0, Math.round(P.hp)) + ' · RUNS ' + Save.runs + ' · WINS ' + Save.wins + '<br>KILLS ' + st.kills + ' · BOSSES ' + st.bosses + '</div></div></div>';
   h += '<div class="ig">'; for (let i = 9; i < 36; i++) h += invCell(Inv.slots[i], i);
   h += '</div><div class="ig hbrow">'; for (let i = 0; i < 9; i++) h += invCell(Inv.slots[i], i); h += '</div>';
-  if (Inv.creative) { h += '<div class="sb-l">CREATIVE — click a block to grab a full stack</div><div class="ig cat">'; for (const [id, nm] of DATA.blocks.build) h += '<div class="ic" onclick="Inv.cursor={k:' + id + ',n:99};renderInv()"><u style="background:' + itemColor(id) + '"></u><em>' + nm + '</em></div>'; h += '</div>'; }
+  if (Inv.creative) { h += '<div class="sb-l">CREATIVE — click a block to grab a full stack</div><div class="ig cat">'; for (const [id, nm] of DATA.blocks.build) h += '<div class="ic" onclick="Inv.cursor={k:' + id + ',n:99};renderInv()">' + iconTag(id) + '<em>' + nm + '</em></div>'; h += '</div>'; }
   h += '<div class="invbtn"><button onclick="Inv.sort();renderInv()">SORT BAG</button><button onclick="Inv.cursor=null;Inv.changed();renderInv()">TRASH HELD</button><button onclick="Inv.creative=!Inv.creative;Inv.changed();renderInv()">CREATIVE: ' + (Inv.creative ? 'ON' : 'OFF') + '</button><button onclick="closeInv()">CLOSE (I)</button></div>';
   h += '<div class="sh-f">CLICK pick up / drop / swap · RIGHT-CLICK half or one · SHIFT-CLICK bag ⇄ hotbar · 1-9 pick a hotbar slot · the omnitool places from the selected slot</div>';
   el.inv.innerHTML = h; updateInvCursor(); if (gp.active) padInvMark();
@@ -90,12 +90,12 @@ function animateCharPreview() {
 }
 function updateInvCursor() {
   const c = Inv.cursor, e = el.invcur; if (!invOpen || !c) { e.style.display = 'none'; return; }
-  e.style.display = 'block'; e.style.left = (mpos.x + 10) + 'px'; e.style.top = (mpos.y + 10) + 'px'; e.innerHTML = '<u style="background:' + itemColor(c.k) + '"></u>' + itemName(c.k) + ' ×' + c.n;
+  e.style.display = 'block'; e.style.left = (mpos.x + 10) + 'px'; e.style.top = (mpos.y + 10) + 'px'; e.innerHTML = iconTag(c.k) + itemName(c.k) + ' ×' + c.n;
 }
 function drawBuildBar() {                                                           // the little 9-slot bar shown while the omnitool is in hand
   const showB = P.weapon === 4; css(el.bsel, 'display', showB ? 'flex' : 'none'); if (!showB) return;
   let key = '' + Inv.sel + Inv.creative; for (let i = 0; i < 9; i++) { const s = Inv.slots[i]; key += s ? s.k + ':' + s.n + ',' : '-,'; }
   if (key === Inv.shown) return; Inv.shown = key;
-  let h = ''; for (let i = 0; i < 9; i++) { const s = Inv.slots[i]; h += '<div class="bc' + (i === Inv.sel ? ' sel' : '') + '">' + (s ? '<u style="background:' + itemColor(s.k) + '"></u><b>' + (Inv.creative && typeof s.k === 'number' ? '∞' : s.n) + '</b>' : '') + '</div>'; }
+  let h = ''; for (let i = 0; i < 9; i++) { const s = Inv.slots[i]; h += '<div class="bc' + (i === Inv.sel ? ' sel' : '') + '">' + (s ? iconTag(s.k) + '<b>' + (Inv.creative && typeof s.k === 'number' ? '∞' : s.n) + '</b>' : '') + '</div>'; }
   el.bsel.innerHTML = h + '<div class="bn">' + (Inv.slots[Inv.sel] ? itemName(Inv.slots[Inv.sel].k) : 'EMPTY') + '</div>';
 }

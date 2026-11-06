@@ -1,5 +1,6 @@
 # Changelog
 ## Unreleased
+- **Item icons**: every block in the hotbar, inventory, creative palette and cursor tip now has a real 2D picture instead of a colour square: a small isometric cube built from the same painted textures and colours the world uses (netherrack, circuit, hazard stripes and brick all look like themselves, neon blocks glow), and a hand-drawn pink crystal for the demon shard. Icons are made once and cached.
 - **DEV GOD MODE** (Options -> DEV GOD MODE): fly (Space up, C / Ctrl down, Shift boost, hover when you let go), cannot be hurt or killed (no void, lava or boss damage), the Helicarrier hull can be broken and built on, free blocks (turns creative inventory on), and the omnitool places a block in open air 4.5 blocks ahead when nothing is in reach (no stacking). COPY GAME STATE… shows and copies one block of JSON: every block change in the current world (grouped by block id, runs as [x,y,z,length]), a legend of block names, and where you stand, to paste to Claude. New tests/god.mjs.
 - Day/night is back to the original gate-and-beam changeover (the high-noon and slow-climb experiments were reverted at Karl's request).
 - **Rift tear edge glitch fixed**: the tear was drawn on a thin box whose side faces smeared the bright centre along the edges; it is now one flat quad, so no box outline shows.
