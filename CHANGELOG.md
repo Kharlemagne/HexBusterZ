@@ -1,5 +1,6 @@
 # Changelog
 ## Unreleased
+- **God mode on a controller**: A flies up, B flies down, X (or L3) boosts, and dash is off while god mode is on. Placing blocks in the air already works with LT (place) / RT (break) on the omnitool.
 - **Controller support in the Crisis Sortie and the ship builder**: Sortie: left stick or d-pad flies, A / RT fires, LT focus (slow), X / B / RB bomb, Y auto-fire, START pause (B or BACK quits from pause), A / X on the result screen continue / retry. Ship builder: stick / d-pad move the cursor, right stick orbits, LB / RB depth, LT / RT change part, A place, B remove, X turn, Y next group, BACK undo, START exit. Both screens list the pad controls in their help text. New tests/padmodes.mjs (fake pad).
 - **God mode placement cage**: with the omnitool out in god mode, a pink wire cage always shows the exact spot the next block will land (against a surface or in mid-air), next to the usual yellow outline on the block you're aiming at.
 - **Item icons**: every block in the hotbar, inventory, creative palette and cursor tip now has a real 2D picture instead of a colour square: a small isometric cube built from the same painted textures and colours the world uses (netherrack, circuit, hazard stripes and brick all look like themselves, neon blocks glow), and a hand-drawn pink crystal for the demon shard. Icons are made once and cached.

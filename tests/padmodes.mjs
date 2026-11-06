@@ -29,4 +29,10 @@ await press(1); check('B removes it', (await Y(() => __g.Yard.blocks.size)) === 
 const yw = await Y(() => __g.Yard.yaw); await Y(() => { __pad.axes[2] = 1; }); await page.waitForTimeout(600); await Y(() => { __pad.axes[2] = 0; });
 check('the right stick orbits the camera', Math.abs((await Y(() => __g.Yard.yaw)) - yw) > .1);
 await press(9); check('START leaves the builder', await Y(() => __g.state() !== 'builder'));
+// --- god mode flight on the pad
+await Y(() => { __g.setState('play'); const P = __g.P; P.x = .5; P.z = 14.5; P.y = 82; __g.OW.update([{ x: P.x, z: P.z }], 30000); __g.OW.pump(30000); __g.GOD.set(true); });
+const gy0 = await Y(() => __g.P.y); await Y(() => { __pad.buttons[0] = { pressed: true, value: 1 }; }); await page.waitForTimeout(1500); await Y(() => { __pad.buttons[0] = { pressed: false, value: 0 }; });
+const gy1 = await Y(() => __g.P.y); check('god mode: A flies up', gy1 > gy0 + .4, gy0 + ' -> ' + gy1);
+await Y(() => { __pad.buttons[1] = { pressed: true, value: 1 }; }); await page.waitForTimeout(1500); await Y(() => { __pad.buttons[1] = { pressed: false, value: 0 }; });
+check('god mode: B flies down', (await Y(() => __g.P.y)) < gy1 - .4);
 await g.close(); done(g.errors);

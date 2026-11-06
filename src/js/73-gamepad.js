@@ -1,5 +1,5 @@
 // ---------------- gamepad ----------------
-const gp = { dx: 0, dy: 0, on: false, active: false, slide: false, lx: 0, ly: 0, rx: 0, ry: 0, lt: 0, rt: 0, a: false, b: false, prevD: {}, prevRaw: [], blocked: false, idx: 0, lastRaw: '' };
+const gp = { dn: false, dx: 0, dy: 0, on: false, active: false, slide: false, lx: 0, ly: 0, rx: 0, ry: 0, lt: 0, rt: 0, a: false, b: false, prevD: {}, prevRaw: [], blocked: false, idx: 0, lastRaw: '' };
 let lastRumble = 0;
 function rumble(strong, weak, ms) {
   if (!gp.on || performance.now() - lastRumble < 70) return; lastRumble = performance.now();
@@ -88,7 +88,7 @@ function pollGamepad() {
   let pads = []; try { pads = navigator.getGamepads ? (navigator.getGamepads() || []) : []; gp.blocked = false; } catch (e) { pads = []; gp.blocked = true; }
   const pad = pickPad(pads);
   padStatus(pad);
-  if (!pad) { gp.on = false; gp.lx = gp.ly = gp.rx = gp.ry = gp.lt = gp.rt = 0; gp.a = gp.b = gp.slide = false; gp.dx = gp.dy = 0; if (state === 'padsetup') padSetupPoll(null); return; }
+  if (!pad) { gp.on = false; gp.lx = gp.ly = gp.rx = gp.ry = gp.lt = gp.rt = 0; gp.a = gp.b = gp.slide = gp.dn = false; gp.dx = gp.dy = 0; if (state === 'padsetup') padSetupPoll(null); return; }
   gp.on = true; gp.idx = pad.index;
   if (state === 'padsetup') { padSetupPoll(pad); return; }
   const dz = (x, y) => { const m = Math.hypot(x, y); if (m < .18) return [0, 0]; const k = Math.min(1, (m - .18) / .82) / m; return [x * k, y * k]; };
@@ -98,7 +98,7 @@ function pollGamepad() {
   if (!padCustom) { down.dash = down.dash || bi(10); down.xcross = down.xcross || bi(11); down.next = down.next || bi(12); down.prev = down.prev || bi(13); down.dl = bi(14); down.dr = bi(15); }
   gp.dx = (bi(15) ? 1 : 0) - (bi(14) ? 1 : 0); gp.dy = (bi(13) ? 1 : 0) - (bi(12) ? 1 : 0);          // d-pad as a second steering input (crisis sortie)
   const pr = n => down[n] && !gp.prevD[n];
-  gp.slide = down.dash; gp.lt = dval(pad, padMap.alt); gp.rt = dval(pad, padMap.fire); gp.a = down.jump;
+  gp.slide = down.dash; gp.lt = dval(pad, padMap.alt); gp.rt = dval(pad, padMap.fire); gp.a = down.jump; gp.dn = down.xcross;
   // any raw button counts as activity (so START / any button works even on an unmapped layout)
   let rawRise = false, anyRaw = false; const rose = new Set();                    // raw (standard-layout) buttons that went down this frame, used by the menus
   pad.buttons.forEach((bb, i) => { const on = bb.pressed || bb.value > .5; if (on) { anyRaw = true; if (!gp.prevRaw[i]) { rawRise = true; rose.add(i); gp.lastRaw = 'BUTTON ' + i; } } gp.prevRaw[i] = on; });
@@ -122,7 +122,7 @@ function pollGamepad() {
     if (rose.has(8)) { openInv(); for (const n in down) gp.prevD[n] = down[n]; return; }               // BACK / SELECT = backpack + character
     if (pr('start') || rose.has(9)) { openPause(); for (const n in down) gp.prevD[n] = down[n]; return; }   // START = game menu
     if (pr('xcross')) P.cEdge = true;
-    if (pr('dash')) tryDash();
+    if (pr('dash') && !GOD.on) tryDash();
     if (pr('jump')) P.jEdge = true;
     if (pr('interact')) { if (!tryInteract()) switchWeapon(P.lastWeapon); }
     if (pr('prev')) nextWeapon(-1);

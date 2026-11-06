@@ -1,17 +1,17 @@
 // ============================================================
 //  DEV GOD MODE (Options -> DEV GOD MODE). Fly, cannot be hurt or killed, the Helicarrier is editable, free blocks that can be placed in mid-air,
 //  and COPY GAME STATE: one block of text with every block change in the current world + where you stand, to paste to Claude.
-//  Space = up, C / Ctrl = down, Shift = boost. Right-click with the omnitool on empty air puts a block 4.5 blocks in front of you.
+//  Space / A = up, C / Ctrl / B = down, Shift / X = boost. Right-click with the omnitool on empty air puts a block 4.5 blocks in front of you.
 // ============================================================
 const GOD = {
   get on() { return !!SaveStore.doc.settings.god; },
   set(v) {
     v = !!v; if (v === this.on) return; setSetting('god', v);
     if (v) { this.wasCreative = Inv.creative; Inv.creative = true; Inv.changed && Inv.changed(); } else if (this.wasCreative === false) { Inv.creative = false; Inv.changed && Inv.changed(); }
-    P.vx = P.vy = P.vz = 0; try { feed(v ? 'GOD MODE ON — SPACE UP · C DOWN · SHIFT BOOST' : 'GOD MODE OFF', v ? '#ffd24a' : '#9aa'); } catch (e) { }
+    P.vx = P.vy = P.vz = 0; try { feed(v ? 'GOD MODE ON — SPACE/A UP · C/B DOWN · SHIFT/X BOOST' : 'GOD MODE OFF', v ? '#ffd24a' : '#9aa'); } catch (e) { }
   },
   fly(dt, w, k, gp) {                                          // called by updatePlayer: replaces gravity with free flight (blocks still stop you)
-    const sp = (k.ShiftLeft || k.ShiftRight ? 34 : 14), up = (k.Space || gp.a ? 1 : 0) - (k.KeyC || k.ControlLeft || k.ControlRight || gp.b ? 1 : 0);
+    const sp = (k.ShiftLeft || k.ShiftRight || gp.slide ? 34 : 14), up = (k.Space || gp.a ? 1 : 0) - (k.KeyC || k.ControlLeft || k.ControlRight || gp.dn ? 1 : 0);
     const kk = Math.min(1, 10 * dt); P.vy += 32 * dt;                                  // undo this frame's gravity
     P.vx += ((w.moving ? w.x * sp : 0) - P.vx) * kk; P.vz += ((w.moving ? w.z * sp : 0) - P.vz) * kk; P.vy += (up * sp * .8 - P.vy) * kk;
     P.sliding = false; P.slamming = false; P.dashT = 0; P.latch = null; P.onGround = false; P.airT = 0; P.hp = 100; P.hurtFlash = 0;
