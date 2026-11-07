@@ -5,7 +5,7 @@
 const SPLASHES = ['Also try HELLGATES!', 'Hurtling through the deep!', 'The Helicarrier is always home!', 'Don\'t look at the sun!', 'Skeleton robot, black!', 'Bullet time!', '100% voxel!', 'Now with half blocks!', 'Eldritch-approved!', 'Mind the lava.', 'Seeds are forever!', 'Press I for your backpack!', 'Slide into the shield!', 'The moon blinks.', 'Cyberpunk, but worse!', 'Made with Claude!'];
 const SAVE_SLOTS = 4;
 const Menu = {
-  stack: ['title'], sel: '', hostMode: false, msg: '', busy: false,
+  pin: '', devOK: false, stack: ['title'], sel: '', hostMode: false, msg: '', busy: false,
   go(name, arg) { this.stack.push(name); this.arg = arg; this.render(); },
   back() { if (this.stack.length > 1) { this.stack.pop(); this.render(); } else if (state === 'paused') resumeGame(); },
   show(name) { this.stack = [name]; this.msg = ''; this.render(); },
@@ -31,6 +31,7 @@ const OPTS = [                                                    // [key, label
   ['sens', 'MOUSE SENSITIVITY', .25, 2, .05, v => Math.round(v * 100) + '%'], ['shake', 'SCREEN SHAKE', 0, 1, .05, v => Math.round(v * 100) + '%']
 ];
 const optV = k => { const v = SaveStore.doc.settings[k]; return v === undefined || v === null ? ({ music: .7, sfx: .8, renderDist: 7, fov: 93, sens: 1, shake: 1 })[k] : v; };
+const DEV_PASS = '300592', pinShown = () => '*'.repeat(Menu.pin.length) + '·'.repeat(Math.max(0, DEV_PASS.length - Menu.pin.length));
 const SCREENS = {
   title() {
     return btn('sp', 'SINGLEPLAYER') + (COOP_ENABLED ? btn('mp', 'MULTIPLAYER') : '') + btn('opt', 'OPTIONS', 'h') + btn('ctl', 'CONTROLS', 'h') + btn('savedata', 'SAVE DATA · EXPORT / IMPORT', 'sm')
@@ -69,14 +70,25 @@ const SCREENS = {
     let h = '<div class="mh">OPTIONS</div>';
     for (const [k, label, min, max, step, fmt] of OPTS) { const v = optV(k); h += '<label class="msl"><span data-lab="' + k + '">' + label + ': ' + fmt(v) + '</span><input type="range" data-set="' + k + '" min="' + min + '" max="' + max + '" step="' + step + '" value="' + v + '"></label>'; }
     const st = SaveStore.doc.settings;
-    h += btn('tinv', 'INVERT MOUSE Y: ' + (st.invertY ? 'ON' : 'OFF'), 'h') + btn('tclock', 'SHOW CLOCK: ' + (st.clock !== false ? 'ON' : 'OFF'), 'h') + btn('tmute', 'SOUND: ' + (muted ? 'MUTED' : 'ON'), 'h') + btn('full', 'FULLSCREEN', 'h') + btn('god', 'DEV GOD MODE: ' + (st.god ? 'ON' : 'OFF'), 'h') + (st.god ? btn('godcopy', 'COPY GAME STATE…', 'h') : '')
-      + btn('pad', 'CONTROLLER SETUP…', 'h') + btn('ctl', 'CONTROLS…', 'h') + (state === 'paused' ? btn('gunpose', 'GUN ARM POSITION…', 'h') : '') + btn('back', 'DONE');
+    h += btn('tinv', 'INVERT MOUSE Y: ' + (st.invertY ? 'ON' : 'OFF'), 'h') + btn('tclock', 'SHOW CLOCK: ' + (st.clock !== false ? 'ON' : 'OFF'), 'h') + btn('tmute', 'SOUND: ' + (muted ? 'MUTED' : 'ON'), 'h') + btn('full', 'FULLSCREEN', 'h')
+      + btn('pad', 'CONTROLLER SETUP…', 'h') + btn('ctl', 'CONTROLS…', 'h') + btn('back', 'DONE');
     return h;
   },
   controls() { return '<div class="mh">CONTROLS</div>' + $('ctlsrc').innerHTML + btn('back', 'DONE'); },
+  devlock() {                                                      // passcode gate for DEV MODE: a keypad (or the keyboard), typed digits show as *
+    let h = '<div class="mh">DEV MODE</div><div class="mnote">ENTER THE PASSCODE</div><div class="pin" id="pinbox">' + pinShown() + '</div>';
+    for (const k of ['1', '2', '3', '4', '5', '6', '7', '8', '9']) h += btn('pin', k, 'pk', 'data-k="' + k + '"');
+    h += btn('pinclr', 'C', 'pk') + btn('pin', '0', 'pk', 'data-k="0"') + btn('pinbk', '⌫', 'pk');
+    return h + btn('back', 'BACK') + '<div id="mmsg" class="mmsg">' + esc(Menu.msg) + '</div>';
+  },
+  dev() {
+    const st = SaveStore.doc.settings;
+    return '<div class="mh">DEV MODE</div>' + btn('god', 'DEV GOD MODE: ' + (st.god ? 'ON' : 'OFF'), 'h') + btn('godcopy', 'COPY GAME STATE…', 'h') + btn('gunpose', 'GUN ARM POSITION…') + btn('devrelock', 'LOCK DEV MODE', 'sm') + btn('back', 'BACK')
+      + '<div class="mnote">GOD MODE: FLY (SPACE / A UP · C / B DOWN · SHIFT / X BOOST) · UNKILLABLE · EDIT THE HELICARRIER · FREE BLOCKS PLACED IN MID-AIR</div>';
+  },
   pause() {
     const c = WorldStore.cur, online = Net.role !== 'offline';
-    let h = '<div class="mh">GAME MENU</div>' + btn('resume', 'BACK TO GAME') + btn('opt', 'OPTIONS', 'h') + btn('ctl', 'CONTROLS', 'h') + btn('gunpose', 'GUN ARM POSITION', 'h');
+    let h = '<div class="mh">GAME MENU</div>' + btn('resume', 'BACK TO GAME') + btn('opt', 'OPTIONS', 'h') + btn('ctl', 'CONTROLS', 'h') + btn('dev', 'DEV MODE', 'h');
     if (Net.role === 'host') h += '<div class="mroom">ROOM CODE: <b>' + esc(Coop.code || '…') + '</b> · ' + (players.length - 1) + ' FRIEND(S) CONNECTED</div>';
     else if (Net.role === 'offline' && COOP_ENABLED) h += btn('opencoop', 'OPEN TO CO-OP');
     h += btn('quit', online ? 'DISCONNECT AND QUIT TO TITLE' : 'SAVE AND QUIT TO TITLE', 'sm');
@@ -108,6 +120,9 @@ const ACT = {
   gunpose() { resumeGame(); GP.start(); },
   async opencoop() { Menu.say('Opening a room…'); try { await hostCurrentWorld(); Menu.render(); } catch (e) { Menu.say(e.message); } },
   quit() { quitToTitle(); },
+  dev() { if (Menu.devOK) Menu.go('dev'); else { Menu.pin = ''; Menu.msg = ''; Menu.go('devlock'); } },
+  devrelock() { Menu.devOK = false; Menu.stack.pop(); Menu.render(); },
+  pin(t) { pinKey(t.dataset.k); }, pinclr() { Menu.pin = ''; Menu.say(''); pinDraw(); }, pinbk() { Menu.pin = Menu.pin.slice(0, -1); pinDraw(); },
   god() { GOD.set(!GOD.on); Menu.render(); }, godcopy() { GOD.openBox(); },
   tinv() { setSetting('invertY', !SaveStore.doc.settings.invertY); Menu.render(); },
   tclock() { setSetting('clock', SaveStore.doc.settings.clock === false); Menu.render(); },
@@ -124,6 +139,17 @@ $('mscreen').addEventListener('input', ev => {
 $('mscreen').addEventListener('keydown', ev => {
   if (ev.key === 'Enter' && ev.target.tagName === 'INPUT') { const t = Menu.top(); if (t === 'create') ACT.docreate(); else if (t === 'rename') ACT.dorename(); else if (t === 'mp') ACT.join(); }
   else if (ev.key === 'Escape') Menu.back();
+});
+function pinDraw() { const b = $('pinbox'); if (b) b.textContent = pinShown(); }
+function pinKey(d) {
+  if (Menu.top() !== 'devlock' || !/^\d$/.test(d)) return; if (Menu.pin.length < DEV_PASS.length) Menu.pin += d; pinDraw();
+  if (Menu.pin.length < DEV_PASS.length) return;
+  if (Menu.pin === DEV_PASS) { Menu.devOK = true; Menu.pin = ''; Menu.msg = ''; Menu.stack[Menu.stack.length - 1] = 'dev'; Menu.render(); try { SFX.place && SFX.place(); } catch (e) { } }
+  else { Menu.pin = ''; Menu.say('WRONG PASSCODE'); pinDraw(); try { SFX.empty && SFX.empty(); } catch (e) { } }
+}
+document.addEventListener('keydown', ev => {                      // type the passcode on the keyboard too
+  if (Menu.top() !== 'devlock' || el.menu.classList.contains('hide')) return;
+  if (/^\d$/.test(ev.key)) { pinKey(ev.key); ev.preventDefault(); } else if (ev.key === 'Backspace') { Menu.pin = Menu.pin.slice(0, -1); pinDraw(); ev.preventDefault(); }
 });
 function applySettings() {
   OW.LOAD = Math.round(optV('renderDist')); OW.KEEP = OW.LOAD + 2;

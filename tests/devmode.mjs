@@ -1,0 +1,26 @@
+// DEV MODE page in the game menu: passcode keypad (digits shown as *), god mode + gun arm position live there.
+import { openGame, startPlaying, check, done } from './lib.mjs';
+console.log('dev mode page');
+const g = await openGame({ width: 640, height: 360 }); const { page } = g; await startPlaying(page, 3, false, false);
+const Y = (f, a) => page.evaluate(f, a);
+const click = a => Y(a => document.querySelector('#mscreen [data-act="' + a + '"]').click(), a);
+const key = d => Y(d => document.querySelector('#mscreen [data-act="pin"][data-k="' + d + '"]').click(), d);
+const screen = () => Y(() => document.getElementById('mscreen').dataset.screen);
+await Y(() => { __g.openPause(); });
+check('the game menu has a DEV MODE button and no loose gun-pose button', await Y(() => !!document.querySelector('#mscreen [data-act="dev"]') && !document.querySelector('#mscreen [data-act="gunpose"]')));
+await click('opt'); check('options no longer hold the dev tools', await Y(() => !document.querySelector('#mscreen [data-act="god"]') && !document.querySelector('#mscreen [data-act="gunpose"]')));
+await click('back'); await click('dev'); check('DEV MODE asks for a passcode', (await screen()) === 'devlock');
+for (const d of '123') await key(d);
+const shown = await Y(() => document.getElementById('pinbox').textContent);
+check('typed digits show as * and never as numbers', shown.startsWith('***') && !/\d/.test(shown), shown);
+for (const d of '456') await key(d);
+check('a wrong code is refused and cleared', (await screen()) === 'devlock' && /WRONG/.test(await Y(() => document.getElementById('mmsg').textContent)) && !(await Y(() => document.getElementById('pinbox').textContent.includes('*'))));
+for (const d of '300592') await key(d);
+check('the right code (300592) opens the dev page', (await screen()) === 'dev');
+check('the dev page holds god mode, copy state and gun arm position', await Y(() => ['god', 'godcopy', 'gunpose'].every(a => document.querySelector('#mscreen [data-act="' + a + '"]'))));
+await click('god'); check('the god mode button works', await Y(() => __g.GOD.on));
+await click('god');
+await click('back'); await click('dev'); check('it stays unlocked this session', (await screen()) === 'dev');
+await click('devrelock'); await click('dev'); check('LOCK DEV MODE asks for the code again', (await screen()) === 'devlock');
+await page.keyboard.type('300592'); await page.waitForTimeout(300); check('the passcode also works from the keyboard', (await screen()) === 'dev');
+await g.close(); done(g.errors);
