@@ -75,11 +75,9 @@ const SCREENS = {
     return h;
   },
   controls() { return '<div class="mh">CONTROLS</div>' + $('ctlsrc').innerHTML + btn('back', 'DONE'); },
-  devlock() {                                                      // passcode gate for DEV MODE: a keypad (or the keyboard), typed digits show as *
-    let h = '<div class="mh">DEV MODE</div><div class="mnote">ENTER THE PASSCODE</div><div class="pin" id="pinbox">' + pinShown() + '</div>';
-    for (const k of ['1', '2', '3', '4', '5', '6', '7', '8', '9']) h += btn('pin', k, 'pk', 'data-k="' + k + '"');
-    h += btn('pinclr', 'C', 'pk') + btn('pin', '0', 'pk', 'data-k="0"') + btn('pinbk', '⌫', 'pk');
-    return h + btn('back', 'BACK') + '<div id="mmsg" class="mmsg">' + esc(Menu.msg) + '</div>';
+  devlock() {                                                      // passcode gate for DEV MODE: just type it; the digits show as *
+    return '<div class="mh">DEV MODE</div><div class="mnote">TYPE THE PASSCODE</div><div class="pinw"><div class="pin" id="pinbox">' + pinShown() + '</div><input id="pinin" data-focus inputmode="numeric" maxlength="6" autocomplete="off" spellcheck="false" aria-label="passcode"></div>'
+      + btn('back', 'BACK') + '<div id="mmsg" class="mmsg">' + esc(Menu.msg) + '</div>';
   },
   dev() {
     const st = SaveStore.doc.settings;
@@ -122,7 +120,6 @@ const ACT = {
   quit() { quitToTitle(); },
   dev() { if (Menu.devOK) Menu.go('dev'); else { Menu.pin = ''; Menu.msg = ''; Menu.go('devlock'); } },
   devrelock() { Menu.devOK = false; Menu.stack.pop(); Menu.render(); },
-  pin(t) { pinKey(t.dataset.k); }, pinclr() { Menu.pin = ''; Menu.say(''); pinDraw(); }, pinbk() { Menu.pin = Menu.pin.slice(0, -1); pinDraw(); },
   god() { GOD.set(!GOD.on); Menu.render(); }, godcopy() { GOD.openBox(); },
   tinv() { setSetting('invertY', !SaveStore.doc.settings.invertY); Menu.render(); },
   tclock() { setSetting('clock', SaveStore.doc.settings.clock === false); Menu.render(); },
@@ -141,16 +138,14 @@ $('mscreen').addEventListener('keydown', ev => {
   else if (ev.key === 'Escape') Menu.back();
 });
 function pinDraw() { const b = $('pinbox'); if (b) b.textContent = pinShown(); }
-function pinKey(d) {
-  if (Menu.top() !== 'devlock' || !/^\d$/.test(d)) return; if (Menu.pin.length < DEV_PASS.length) Menu.pin += d; pinDraw();
-  if (Menu.pin.length < DEV_PASS.length) return;
+function pinCheck() {
+  if (Menu.top() !== 'devlock' || Menu.pin.length < DEV_PASS.length) return;
   if (Menu.pin === DEV_PASS) { Menu.devOK = true; Menu.pin = ''; Menu.msg = ''; Menu.stack[Menu.stack.length - 1] = 'dev'; Menu.render(); try { SFX.place && SFX.place(); } catch (e) { } }
-  else { Menu.pin = ''; Menu.say('WRONG PASSCODE'); pinDraw(); try { SFX.empty && SFX.empty(); } catch (e) { } }
+  else { Menu.pin = ''; const i = $('pinin'); if (i) i.value = ''; Menu.say('WRONG PASSCODE'); pinDraw(); try { SFX.empty && SFX.empty(); } catch (e) { } }
 }
-document.addEventListener('keydown', ev => {                      // type the passcode on the keyboard too
-  if (Menu.top() !== 'devlock' || el.menu.classList.contains('hide')) return;
-  if (/^\d$/.test(ev.key)) { pinKey(ev.key); ev.preventDefault(); } else if (ev.key === 'Backspace') { Menu.pin = Menu.pin.slice(0, -1); pinDraw(); ev.preventDefault(); }
-});
+$('mscreen').addEventListener('input', ev => { if (ev.target.id !== 'pinin') return; const v = ev.target.value.replace(/\D/g, '').slice(0, DEV_PASS.length); ev.target.value = v; Menu.pin = v; pinDraw(); pinCheck(); });
+document.addEventListener('keydown', ev => { if (Menu.top() === 'devlock' && !el.menu.classList.contains('hide')) { const i = $('pinin'); if (i && document.activeElement !== i) i.focus(); } }, true);   // typing anywhere on the passcode screen goes into the box
+$('mscreen').addEventListener('click', ev => { if (Menu.top() === 'devlock' && !ev.target.closest('[data-act]')) { const i = $('pinin'); if (i) i.focus(); } });
 function applySettings() {
   OW.LOAD = Math.round(optV('renderDist')); OW.KEEP = OW.LOAD + 2;
   try { applyVolumes(); } catch (e) { }

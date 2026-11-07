@@ -296,4 +296,4 @@ h1.hx::after{color:#00f0ff;transform:translate(5px,-1px);animation:glb 2.3s infi
 
 .ico{background-size:contain;background-repeat:no-repeat;background-position:center;image-rendering:pixelated}
 
-.mb.pk{width:calc(33.33% - 6px);font-size:20px;padding:14px 0;letter-spacing:0}.pin{width:100%;text-align:center;font-size:34px;letter-spacing:16px;color:#ffe96a;min-height:46px;margin:6px 0 10px;text-indent:16px}
+.pinw{position:relative;width:100%}#pinin{position:absolute;inset:0;width:100%;height:100%;opacity:0;font-size:16px;cursor:text;border:0}.pin{width:100%;text-align:center;font-size:34px;letter-spacing:16px;color:#ffe96a;min-height:46px;margin:6px 0 10px;text-indent:16px}
