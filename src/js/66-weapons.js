@@ -4,11 +4,17 @@ function switchWeapon(i) {
   if (i === P.weapon || i < 0 || i > 4) return;
   if (!Save.unlocked[i]) { feed('LOCKED — FORGE IT AT THE SMITH', '#ff8a3a'); SFX.empty(); return; }
   if (i === 4 && mode !== 'hub') { feed('OMNITOOL WORKS IN THE HUB ONLY', '#ff8a3a'); SFX.empty(); return; }
-  P.lastWeapon = P.weapon < 0 ? 0 : P.weapon; P.weapon = i; P.charge = 0; P.zoom = false; P.kick = .12; P.kickRot = -.4;
+  P.lastWeapon = P.weapon < 0 || P.weapon === 4 ? (P.lastWeapon === 4 ? 0 : P.lastWeapon) : P.weapon; P.weapon = i; P.charge = 0; P.zoom = false; P.kick = .12; P.kickRot = -.4;
   hotSlots.forEach((d, k) => d.classList.toggle('on', k === i));
+  { const hd = document.getElementById('hud'); if (hd) hd.classList.toggle('omni', i === 4); }
   txt(el.wname, WNAMES[i] + (i === 4 ? ' · ' + SHAPE_NAMES[P.shape || 0] : ''));
 }
-function nextWeapon(dir) { let i = P.weapon; for (let k = 0; k < 5; k++) { i = (i + dir + 5) % 5; if (weaponOK(i)) { switchWeapon(i); return; } } }
+function nextWeapon(dir) { let i = P.weapon; for (let k = 0; k < 4; k++) { i = (i + dir + 4) % 4; if (weaponOK(i)) { switchWeapon(i); return; } } }
+function toggleOmni() {                                                              // the omnitool is its own mode: D-pad UP in, D-pad UP out
+  if (state !== 'play') return;
+  if (P.weapon === 4) { const b = P.omniBack >= 0 && P.omniBack < 4 && weaponOK(P.omniBack) ? P.omniBack : 0; switchWeapon(b); return; }
+  P.omniBack = P.weapon; switchWeapon(4);
+}
 function recoil(z, r) { rumble(.15 + z * 2, .1 + z * 2, 60); P.kick = Math.min(.3, P.kick + z); P.kickRot += r; P.flashT = .05; }
 function cycleShape(d = 1) { P.shape = ((P.shape || 0) + d + SHAPE_NAMES.length) % SHAPE_NAMES.length; updateWname(); feed('SHAPE: ' + SHAPE_NAMES[P.shape], '#7af0ff'); SFX.place(); }
 function updateWname() { if (typeof el !== 'undefined' && el.wname) txt(el.wname, WNAMES[P.weapon] + (P.weapon === 4 ? ' · ' + SHAPE_NAMES[P.shape || 0] : '')); }

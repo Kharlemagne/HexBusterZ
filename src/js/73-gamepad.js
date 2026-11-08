@@ -95,7 +95,7 @@ function pollGamepad() {
   [gp.lx, gp.ly] = dz(sval(pad, padMap.lx), sval(pad, padMap.ly)); [gp.rx, gp.ry] = dz(sval(pad, padMap.rx), sval(pad, padMap.ry));
   const bi = i => { const bb = pad.buttons[i]; return !!bb && (bb.pressed || bb.value > .5); };
   const down = {}; for (const n of PAD_NAMES) down[n] = dval(pad, padMap[n]) > .5;
-  if (!padCustom) { down.dash = down.dash || bi(10); down.xcross = down.xcross || bi(11); down.next = down.next || bi(12); down.prev = down.prev || bi(13); down.dl = bi(14); down.dr = bi(15); }
+  if (!padCustom) { down.dash = down.dash || bi(10); down.xcross = down.xcross || bi(11); down.dl = bi(14); down.dr = bi(15); }
   gp.dx = (bi(15) ? 1 : 0) - (bi(14) ? 1 : 0); gp.dy = (bi(13) ? 1 : 0) - (bi(12) ? 1 : 0);          // d-pad as a second steering input (crisis sortie)
   const pr = n => down[n] && !gp.prevD[n];
   gp.slide = down.dash; gp.lt = dval(pad, padMap.alt); gp.rt = dval(pad, padMap.fire); gp.a = down.jump; gp.dn = down.xcross;
@@ -125,9 +125,9 @@ function pollGamepad() {
     if (pr('dash') && !GOD.on) tryDash();
     if (pr('jump')) P.jEdge = true;
     if (pr('interact')) { if (!tryInteract()) switchWeapon(P.lastWeapon); }
-    if (pr('prev')) nextWeapon(-1);
-    if (pr('next')) nextWeapon(1);
-    if (P.weapon === 4) { if (!padCustom && pr('dl')) Inv.cycle(-1); if (!padCustom && pr('dr')) Inv.cycle(1); }
+    if (rose.has(12)) toggleOmni();                                                                     // D-PAD UP = omnitool mode on / off
+    if (pr('prev')) { if (P.weapon === 4) Inv.cycle(-1); else nextWeapon(-1); }                           // bumpers cycle blocks while building
+    if (pr('next')) { if (P.weapon === 4) Inv.cycle(1); else nextWeapon(1); }
   }
   for (const n in down) gp.prevD[n] = down[n];
 }

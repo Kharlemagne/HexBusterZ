@@ -3,6 +3,7 @@ import { openGame, startPlaying, check, done } from './lib.mjs';
 console.log('gun arm position mode');
 const g = await openGame({ width: 640, height: 360 }); const { page } = g; await startPlaying(page, 3, false, false);
 await page.evaluate(() => { __g.openPause(); });
+await page.evaluate(() => { __g.Menu.devOK = true; __g.Menu.go('dev'); });
 await page.click('[data-act="gunpose"]');
 const st = await page.evaluate(() => ({ on: __g.GP.on, state: __g.state(), hud: getComputedStyle(document.getElementById('hud')).visibility, box: !!document.getElementById('gpinfo') }));
 check('the pause menu button enters the mode, hides the HUD and shows the readout', st.on && st.state === 'play' && st.hud === 'hidden' && st.box, JSON.stringify(st));

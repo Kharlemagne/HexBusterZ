@@ -33,7 +33,8 @@ const Inv = {
   useSel() { const s = this.slots[this.sel]; if (!s) return false; if (!this.creative) { s.n--; if (s.n <= 0) this.slots[this.sel] = null; this.changed(); } return true; },
   selBlock() { const s = this.slots[this.sel]; return s && typeof s.k === 'number' ? s.k : (this.creative ? DATA.blocks.build[0][0] : 0); },
   cycle(dir) {                                                                      // mouse wheel / d-pad: next hotbar slot that holds a block
-    for (let i = 1; i <= 9; i++) { const j = (this.sel + dir * i + 90) % 9, s = this.slots[j]; if (s && typeof s.k === 'number') { this.sel = j; this.changed(); return; } }
+    const ORD = [9, 10, 11, 12, 13, 14, 15, 16, 17, 0, 1, 2, 3, 4, 5, 6, 7, 8], at = Math.max(0, ORD.indexOf(this.sel));      // both displayed rows, top then bottom
+    for (let i = 1; i <= 18; i++) { const j = ORD[(at + dir * i + 180) % 18], s = this.slots[j]; if (s && typeof s.k === 'number') { this.sel = j; this.changed(); return; } }
   },
   sort() {
     const all = []; for (let i = 9; i < 36; i++) if (this.slots[i]) all.push(this.slots[i]);
@@ -92,10 +93,10 @@ function updateInvCursor() {
   const c = Inv.cursor, e = el.invcur; if (!invOpen || !c) { e.style.display = 'none'; return; }
   e.style.display = 'block'; e.style.left = (mpos.x + 10) + 'px'; e.style.top = (mpos.y + 10) + 'px'; e.innerHTML = iconTag(c.k) + itemName(c.k) + ' ×' + c.n;
 }
-function drawBuildBar() {                                                           // the little 9-slot bar shown while the omnitool is in hand
+function drawBuildBar() {                                                           // the two-row bar (18 slots) shown while the omnitool is in hand
   const showB = P.weapon === 4; css(el.bsel, 'display', showB ? 'flex' : 'none'); if (!showB) return;
-  let key = '' + Inv.sel + Inv.creative; for (let i = 0; i < 9; i++) { const s = Inv.slots[i]; key += s ? s.k + ':' + s.n + ',' : '-,'; }
+  let key = '' + Inv.sel + Inv.creative; for (let i = 0; i < 18; i++) { const s = Inv.slots[i]; key += s ? s.k + ':' + s.n + ',' : '-,'; }
   if (key === Inv.shown) return; Inv.shown = key;
-  let h = ''; for (let i = 0; i < 9; i++) { const s = Inv.slots[i]; h += '<div class="bc' + (i === Inv.sel ? ' sel' : '') + '">' + (s ? iconTag(s.k) + '<b>' + (Inv.creative && typeof s.k === 'number' ? '∞' : s.n) + '</b>' : '') + '</div>'; }
+  let h = ''; for (const i of [9, 10, 11, 12, 13, 14, 15, 16, 17, 0, 1, 2, 3, 4, 5, 6, 7, 8]) { const s = Inv.slots[i]; h += '<div class="bc' + (i === Inv.sel ? ' sel' : '') + '">' + (s ? iconTag(s.k) + '<b>' + (Inv.creative && typeof s.k === 'number' ? '∞' : s.n) + '</b>' : '') + '</div>'; }
   el.bsel.innerHTML = h + '<div class="bn">' + (Inv.slots[Inv.sel] ? itemName(Inv.slots[Inv.sel].k) : 'EMPTY') + '</div>';
 }

@@ -25,7 +25,7 @@ addEventListener('keydown', e => {
   if (e.code === 'Space') P.jEdge = true;
   if (e.code === 'KeyI' || e.code === 'Tab') { openInv(); return; }
   if (e.code === 'KeyE' && tryInteract()) return;
-  if (e.code.startsWith('Digit')) { const n = +e.code.slice(5); if (n >= 1 && n <= 5) switchWeapon(n - 1); }
+  if (e.code.startsWith('Digit')) { const n = +e.code.slice(5); if (n >= 1 && n <= 4) switchWeapon(n - 1); else if (n === 5) toggleOmni(); }
   else if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') { if (!GOD.on) tryDash(); }
   else if (e.code === 'KeyC' || e.code === 'ControlLeft') P.cEdge = true;
   else if (e.code === 'KeyV') cycleShape(e.shiftKey ? -1 : 1);

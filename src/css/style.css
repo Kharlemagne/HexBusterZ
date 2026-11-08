@@ -214,15 +214,15 @@ h1.hx::after{color:#00f0ff;transform:translate(5px,-1px);animation:glb 2.3s infi
 #roomcode{top:48px;left:auto;right:22px;transform:none}
 #mini{top:48px;left:18px;padding:0;border-color:#37f0ff99;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
 #prompt{bottom:150px;color:#fff;border-color:#ffd23acc;animation:bl .8s infinite alternate}
-#wname{bottom:74px;font-size:10px;padding:3px 10px;letter-spacing:4px;color:#ffd23a}
+#wname{bottom:104px;font-size:10px;padding:3px 10px;letter-spacing:4px;color:#ffd23a}
 #style{top:84px;right:22px;width:210px;padding:8px 12px;text-align:right;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
 #rank{font-size:64px;-webkit-text-stroke:1px #000;text-shadow:0 0 14px currentColor}
 #rankname{font-size:11px;letter-spacing:5px}
 #sbar{height:6px;border:1px solid #37f0ff77;background:#021016}
 #score{font-size:20px;letter-spacing:3px;color:#8ff7ff}
 #feed{font-size:11px;letter-spacing:2px}
-/* health + dash + bullet time: one cluster, top centre */
-#hp{left:50%;bottom:auto;top:10px;transform:translateX(-50%);width:min(380px,44vw);padding:8px 14px 9px;
+/* health + dash + bullet time: one cluster, bottom centre */
+#hp{left:50%;top:auto;bottom:12px;transform:translateX(-50%);width:min(380px,44vw);padding:8px 14px 9px;
   background:linear-gradient(180deg,#06222bd9,#031219e6),repeating-linear-gradient(0deg,#37f0ff10 0 1px,transparent 1px 3px);
   border:1px solid #37f0ffaa;box-shadow:inset 0 0 16px #37f0ff30,0 0 14px #37f0ff30;
   clip-path:polygon(14px 0,calc(100% - 14px) 0,100% 14px,100% calc(100% - 6px),calc(100% - 6px) 100%,6px 100%,0 calc(100% - 6px),0 14px)}
@@ -238,17 +238,19 @@ h1.hx::after{color:#00f0ff;transform:translate(5px,-1px);animation:glb 2.3s infi
 #btbar{margin-top:6px;width:auto;height:9px;background:#021016;border:1px solid #6ec8ffaa;transform:none}
 #btbar::before{font-size:7px;letter-spacing:3px;left:6px;top:0;line-height:9px;color:#fff;z-index:2;text-shadow:0 0 3px #000}
 #btbar i{background:#2a5a88}
-/* weapon modes = tab strip along the bottom */
-#hotbar{gap:4px;bottom:12px}
-#hotbar .slot{width:96px;height:34px;padding:3px 8px;font-size:9px;color:#6ab8c4;border-color:#37f0ff55}
+/* weapon modes = a stacked strip down the left, upper centre */
+#hotbar{gap:5px;bottom:auto;top:34%;left:14px;transform:none;flex-direction:column}
+#hotbar .slot{width:112px;height:34px;padding:3px 8px;font-size:9px;color:#6ab8c4;border-color:#37f0ff55;transition:transform .12s}
 .slot b{color:#37f0ff}
-.slot.on{transform:translateY(-4px);color:#fff;border-color:#ffd23a;background:linear-gradient(180deg,#3a3008cc,#1a1404e6),repeating-linear-gradient(0deg,#ffd23a10 0 1px,transparent 1px 3px);box-shadow:inset 0 0 14px #ffd23a33,0 0 12px #ffd23a44}
+.slot.on{transform:translateX(8px);color:#fff;border-color:#ffd23a;background:linear-gradient(180deg,#3a3008cc,#1a1404e6),repeating-linear-gradient(0deg,#ffd23a10 0 1px,transparent 1px 3px);box-shadow:inset 0 0 14px #ffd23a33,0 0 12px #ffd23a44}
 .slot.on b{color:#ffd23a}
 #bossw{top:92px!important;padding:6px 12px;width:min(560px,60vw)!important}
 #bossname{color:#ff7a6a}
-#bsel{bottom:112px;padding:6px 10px}
+#bsel{padding:6px 10px}
 #toast{border-color:#37f0ff88;color:#bff8ff}
-#bsel{bottom:54px}
+#bsel{bottom:104px;width:min(500px,94vw)}
+#hud.omni #wname{bottom:244px}
+#hud.omni #prompt{bottom:278px}
 /* ---- SHIPYARD (the ship builder) ---- */
 #yard{position:fixed;inset:0;display:none;z-index:6;background:radial-gradient(ellipse at 50% 40%,#0a2a66 0%,#04122e 62%,#020816 100%);color:#bfeaff;grid-template-columns:clamp(220px,22vw,300px) 1fr clamp(230px,24vw,310px);gap:12px;padding:12px 12px 34px}
 #yard.on{display:grid}

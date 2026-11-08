@@ -81,7 +81,7 @@ const SCREENS = {
   },
   dev() {
     const st = SaveStore.doc.settings;
-    return '<div class="mh">DEV MODE</div>' + btn('god', 'DEV GOD MODE: ' + (st.god ? 'ON' : 'OFF'), 'h') + btn('godcopy', 'COPY GAME STATE…', 'h') + btn('gunpose', 'GUN ARM POSITION…') + btn('devrelock', 'LOCK DEV MODE', 'sm') + btn('back', 'BACK')
+    return '<div class="mh">DEV MODE</div>' + btn('god', 'DEV GOD MODE: ' + (st.god ? 'ON' : 'OFF'), 'h') + btn('godcopy', 'COPY GAME STATE…', 'h') + btn('gunpose', 'GUN ARM POSITION…') + btn('holopos', 'MODE DISPLAY POSITION…') + btn('devrelock', 'LOCK DEV MODE', 'sm') + btn('back', 'BACK')
       + '<div class="mnote">GOD MODE: FLY (SPACE / A UP · C / B DOWN · SHIFT / X BOOST) · UNKILLABLE · EDIT THE HELICARRIER · FREE BLOCKS PLACED IN MID-AIR</div>';
   },
   pause() {
@@ -116,6 +116,7 @@ const ACT = {
   },
   resume() { resumeGame(); },
   gunpose() { resumeGame(); GP.start(); },
+  holopos() { resumeGame(); GP.start('holo'); },
   async opencoop() { Menu.say('Opening a room…'); try { await hostCurrentWorld(); Menu.render(); } catch (e) { Menu.say(e.message); } },
   quit() { quitToTitle(); },
   dev() { if (Menu.devOK) Menu.go('dev'); else { Menu.pin = ''; Menu.msg = ''; Menu.go('devlock'); } },

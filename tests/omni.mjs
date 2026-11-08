@@ -1,0 +1,43 @@
+// Omnitool as its own mode (D-pad UP in/out, bumpers cycle two rows), stacked mode HUD, bottom vitals, and the MODE DISPLAY POSITION dev tool.
+import { openGame, startPlaying, check, done } from './lib.mjs';
+console.log('omni mode + HUD + holo position');
+const init = () => { window.__pad = { id: 'fake pad', index: 0, mapping: 'standard', connected: true, buttons: Array.from({ length: 17 }, () => ({ pressed: false, value: 0 })), axes: [0, 0, 0, 0] }; navigator.getGamepads = () => [window.__pad]; };
+const g = await openGame({ width: 800, height: 450, init }); const { page } = g; await startPlaying(page, 3, false, false);
+const Y = (f, a) => page.evaluate(f, a);
+const press = async (i, ms = 200) => { await Y(i => { __pad.buttons[i] = { pressed: true, value: 1 }; }, i); await page.waitForTimeout(ms); await Y(i => { __pad.buttons[i] = { pressed: false, value: 0 }; }, i); await page.waitForTimeout(ms); };
+await Y(() => { __g.Save.unlocked[4] = true; __g.Save.unlocked[1] = true; __g.Save.unlocked[2] = true; __g.Save.unlocked[3] = true; __g.P.weapon = -1; __g.switchWeapon(1); __g.Inv.creative = true; for (let i = 0; i < 18; i++) __g.Inv.slots[i] = { k: 1 + (i % 6), n: 9 }; __g.Inv.sel = 0; __g.Inv.changed(); });
+check('the loadout has 4 slots (no omnitool slot)', await Y(() => __g.hotSlots.length === 4));
+const lay = await Y(() => { const r = n => document.getElementById(n).getBoundingClientRect(); const h = r('hotbar'), p = r('hp'); return { hl: h.left, ht: h.top, hh: h.height, hw: h.width, hpt: p.top, hpb: p.bottom, hpc: (p.left + p.right) / 2, W: innerWidth, H: innerHeight }; });
+check('modes are a vertical stack on the left, upper-centre', lay.hl < 40 && lay.hh > lay.hw && lay.ht > lay.H * .2 && lay.ht < lay.H * .5, JSON.stringify(lay));
+check('vitals sit at the bottom centre', lay.hpt > lay.H * .7 && Math.abs(lay.hpc - lay.W / 2) < 8, JSON.stringify(lay));
+await Y(() => __g.setState && 0);
+// D-pad UP: in and out
+await press(12); check('D-pad UP enters the omnitool', await Y(() => __g.P.weapon === 4));
+check('the omni bar shows two rows (18 cells)', await Y(() => (__g.drawBuildBar(), document.querySelectorAll('#bsel .bc').length === 18)));
+const rows = await Y(() => { const c = [...document.querySelectorAll('#bsel .bc')].map(e => e.getBoundingClientRect().top); return new Set(c.map(Math.round)).size; });
+check('they lay out in exactly 2 rows', rows === 2, rows);
+const s0 = await Y(() => __g.Inv.sel);
+await press(5); const s1 = await Y(() => __g.Inv.sel); await press(4); const s2 = await Y(() => __g.Inv.sel);
+check('RB / LB cycle blocks (and the weapon stays the omnitool)', s1 !== s0 && s2 === s0 && await Y(() => __g.P.weapon === 4), s0 + ',' + s1 + ',' + s2);
+await Y(() => { __g.Inv.sel = 17; }); await press(5); const sx = await Y(() => __g.Inv.sel); await Y(() => { __g.Inv.sel = 8; }); await press(5); check('cycling crosses between the rows (top→bottom, bottom wraps to top)', await Y(() => __g.Inv.sel === 9) && sx === 0, sx);
+await press(12); check('D-pad UP again returns to the previous mode', await Y(() => __g.P.weapon === 1));
+await press(5); check('RB now cycles gun modes (never lands on the omnitool)', await Y(() => __g.P.weapon === 2));
+await Y(() => { for (let i = 0; i < 6; i++) __g.nextWeapon(1); }); check('mode cycling stays in 0..3', await Y(() => __g.P.weapon >= 0 && __g.P.weapon <= 3));
+await page.keyboard.press('Digit5'); check('the 5 key toggles it too', await Y(() => __g.P.weapon === 4)); await page.keyboard.press('Digit5'); check('and back', await Y(() => __g.P.weapon !== 4));
+await Y(() => __g.switchWeapon(4)); await page.waitForTimeout(300);
+await page.screenshot({ path: '/tmp/omni-hud.png', timeout: 120000 });
+await Y(() => __g.switchWeapon(1)); await page.waitForTimeout(300);
+await page.screenshot({ path: '/tmp/mode-hud.png', timeout: 120000 });
+// holo position tool
+await Y(() => { __g.openPause(); });
+await Y(() => { __g.Menu.devOK = true; __g.Menu.go('dev'); });
+check('the dev page lists MODE DISPLAY POSITION', await Y(() => !!document.querySelector('[data-act="holopos"]')));
+await page.click('[data-act="holopos"]');
+check('the tool starts on the holo target', await Y(() => __g.GP.on && __g.GP.target === 'holo'));
+await page.keyboard.down('KeyD'); await page.keyboard.down('KeyR'); await page.keyboard.down('BracketRight'); await page.waitForTimeout(700); await page.keyboard.up('KeyD'); await page.keyboard.up('KeyR'); await page.keyboard.up('BracketRight');
+const h = await Y(() => ({ ...__g.GP.h, a: __g.GP.v.x }));
+check('keys move and resize the display (the arm is untouched)', h.x > .02 && h.y > .02 && h.scale > 1.05 && h.a === 0, JSON.stringify(h));
+await page.waitForTimeout(300); await page.screenshot({ path: '/tmp/holo-pos.png', timeout: 120000 });
+await page.keyboard.press('Backspace'); check('backspace resets it', await Y(() => __g.GP.h.scale === 1 && __g.GP.h.x === 0));
+await page.keyboard.press('Enter'); check('Enter exits', await Y(() => !__g.GP.on));
+await g.close(); done(g.errors);
