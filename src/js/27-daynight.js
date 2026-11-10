@@ -69,7 +69,7 @@ const DayNight = {
   },
   load() { const c = WorldStore.cur, t = +(c && c.data.time); this.phase = (t >= .25 && t < .75) || !(t >= 0) ? 'day' : 'night'; this.ev = null; this.idle = 40 + Math.random() * 80; this.pose(); },
   collect() { const c = WorldStore.cur; if (Net.role !== 'client' && c && !c.ephemeral) c.data.time = this.phase === 'day' ? .5 : 0; },
-  clock() { return OW.gen === 3 ? 'IN TRANSIT' : this.ev ? 'THE RIFT' : this.phase === 'day' ? 'DAY' : 'NIGHT'; },
+  clock() { return OW.gen === 3 ? 'IN TRANSIT' : OW.gen === 5 ? 'LOST' : this.ev ? 'THE RIFT' : this.phase === 'day' ? 'DAY' : 'NIGHT'; },
   isNight() { return this.state(0, 0).amb < .5; },
   state(x, z) {
     if (OW.gen === 3) return SPACE_SKY;
@@ -102,7 +102,7 @@ function drawSkyDome(f, roll, fovy, asp, sk) {
   gl.uniform3fv(L.fwd, f); gl.uniform3f(L.rgt, sx, sy, sz); gl.uniform3f(L.upv, ux, uy, uz);
   gl.uniform3fv(L.zen, sk.zen); gl.uniform3fv(L.hor, sk.hor); gl.uniform3fv(L.gnd, sk.fog); gl.uniform3fv(L.sunC, sk.sunC); gl.uniform3fv(L.moonC, sk.moonC);
   gl.uniform2f(L.tanf, th * asp, th); gl.uniform1f(L.stars, sk.stars); gl.uniform1f(L.sunA, sk.sunA); gl.uniform1f(L.tm, T);
-  gl.uniform1fv(L.sunV, sk.sunV); gl.uniform1fv(L.moonV, sk.moonV); gl.uniform1fv(L.dieA, sk.die); gl.uniform4fv(L.gt, sk.gate); gl.uniform1f(L.gk, sk.gk); gl.uniform1f(L.fx, OW.gen === 3 ? 2 : OW.gen >= 2 ? 1 : 0); gl.uniform1f(L.bk, sk.bk);
+  gl.uniform1fv(L.sunV, sk.sunV); gl.uniform1fv(L.moonV, sk.moonV); gl.uniform1fv(L.dieA, sk.die); gl.uniform4fv(L.gt, sk.gate); gl.uniform1f(L.gk, sk.gk); gl.uniform1f(L.fx, OW.gen === 3 ? 2 : OW.gen === 5 ? 0 : OW.gen >= 2 ? 1 : 0); gl.uniform1f(L.bk, sk.bk);
   gl.uniform2f(L.bgSpd, SKY_STAR_SPEED, SKY_TENT_SPEED); gl.uniform3fv(L.bA, sk.bA); gl.uniform3fv(L.bB, sk.bB); gl.uniform2fv(L.bP, sk.bP);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
   gl.useProgram(prog); gl.depthFunc(gl.LESS); gl.enable(gl.DEPTH_TEST); gl.depthMask(true);

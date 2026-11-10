@@ -35,9 +35,16 @@ function shardIcon() {
   x.strokeStyle = '#fff'; x.lineWidth = 1.6; x.beginPath(); x.moveTo(24, 14); x.lineTo(29, 9); x.moveTo(52, 8); x.lineTo(52, 15); x.moveTo(49, 11.5); x.lineTo(55, 11.5); x.stroke();
   return c.toDataURL();
 }
+function bucketIcon(k) {
+  const c = iconCanvas(), x = c.getContext('2d'), P = (a, f) => { x.beginPath(); x.moveTo(...a[0]); for (let i = 1; i < a.length; i++) x.lineTo(...a[i]); x.closePath(); x.fillStyle = f; x.fill(); };
+  P([[14, 18], [50, 18], [44, 54], [20, 54]], '#8a929a'); P([[14, 18], [50, 18], [48, 24], [16, 24]], '#c4ccd4'); P([[20, 54], [44, 54], [45, 48], [19, 48]], '#6a727a');
+  if (k !== 'bucket') P([[17, 26], [47, 26], [46, 32], [18, 32]], k === 'bucket_lava' ? '#ff7a1a' : '#07070f');
+  x.strokeStyle = '#2a2e34'; x.lineWidth = 2; x.beginPath(); x.moveTo(14, 18); x.lineTo(20, 54); x.lineTo(44, 54); x.lineTo(50, 18); x.stroke();
+  x.beginPath(); x.arc(32, 18, 16, Math.PI, 0); x.stroke(); return c.toDataURL();
+}
 function itemIcon(k) {
   let u = ICON_CACHE.get(k); if (u) return u;
-  try { u = k === 'shard' ? shardIcon() : typeof k === 'number' ? cubeIcon(k) : null; } catch (e) { u = null; }
+  try { u = k === 'shard' ? shardIcon() : isBucket(k) ? bucketIcon(k) : typeof k === 'number' ? cubeIcon(k) : null; } catch (e) { u = null; }
   if (!u) { const c = iconCanvas(), x = c.getContext('2d'); x.fillStyle = itemColor(k); x.fillRect(10, 10, 44, 44); u = c.toDataURL(); if (k !== 'shard' && !(typeof k === 'number' && !ATLAS_CV)) { } }
   if (typeof k !== 'number' || ATLAS_CV) ICON_CACHE.set(k, u);        // before the atlas exists a block only gets a stand-in, which must not be cached
   return u;

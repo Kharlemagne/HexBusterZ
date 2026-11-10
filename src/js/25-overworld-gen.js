@@ -55,6 +55,7 @@ function baseHeight(x, z) {                                              // terr
 const HUB = { list: [], voidY: 0, deck: 0, gate: { x: 0, z: 0, y: 0, seed: 1 }, spawn: { x: 0, z: 0 }, npc: { x: 0, z: 0 }, lifts: [] };
 function hubSet(gen) {
   if (gen === 4) { const L = realmLayout(OWG.S); Object.assign(HUB, { voidY: REALM_VOID, deck: L.tear.y, gate: null, list: L.gates, spawn: L.spawn, npc: { x: 0, z: -99999 }, lifts: [], tear: L.tear }); }
+  else if (gen === 5) Object.assign(HUB, { voidY: -999, deck: 70, gate: null, list: [], spawn: { x: .5, z: .5 }, npc: { x: 0, z: -99999 }, lifts: [], tear: Abyss.rift || null });
   else if (gen === 3) Object.assign(HUB, { list: [STN.gate], tear: null, voidY: 6, deck: SD, gate: STN.gate, spawn: STN.spawn, npc: STN.npc, lifts: [] });
   else if (gen === 2) Object.assign(HUB, { list: [CAR_GATE], tear: null, voidY: VOID_Y, deck: CAR.deck, gate: CAR_GATE, spawn: CAR_SPAWN, npc: CAR_NPC, lifts: LIFTS.map(l => ({ x: l.x, z: l.z, y0: 36, y1: CAR.deck + 1.5 })) });
 }
@@ -76,7 +77,7 @@ function gatesNear(x, z, r) {                                            // ever
   if (OW.gen >= 2) for (const g of HUB.list) if (Math.hypot(g.x - x, g.z - z) <= r) out.push(g);
   return out;
 }
-OWG.gen = function (cx, cz) { return OW.gen === 4 ? OWG.gen4(cx, cz) : OW.gen === 3 ? OWG.gen3(cx, cz) : OW.gen === 2 ? OWG.gen2(cx, cz) : OWG.gen1(cx, cz); };
+OWG.gen = function (cx, cz) { return OW.gen === 5 ? OWG.gen5(cx, cz) : OW.gen === 4 ? OWG.gen4(cx, cz) : OW.gen === 3 ? OWG.gen3(cx, cz) : OW.gen === 2 ? OWG.gen2(cx, cz) : OWG.gen1(cx, cz); };
 function nearestGate(x, z) {
   let best = null, bd = 1e18;
   for (let rz = gateRegion(z) - 2; rz <= gateRegion(z) + 2; rz++) for (let rx = gateRegion(x) - 2; rx <= gateRegion(x) + 2; rx++) { const g = gateOf(rx, rz); if (g) { const d = Math.hypot(g.x - x, g.z - z); if (d < bd) { bd = d; best = g; } } }
@@ -101,7 +102,8 @@ function stDistrict(x, z) {
 }
 function realmCoords() { const o = Net.hubOverride; if (o) return o.coords || ''; const m = WorldStore.cur && WorldStore.cur.data.map; return m ? m.coords : ''; }
 function biomeAt(x, z, y) {
-  if (OW.gen === 4) { const I = realmColumn(x, z, OWG.S), c = realmCoords(); return (I.solid ? BIOME_NAMES[I.bi] : 'THE ABYSS') + (c ? ' · RIFT ' + c.toUpperCase().slice(0, 18) : ''); }
+  if (OW.gen === 4) { const I = realmColumn(x, z, OWG.S), c = realmCoords(); return I.name + (c ? ' · RIFT ' + c.toUpperCase().slice(0, 18) : ''); }
+  if (OW.gen === 5) return 'THE ABYSS';
   if (OW.gen === 3 && y !== undefined && y < RC.fy + RC.h + 3 && y > RC.fy - 3 && onStation(x, z) && x > RC.x0 - 2 && x < RC.x1 + 2 && z > RC.z0 - 2 && z < RC.z1 + 2) return 'THE HELICARRIER · REACTOR CORE';
   if (OW.gen === 3) return onStation(x, z) && (y === undefined || y > 44) ? 'THE HELICARRIER · ' + stDistrict(x, z) : 'DEEP SPACE';
   if (OW.gen === 2) { if (onCarrier(x, z) && (y === undefined || y > carrierBottom(x, z) - 6)) return 'THE HELICARRIER'; const I = islandRaw(x, z); return I.solid ? BIOME_NAMES[I.bi] : 'THE ABYSS'; }

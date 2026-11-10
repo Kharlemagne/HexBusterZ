@@ -188,6 +188,7 @@ const WorldSave = {
     return out;
   },
   collect() {
+    if (Abyss.on) { this.dirty = false; return; }                                               // the Abyss is never saved (and never touches the real edits)
     if (!this.dirty) return; const c = WorldStore.cur;
     if (c && !c.ephemeral) { if (c.data.map && c.data.realms && c.data.realms[String(c.data.map.seed)]) c.data.realms[String(c.data.map.seed)].edits = this.list(); else c.data.edits = this.list(); }       // a realm keeps its own edits, the station keeps its own
     this.dirty = false;

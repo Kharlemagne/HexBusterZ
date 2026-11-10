@@ -13,17 +13,17 @@ check('the sequence goes charge, zap, stabilise and then the rift STAYS OPEN', [
 const stay = await page.evaluate(() => { const P = __g.P; for (let i = 0; i < 300; i++) { P.x = .5; P.z = -13.5; P.y = 15.01; P.vy = 0; __g.update(1 / 60); } return { gen: __g.OW.gen, phase: __g.Rift.phase }; });
 check('it does not teleport you by itself', stay.gen === 3 && stay.phase === 'open', JSON.stringify(stay));
 await page.evaluate(() => { const P = __g.P; P.x = .5; P.z = .5; P.y = 15.01; for (let i = 0; i < 3; i++) __g.update(1 / 60); });
-const A = await page.evaluate(() => { const P = __g.P, L = __g.HUB.list; return { gen: __g.OW.gen, y: P.y, ok: __g.P.alive, gates: L.length, seed: __g.WorldStore.cur.data.map.seed, layout: JSON.stringify(__g.realmLayout(__g.WorldStore.cur.data.map.seed).isl.map(i => [i.x, i.z, i.bi])), bio: __g.biomeAt(P.x, P.z, P.y) }; });
-check('you arrive on the spawn island of a small realm with two Hellgates', A.gen === 4 && A.y > 79 && A.ok && A.gates === 2 && /RIFT 4821/.test(A.bio), JSON.stringify(A));
+const A = await page.evaluate(() => { const P = __g.P, L = __g.HUB.list, T = __g.HUB.tear, S = __g.WorldStore.cur.data.map.seed; return { gen: __g.OW.gen, y: P.y, ok: P.alive, extra: L.length, near: Math.hypot(P.x - T.x, P.z - T.z), seed: S, bio: document.body.innerText.slice(0, 4000) }; });
+check('you arrive at the entry rift of an 8000-block realm that has two more rifts', A.gen === 4 && A.ok && A.extra === 2 && A.near < 20 && A.y > 40, JSON.stringify({ ...A, bio: '' }));
 const same = await page.evaluate(() => __g.seedFromText('4821 -77') === __g.WorldStore.cur.data.map.seed && __g.seedFromText('4821 -77') !== __g.seedFromText('4821 -78'));
 check('the same coordinates always give the same seed; different ones do not', same);
-const all4 = await page.evaluate(() => { const s = new Set(__g.realmLayout(__g.WorldStore.cur.data.map.seed).isl.map(i => i.bi)); return s.size; });
-check('every realm has all four biomes', all4 === 4, String(all4));
-const build = await page.evaluate(() => { __g.setBlock(5, 81, 5, 33); __g.flushSave(); const r = __g.WorldStore.cur.data.realms[String(__g.WorldStore.cur.data.map.seed)]; return { inRealm: r.edits.length, inStation: __g.WorldStore.cur.data.edits.length }; });
+const rifts = await page.evaluate(() => { const L = __g.realmLayout(__g.WorldStore.cur.data.map.seed).rifts; let m = 1e9; for (let a = 0; a < L.length; a++) for (let b = a + 1; b < L.length; b++) m = Math.min(m, Math.hypot(L[a].x - L[b].x, L[a].z - L[b].z)); return { n: L.length, m }; });
+check('every realm has three rifts, at least 2000 blocks apart', rifts.n === 3 && rifts.m >= 2000, JSON.stringify(rifts));
+const build = await page.evaluate(() => { const T = __g.HUB.tear; window.__bx = [T.x + 6, T.y + 6, T.z + 6]; __g.OW.update([{ x: T.x, z: T.z }], 9000); __g.OW.pump(9000); __g.setBlock(...window.__bx, 33); __g.flushSave(); const r = __g.WorldStore.cur.data.realms[String(__g.WorldStore.cur.data.map.seed)]; return { inRealm: r.edits.length, inStation: __g.WorldStore.cur.data.edits.length }; });
 check('what you build in a realm is saved with that realm, not the station', build.inRealm >= 1 && build.inStation === 0, JSON.stringify(build));
 const home = await page.evaluate(() => { const P = __g.P, T = __g.HUB.tear; P.x = T.x + .5; P.z = T.z + .5; P.y = T.y + 1.1; for (let i = 0; i < 5; i++) __g.update(1 / 60); return { gen: __g.OW.gen, x: __g.P.x, z: __g.P.z, map: __g.WorldStore.cur.data.map }; });
 check('stepping into the tear brings you back to the Rift Stabilizer', home.gen === 3 && home.map === null && Math.abs(home.x - .5) < 3 && Math.abs(home.z - 14.5) < 3, JSON.stringify(home));
-const again = await page.evaluate(() => { __g.enterRealm('4821 -77'); const r = __g.get(5, 81, 5); return { gen: __g.OW.gen, b: r }; });
+const again = await page.evaluate(() => { __g.enterRealm('4821 -77'); const r = __g.get(...window.__bx); return { gen: __g.OW.gen, b: r }; });
 check('going back to the same coordinates restores the same realm, including your build', again.gen === 4 && again.b === 33, JSON.stringify(again));
 // stairs and neon rails (back on the station)
 await page.evaluate(() => __g.leaveRealm());

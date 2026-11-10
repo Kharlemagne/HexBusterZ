@@ -8,6 +8,7 @@ for (let id = 48; id < REG_N; id++) {
   const k = KIND[id]; if (k === K.RAIL) { EMIT.add(id); DATA.blocks.names[id] = 'NEON RAIL ' + ['CYAN', 'MAGENTA', 'ORANGE', 'BLUE', 'GREEN'][id - 144]; DATA.blocks.build.push([id, DATA.blocks.names[id]]); }
   else DATA.blocks.names[id] = (DATA.blocks.names[b] || 'BLOCK') + ' ' + ['', 'SLAB', 'TOP SLAB', 'STAIRS', 'VERTICAL SLAB', 'WALL', 'PILLAR', 'BEAM', 'BEAM', 'FENCE', 'PANE', '', '', 'WEDGE'][k];
 }
+for (let id = 3600; id <= 3608; id++) { COL[id] = [.03, .035, .05]; DATA.blocks.colors[id] = '#050810'; DATA.blocks.names[id] = id === 3600 ? 'BLACK WATER' : id === 3608 ? 'BLACK WATER (FALLING)' : 'BLACK WATER (FLOWING)'; }
 for (let t = 0; t < 4; t++) for (let f = 0; f < 4; f++) { const id = SCR0 + t * 4 + f; DATA.blocks.names[id] = SCR_NAMES[t]; DATA.blocks.colors[id] = SCR_COLORS[t]; COL[id] = COL[32]; }
 for (let t = 0; t < 4; t++) DATA.blocks.build.push([SCR0 + t * 4, SCR_NAMES[t]]);
 // MONITOR MERGING. Identical monitors (same type, same facing, touching in the wall's plane) are tiled into RECTANGLES whose sides are 1 or an even number up to 10
@@ -81,15 +82,15 @@ function buildChunk(cx, cz) {
   for (let y = 0; y < yMax; y++) for (let z = z0; z < z0 + CS; z++) for (let x = x0; x < x0 + CS; x++) {
     const li = ch ? ((x & 15) | ((z & 15) << 4) | (y << 8)) : 0;
     const id = ch ? ch.b[li] : world[idx(x, y, z)]; if (!id) continue;
-    const lav = isLava(id), sk = slabKind(id), scr = KIND[id] === K.SCREEN;
+    const lav = isLiquid(id), sk = slabKind(id), scr = KIND[id] === K.SCREEN;
     if (sk === 3) { meshPartial(out, id, x, y, z); continue; }
     const b = COL[id] || (COL[id] = [.6, .6, .6]), em = EMIT.has(id), bl = ch ? (ch.blood ? ch.blood[li] : 0) : blood[idx(x, y, z)];
     const vr = .86 + hash(x * 7 + y * 13, z * 5 + y * 3) * .28;
     for (let d = 0; d < 3; d++) for (let s = -1; s <= 1; s += 2) {
       n[0] = n[1] = n[2] = 0; n[d] = s;
       const nb = get(x + n[0], y + n[1], z + n[2]), nk = slabKind(nb);
-      if (lav) { if (nb !== 0 && !nk && !(d === 1 && s > 0 && !isLava(nb))) continue; }        // lava hides against solids and lava (corners are shared, so no cracks) but its lowered top shows under a ceiling; next to a half block it stays visible
-      else if (nb !== 0 && !isLava(nb) && !(d === 1 && sk && (s > 0 ? sk === 1 : sk === 2))) {   // (the flat face in the middle of a half block is never hidden by the next block)
+      if (lav) { if (nb !== 0 && !nk && !(d === 1 && s > 0 && !isLiquid(nb))) continue; }        // lava hides against solids and lava (corners are shared, so no cracks) but its lowered top shows under a ceiling; next to a half block it stays visible
+      else if (nb !== 0 && !isLiquid(nb) && !(d === 1 && sk && (s > 0 ? sk === 1 : sk === 2))) {   // (the flat face in the middle of a half block is never hidden by the next block)
         if (!nk) continue;                                                                      // a full block next to us covers this face completely
         if (d === 1) { if ((s > 0 ? nk === 1 : nk === 2) && (sk === 0 || (s > 0 ? sk === 2 : sk === 1))) continue; }                       // a half block touches us with its flat face only on the shared plane
         else if (sk && nk === sk) continue;                                                     // two half blocks of the same half share a wall
@@ -137,14 +138,14 @@ function buildChunk(cx, cz) {
   m.count = arr.length / VF;
 }
 // ---- lava surface heights ----
-const lavaH = id => id === 30 ? 1 : id === 4 ? .88 : .18 + (id - 22) * .105;       // flowing level 1 is a low sheet, level 7 almost a full block
+const lavaH = id => id === 30 || id === 3608 ? 1 : id === 4 || id === 3600 ? .88 : id >= 3601 ? .18 + (id - 3600) * .105 : .18 + (id - 22) * .105;       // flowing level 1 is a low sheet, level 7 almost a full block
 // height of the lava surface at the corner point (X,Z) of layer y: the average of the four lava / air blocks around it (solids are ignored,
 // anything with lava above it counts as full), like Minecraft, so neighbouring blocks always agree and the flow reads as one sloping sheet
 function lavaCorner(X, y, Z) {
   let sum = 0, w = 0;
   for (let k = 0; k < 4; k++) {
     const x = X - 1 + (k & 1), z = Z - 1 + (k >> 1), id = get(x, y, z);
-    if (isLava(id)) { if (isLava(get(x, y + 1, z))) return 1; const h = lavaH(id), wt = h >= .8 ? 10 : 1; sum += h * wt; w += wt; }
+    if (isLiquid(id)) { if (isLiquid(get(x, y + 1, z))) return 1; const h = lavaH(id), wt = h >= .8 ? 10 : 1; sum += h * wt; w += wt; }
     else if (id === 0) w += .5;
   }
   return w ? Math.max(.06, sum / w) : .5;

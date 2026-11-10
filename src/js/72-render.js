@@ -29,7 +29,8 @@ function renderFrame(dt) {
     f = fwdV(); roll = P.sliding ? .06 : (keys.KeyD ? .012 : keys.KeyA ? -.012 : 0) + rnd(-sh, sh) * .05;
   }
   P.btFade = lerp(P.btFade, P.bt > 0 ? 1 : 0, Math.min(1, 5 * dt)); P.fovPunch = Math.max(0, P.fovPunch - dt * 1.6);
-  let sk = null; if (useChunks) { sk = DayNight.state(P.x, P.z); fogCur = sk.fog; }
+  let sk = null; if (useChunks) { sk = DayNight.state(P.x, P.z); if (OW.gen === 5) sk = abyssSky(sk); fogCur = sk.fog; }
+  gl.uniform1f(loc.gry, OW.gen === 5 && useChunks ? 1 : 0);
   { const k = P.btFade, fb = useChunks ? fogCur : FOG, fc = [lerp(fb[0], .03, k), lerp(fb[1], .12, k), lerp(fb[2], .34, k)]; gl.clearColor(fc[0], fc[1], fc[2], 1); gl.uniform3fv(loc.fogc, fc); }
   gl.viewport(0, 0, canvas.width, canvas.height);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -52,9 +53,9 @@ function renderFrame(dt) {
     if (GOD.on) { const g = h ? { x: h.x + h.nx, y: h.y + h.ny, z: h.z + h.nz } : GOD.air(); if (g && get(g.x, g.y, g.z) === 0) pushOutline(g.x, g.y, g.z, [1, .25, .85], .05); } }     // god mode: a pink cage where the next block will land
   flushDyn();
   if (OW.gen === 3 && mode === 'hub') { drawVatGlass(T); drawStationGlass(T); drawHangarHolo(T); drawCoreGlass(T); drawRiftTear(T); }
-  if (OW.gen === 4 && mode === 'hub') drawRealmTears(T);
+  if ((OW.gen === 4 || OW.gen === 5) && mode === 'hub') drawRealmTears(T);
   if (state === 'play' || state === 'paused') {
-    gl.clear(gl.DEPTH_BUFFER_BIT); gl.uniform1f(loc.amb, 1);
+    gl.clear(gl.DEPTH_BUFFER_BIT); gl.uniform1f(loc.amb, 1); gl.uniform1f(loc.gry, 0);                    // the arm keeps its colour in the Abyss
     gl.uniformMatrix4fv(loc.vp, false, perspective(1.05, asp, .01, 10)); gl.uniform3f(loc.cam, 0, 0, 0);
     drawViewmodel();
   }

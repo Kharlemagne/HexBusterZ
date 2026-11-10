@@ -27,6 +27,7 @@ SHAPABLE.forEach((b, i) => { SHAPE_IDX[b] = i; });
   for (let i = 80; i < 144; i++) { BASE[i] = 32 + ((i - 80) >> 2); KIND[i] = K.STAIR; DIR[i] = (i - 80) & 3; }
   SHAPABLE.forEach((b, i) => { for (let dd = 0; dd < 4; dd++) { const id = WEDGE0 + i * 4 + dd; if (id < REG_N) { BASE[id] = b; KIND[id] = K.WEDGE; DIR[id] = dd; } } });          // wedges: a 45 degree ramp in eight thin steps, rising towards +x, -x, +z, -z
   for (let i = 0; i < 5; i++) { BASE[144 + i] = RAIL_BASE[i]; KIND[144 + i] = K.RAIL; }
+  for (let i = 3600; i <= 3608; i++) BASE[i] = 31;                                   // black water draws with tile pair 62/63 (the shader paints it)
 })();
 // the id of material `base` made into shape `kind` (dir for stairs / vertical slabs); falls back to the full block when the material has no such shape
 function blockId(base, kind, dir = 0) {
@@ -82,4 +83,4 @@ function partBoxes(id, x, y, z, mesh) {
   return r;
 }
 function cellBoxes(id, x, y, z) { return partBoxes(id, x, y, z, false).map(q => [x + q[0], y + q[1], z + q[2], x + q[3], y + q[4], z + q[5]]); }
-const isFull = i => i !== 0 && !isLava(i) && (!KIND[i] || KIND[i] === K.SCREEN);
+const isFull = i => i !== 0 && !isLiquid(i) && (!KIND[i] || KIND[i] === K.SCREEN);

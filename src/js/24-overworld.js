@@ -17,7 +17,7 @@ const OW = {
   },
   set(x, y, z, id) {                                                    // returns the old block, -1 if that chunk isn't loaded
     const ch = this.chunks.get(ckey(x >> 4, z >> 4)); if (!ch) return -1;
-    const li = (x & 15) | ((z & 15) << 4) | (y << 8), old = ch.b[li]; ch.b[li] = id; if (ch.blood) ch.blood[li] = 0; if (id && y > ch.top) ch.top = y; if (id && LV[BASE[id]] && !isLava(id)) ch.em = true;
+    const li = (x & 15) | ((z & 15) << 4) | (y << 8), old = ch.b[li]; ch.b[li] = id; if (ch.blood) ch.blood[li] = 0; if (id && y > ch.top) ch.top = y; if (id && LV[BASE[id]] && !isLiquid(id)) ch.em = true;
     return old;
   },
   has(cx, cz) { return this.chunks.has(ckey(cx, cz)); },
@@ -25,9 +25,9 @@ const OW = {
     const key = ckey(cx, cz); if (this.chunks.has(key)) return;
     const b = OWG.gen(cx, cz); let top = 0;
     for (let y = WORLD_H - 1; y > 0 && !top; y--) { const o = y << 8; for (let i = 0; i < 256; i++) if (b[o + i]) { top = y; break; } }
-    const ch = { cx, cz, b, top, blood: null, age: 0, em: false }; for (let i = 0; i < b.length; i++) { const id = b[i]; if (id && LV[BASE[id]] && !isLava(id)) { ch.em = true; break; } }
+    const ch = { cx, cz, b, top, blood: null, age: 0, em: false }; for (let i = 0; i < b.length; i++) { const id = b[i]; if (id && LV[BASE[id]] && !isLiquid(id)) { ch.em = true; break; } }
     const em = this.edits.get(key);
-    if (em) for (const [li, e] of em) { if (e.orig === -1) e.orig = b[li]; b[li] = e.id; const y = li >> 8; if (e.id && y > ch.top) ch.top = y; if (e.id && LV[BASE[e.id]] && !isLava(e.id)) ch.em = true; }
+    if (em) for (const [li, e] of em) { if (e.orig === -1) e.orig = b[li]; b[li] = e.id; const y = li >> 8; if (e.id && y > ch.top) ch.top = y; if (e.id && LV[BASE[e.id]] && !isLiquid(e.id)) ch.em = true; }
     this.chunks.set(key, ch); this.lch = null; this.lcx = 1e9;
     for (const [a, c] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) if (this.chunks.has(ckey(cx + a, cz + c))) dirty.add(ckey(cx + a, cz + c));
   },
@@ -56,7 +56,7 @@ const OW = {
   },
   // start (or restart) the open world around a spawn point; loads the first chunks synchronously so the player never spawns in the void
   begin(sx, sz, seed, villageSeed, editsList, gen) {
-    this.drop(); if (typeof Fluid !== 'undefined') Fluid.reset(); this.seed = seed >>> 0; this.villageSeed = villageSeed >>> 0; OWG.S = this.seed | 0; this.gen = gen === 4 ? 4 : gen === 3 ? 3 : gen === 2 ? 2 : 1;
+    this.drop(); if (typeof Fluid !== 'undefined') Fluid.reset(); this.seed = seed >>> 0; this.villageSeed = villageSeed >>> 0; OWG.S = this.seed | 0; WORLD_H = gen === 4 || gen === 5 ? 384 : 160; this.gen = gen === 5 ? 5 : gen === 4 ? 4 : gen === 3 ? 3 : gen === 2 ? 2 : 1;
     if (this.gen === 1) this.ensureStamp(); useChunks = true; H = WORLD_H; N = 64; this.configure();
     WorldSave.load(editsList || []);
     const cx = Math.floor(sx / CS), cz = Math.floor(sz / CS);

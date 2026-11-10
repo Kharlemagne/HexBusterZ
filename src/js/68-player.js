@@ -88,8 +88,8 @@ function updatePlayer(dt) {
   if (gp.on) { const zs = P.zoom ? .4 : 1; P.yaw -= gp.rx * Math.abs(gp.rx) * 3.6 * zs * ld; P.pitch = clamp(P.pitch - gp.ry * Math.abs(gp.ry) * 2.6 * zs * ld, -1.55, 1.55); }
   if (P.snap) { const sn = P.snap, kk = Math.min(1, 14 * ld); sn.t += ld; P.yaw += (sn.y - P.yaw) * kk; P.pitch += (sn.p - P.pitch) * kk; if ((Math.abs(sn.y - P.yaw) < .006 && Math.abs(sn.p - P.pitch) < .006) || sn.t > .5) P.snap = null; }
   if (RIDE.on || Lift.on) { P.vx = P.vy = P.vz = 0; return; }                                  // riding a pod: the ride script moves you
-  const w = wishVec(), inLava = isLava(get(Math.floor(P.x), Math.floor(P.y + .3), Math.floor(P.z)));
-  const maxSp = inLava ? 5 : 10.5, want = !!(k.ShiftLeft || k.ShiftRight || gp.slide), edge = P.cEdge; P.cEdge = false;
+  const w = wishVec(), inLava = isLava(get(Math.floor(P.x), Math.floor(P.y + .3), Math.floor(P.z))), inWater = !inLava && isWater(get(Math.floor(P.x), Math.floor(P.y + .5), Math.floor(P.z)));
+  const maxSp = inLava ? 5 : inWater ? 5.2 : 10.5, want = !!(k.ShiftLeft || k.ShiftRight || gp.slide), edge = P.cEdge; P.cEdge = false;
   P.inv = Math.max(0, P.inv - dt); P.shieldT = Math.max(0, P.shieldT - dt); P.shieldFlash = Math.max(0, P.shieldFlash - dt);
   const spd0 = Math.hypot(P.vx, P.vz);
   if (edge && !P.slamming && !inLava && P.dashT <= 0) xcross();
@@ -115,6 +115,10 @@ function updatePlayer(dt) {
   if (P.vy < -70) P.vy = -70;
   P.coyote = P.onGround ? .1 : P.coyote - dt;
   if ((k.Space || gp.a) && P.coyote > 0 && !P.slamming && P.dashT <= 0) { P.vy = 10.2; P.coyote = 0; P.onGround = false; SFX.jump(); }
+  if (inWater && !GOD.on) {                                                                      // swimming: heavy, slow, Space swims up, and the water takes the fall away
+    P.vy = Math.max(P.vy, -4.2); const dr = Math.max(0, 1 - 2.4 * dt); P.vx *= dr; P.vz *= dr; if (P.vy > 0 && !(k.Space || gp.a)) P.vy *= dr;
+    if (k.Space || gp.a) P.vy = Math.min(P.vy + 24 * dt, 5.2); P.airT = 0; P.slamming = false;
+  }
   if (inLava) { P.vy = Math.max(P.vy, -3); P.hp -= 30 * dt; P.hurtFlash = Math.max(P.hurtFlash, .5); if (k.Space || gp.a) P.vy = 7; if (P.hp <= 0) die(); }
   // wall climb: keep tapping/holding jump against a wall to go up (also gives the native wall slow-fall); otherwise a granted double jump
   P.wallCd = Math.max(0, P.wallCd - dt);

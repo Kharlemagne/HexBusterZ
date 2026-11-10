@@ -3,7 +3,8 @@
 //  Breaking a block puts it in your inventory; placing one uses it up (unless CREATIVE is on). Saved with your profile
 //  (SaveStore.doc.inv); every player's inventory is their own, even in co-op.
 // ============================================================
-const ITEMS = { shard: { name: 'DEMON SHARD', color: '#ff6ad0', value: 3 } };          // non-block items; shards sell to Vex for gems
+const ITEMS = { shard: { name: 'DEMON SHARD', color: '#ff6ad0', value: 3 }, bucket: { name: 'BUCKET', color: '#b8c0c8', value: 0 }, bucket_water: { name: 'BLACK WATER BUCKET', color: '#1a1a2a', value: 0 }, bucket_lava: { name: 'LAVA BUCKET', color: '#ff6a1a', value: 0 } };
+const isBucket = k => k === 'bucket' || k === 'bucket_water' || k === 'bucket_lava';          // non-block items; shards sell to Vex for gems
 const STACK_MAX = 99;
 const itemName = k => typeof k === 'number' ? (DATA.blocks.names[k] || 'BLOCK ' + k) : (ITEMS[k] ? ITEMS[k].name : String(k));
 const itemColor = k => typeof k === 'number' ? (DATA.blocks.colors[k] || '#888') : (ITEMS[k] ? ITEMS[k].color : '#888');
@@ -15,7 +16,7 @@ const Inv = {
     const c = WorldStore.cur, d = c && c.data.inv;
     this.slots = new Array(36).fill(null); this.sel = 0; this.creative = false; this.cursor = null;
     if (d && Array.isArray(d.slots)) { d.slots.slice(0, 36).forEach((s, i) => { if (Array.isArray(s) && s[1] > 0) this.slots[i] = { k: s[0], n: Math.min(STACK_MAX, s[1] | 0) }; }); this.sel = clamp(d.sel | 0, 0, 8); this.creative = !!d.creative; this.equip = Object.assign({ helm: null, chest: null, legs: null, boots: null }, d.equip || {}); }
-    else { [2, 1, 3, 5, 7, 8, 6, 12, 13].forEach((id, i) => { this.slots[i] = { k: id, n: 64 }; }); if (c && c.meta.mode === 'creative') this.creative = true; this.collect(); }          // a starter kit for new (and upgraded) profiles
+    else { [2, 1, 3, 5, 7, 8, 6, 12, 13].forEach((id, i) => { this.slots[i] = { k: id, n: 64 }; }); this.slots[9] = { k: 'bucket', n: 2 }; if (c && c.meta.mode === 'creative') this.creative = true; this.collect(); }          // a starter kit for new (and upgraded) profiles
   },
   collect() { const c = WorldStore.cur; if (!c || c.ephemeral) return; c.data.inv = { slots: this.slots.map(s => s ? [s.k, s.n] : 0), sel: this.sel, creative: this.creative, equip: this.equip }; },
   changed() { SaveStore.dirty = true; this.shown = ''; },
@@ -34,7 +35,7 @@ const Inv = {
   selBlock() { const s = this.slots[this.sel]; return s && typeof s.k === 'number' ? s.k : (this.creative ? DATA.blocks.build[0][0] : 0); },
   cycle(dir) {                                                                      // mouse wheel / d-pad: next hotbar slot that holds a block
     const ORD = [9, 10, 11, 12, 13, 14, 15, 16, 17, 0, 1, 2, 3, 4, 5, 6, 7, 8], at = Math.max(0, ORD.indexOf(this.sel));      // both displayed rows, top then bottom
-    for (let i = 1; i <= 18; i++) { const j = ORD[(at + dir * i + 180) % 18], s = this.slots[j]; if (s && typeof s.k === 'number') { this.sel = j; this.changed(); return; } }
+    for (let i = 1; i <= 18; i++) { const j = ORD[(at + dir * i + 180) % 18], s = this.slots[j]; if (s && (typeof s.k === 'number' || isBucket(s.k))) { this.sel = j; this.changed(); return; } }
   },
   sort() {
     const all = []; for (let i = 9; i < 36; i++) if (this.slots[i]) all.push(this.slots[i]);
@@ -77,7 +78,7 @@ function renderInv() {
     + '<div class="stats">HP ' + Math.max(0, Math.round(P.hp)) + ' · RUNS ' + Save.runs + ' · WINS ' + Save.wins + '<br>KILLS ' + st.kills + ' · BOSSES ' + st.bosses + '</div></div></div>';
   h += '<div class="ig">'; for (let i = 9; i < 36; i++) h += invCell(Inv.slots[i], i);
   h += '</div><div class="ig hbrow">'; for (let i = 0; i < 9; i++) h += invCell(Inv.slots[i], i); h += '</div>';
-  if (Inv.creative) { h += '<div class="sb-l">CREATIVE — click a block to grab a full stack</div><div class="ig cat">'; for (const [id, nm] of DATA.blocks.build) h += '<div class="ic" onclick="Inv.cursor={k:' + id + ',n:99};renderInv()">' + iconTag(id) + '<em>' + nm + '</em></div>'; h += '</div>'; }
+  if (Inv.creative) { h += '<div class="sb-l">CREATIVE — click a block to grab a full stack</div><div class="ig cat">'; h += '<div class="ic" onclick="Inv.cursor={k:\'bucket\',n:16};renderInv()">' + iconTag('bucket') + '<em>BUCKET</em></div>'; for (const [id, nm] of DATA.blocks.build) h += '<div class="ic" onclick="Inv.cursor={k:' + id + ',n:99};renderInv()">' + iconTag(id) + '<em>' + nm + '</em></div>'; h += '</div>'; }
   h += '<div class="invbtn"><button onclick="Inv.sort();renderInv()">SORT BAG</button><button onclick="Inv.cursor=null;Inv.changed();renderInv()">TRASH HELD</button><button onclick="Inv.creative=!Inv.creative;Inv.changed();renderInv()">CREATIVE: ' + (Inv.creative ? 'ON' : 'OFF') + '</button><button onclick="closeInv()">CLOSE (I)</button></div>';
   h += '<div class="sh-f">CLICK pick up / drop / swap · RIGHT-CLICK half or one · SHIFT-CLICK bag ⇄ hotbar · 1-9 pick a hotbar slot · the omnitool places from the selected slot</div>';
   el.inv.innerHTML = h; updateInvCursor(); if (gp.active) padInvMark();

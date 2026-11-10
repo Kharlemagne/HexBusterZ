@@ -12,7 +12,7 @@ const LV = new Uint8Array(REG_N), LC = new Float32Array(REG_N * 3);             
   const col = id => { const c = hx(parseInt(DATA.blocks.colors[id].slice(1), 16)), m = Math.max(c[0], c[1], c[2], .01); return [c[0] / m, c[1] / m, c[2] / m]; };
   for (let i = 0; i < REG_N; i++) if (LV[i]) { const c = col(i); LC[i * 3] = c[0]; LC[i * 3 + 1] = c[1]; LC[i * 3 + 2] = c[2]; }
 })();
-const emits = id => LV[BASE[id]] > 0 && !isLava(id);
+const emits = id => LV[BASE[id]] > 0 && !isLiquid(id);
 let LT = null;                                                                 // the light field of the chunk being meshed
 function computeLight(cx, cz, yTop) {
   const M = LMAX, W = 16 + 2 * M, x0 = cx * CS - M, z0 = cz * CS - M, Hh = yTop + 1;
@@ -22,7 +22,7 @@ function computeLight(cx, cz, yTop) {
   const n = W * W * Hh, R = new Uint8Array(n), G = new Uint8Array(n), Bl = new Uint8Array(n), OP = new Uint8Array(n), q = [];
   const I = (x, y, z) => (y * W + (z - z0)) * W + (x - x0);
   for (let y = 1; y < Hh; y++) for (let z = z0; z < z0 + W; z++) for (let x = x0; x < x0 + W; x++) {
-    const id = get(x, y, z); if (!id || isLava(id)) continue; const i = I(x, y, z);
+    const id = get(x, y, z); if (!id || isLiquid(id)) continue; const i = I(x, y, z);
     if (!KIND[id]) OP[i] = 1;
     const l = LV[BASE[id]]; if (l) { const b = BASE[id]; R[i] = Math.round(l * LC[b * 3]); G[i] = Math.round(l * LC[b * 3 + 1]); Bl[i] = Math.round(l * LC[b * 3 + 2]); q.push(i); }
   }

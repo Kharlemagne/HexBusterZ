@@ -11,7 +11,7 @@ precision highp float;
 #else
 precision mediump float;
 #endif
-varying vec4 vc;varying float vd;varying vec2 vuv;varying float vt;varying vec3 vwp;uniform sampler2D tex;uniform sampler2D avg;uniform vec3 fogc;uniform vec2 fogr;uniform float ga;uniform float amb;uniform float tm;
+varying vec4 vc;varying float vd;varying vec2 vuv;varying float vt;varying vec3 vwp;uniform sampler2D tex;uniform sampler2D avg;uniform vec3 fogc;uniform vec2 fogr;uniform float ga;uniform float gry;uniform float amb;uniform float tm;
 float lh(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 float lv(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(lh(i),lh(i+vec2(1.0,0.0)),f.x),mix(lh(i+vec2(0.0,1.0)),lh(i+vec2(1.0,1.0)),f.x),f.y);}
 // flowing lava in WORLD space, so neighbouring lava blocks form one continuous river: warped noise drifts, a dark crust floats on glowing orange, bright cracks open and close
@@ -86,6 +86,13 @@ vec3 lava(vec3 w,float t,float dist){
   c*=0.88+0.12*sin(t*2.2+w.x*0.9+w.z*0.7);
   return mix(c,vec3(0.95,0.33,0.07),smoothstep(55.0,115.0,dist));
 }
+vec3 bwater(vec3 w,float t,float dist){                                              // BLACK WATER: ink-dark, a slow swell, faint cold glints on the crests
+  vec2 p=w.xz*0.35+vec2(t*0.04,t*0.025);float n=0.0,a=0.5;
+  for(int i=0;i<3;i++){n+=a*lv(p+vec2(sin(p.y*1.3+t*0.3),cos(p.x*1.2-t*0.25))*0.6);p=p*2.1+vec2(3.1,5.3);a*=0.5;}
+  float s=smoothstep(0.5,0.72,n);
+  vec3 c=vec3(0.006,0.008,0.016)+vec3(0.05,0.075,0.11)*s*s;
+  return mix(c,vec3(0.02,0.026,0.045),smoothstep(55.0,115.0,dist));
+}
 void main(){
   float em=step(vt,-0.5);float ti=floor(abs(vt)+0.5)-1.0;
   vec2 tc=vec2(mod(ti,16.0),floor(ti/16.0));vec2 f=fract(vuv);
@@ -96,8 +103,10 @@ void main(){
   float rga=1.0;
   if(ti>9999.5){vec4 rf=riftfx(vuv,vc.r,vc.g,tm);col=rf.rgb;rga=rf.a;}else if(ti>599.5)col=holo(ti,vuv,tm);else if(ti>199.5)col=scr(ti,vuv,tm);
   if((ti>7.5&&ti<9.5)||(ti>45.5&&ti<61.5)){float sd=step(0.5,mod(ti,2.0));col=lava(mix(vec3(vwp.x+vwp.z,0.0,vwp.y*1.3+tm*0.8),vwp,sd),tm,vd);}
+  if(ti>62.5&&ti<64.5){float sd=step(0.5,mod(ti,2.0));col=bwater(mix(vec3(vwp.x+vwp.z,0.0,vwp.y*1.3+tm*0.8),vwp,sd),tm,vd);}
   float lamp=0.62*(1.0-smoothstep(1.5,22.0,vd));
   col*=mix(max(amb,lamp),1.0,em);
+  col=mix(col,vec3(dot(col,vec3(0.299,0.587,0.114))),gry);
   float fg=smoothstep(fogr.x,fogr.y,vd)*min(vc.a,1.0);
   gl_FragColor=vec4(mix(col,fogc,fg),ga*rga);
 }`;
@@ -298,6 +307,7 @@ function initGL() {
   loc.p = 0; loc.c = 1; loc.uv = 2; loc.t = 3;
   loc.vp = gl.getUniformLocation(prog, 'vp'); loc.cam = gl.getUniformLocation(prog, 'cam');
   loc.fogc = gl.getUniformLocation(prog, 'fogc'); loc.fogr = gl.getUniformLocation(prog, 'fogr'); loc.amb = gl.getUniformLocation(prog, 'amb'); loc.ga = gl.getUniformLocation(prog, 'ga'); loc.tm = gl.getUniformLocation(prog, 'tm');
+  loc.gry = gl.getUniformLocation(prog, 'gry');
   gl.uniform1i(gl.getUniformLocation(prog, 'tex'), 0); gl.uniform1i(gl.getUniformLocation(prog, 'avg'), 1); gl.uniform1f(loc.amb, 1); gl.uniform1f(loc.ga, 1);
   for (const k of [loc.p, loc.c, loc.uv, loc.t]) gl.enableVertexAttribArray(k);
   { const A = makeAtlas(); ATLAS_CV = A.canvas; texAtlas = gl.createTexture(); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, texAtlas);

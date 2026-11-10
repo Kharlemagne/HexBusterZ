@@ -71,11 +71,22 @@ function updateWeapons(dt) {
         SFX.dig(); digCd = .12; P.swing = 1;
       } else if (stProtected(h.x, h.y, h.z)) { feed('HELICARRIER HULL — INDESTRUCTIBLE', '#7af0ff'); SFX.shink && SFX.shink(); digCd = .45; }
     }
+    const bs = Inv.slots[Inv.sel];
+    if (R && digCd <= 0 && bs && isBucket(bs.k)) {                                              // buckets work like Minecraft's: an empty one scoops a source, a full one pours one out
+      const e = eyePos(), f = fwdV(), bh = raycast(e[0], e[1], e[2], f[0], f[1], f[2], 6.5, true); digCd = .3;
+      if (bh) {
+        const bid = get(bh.x, bh.y, bh.z);
+        if (bs.k === 'bucket') { if (bid === 3600 || bid === 4) { setBlock(bh.x, bh.y, bh.z, 0); const full = bid === 4 ? 'bucket_lava' : 'bucket_water'; if (!Inv.creative) { Inv.useSel(); if (Inv.add(full, 1)) feed('INVENTORY FULL', '#ff8a3a'); } SFX.place(); P.swing = .6; } }
+        else { const px = bh.x + bh.nx, py = bh.y + bh.ny, pz = bh.z + bh.nz, tid = bs.k === 'bucket_lava' ? 4 : 3600, at = (isLiquid(bid) ? [bh.x, bh.y, bh.z] : [px, py, pz]), cur = get(at[0], at[1], at[2]);
+          if ((cur === 0 || isLiquid(cur)) && !playerOverlaps(at[0], at[1], at[2]) && setBlock(at[0], at[1], at[2], tid)) { if (!Inv.creative) { Inv.useSel(); if (Inv.add('bucket', 1)) feed('INVENTORY FULL', '#ff8a3a'); } SFX.place(); P.swing = .6; } }
+      }
+      return;
+    }
     const ph = h || (R && GOD.on ? GOD.air() : null);                  // god mode: with nothing in reach the block goes into the air in front of you
     if (R && digCd <= 0 && ph) {
       const h = ph;
       const px = h.x + h.nx, py = h.y + h.ny, pz = h.z + h.nz;
-      if (get(px, py, pz) === 0 || isLava(get(px, py, pz))) {
+      if (get(px, py, pz) === 0 || isLiquid(get(px, py, pz))) {
         let bid = Inv.selBlock();
         if (bid) { const e = eyePos(), f = fwdV(), hy = e[1] + f[1] * h.t, top = h.ny < 0 || (h.ny === 0 && hy - py >= .5);          // aim at the upper half of a wall, or under a block, and half blocks go in the top half
           const k = KIND[bid]; if (k === K.SCREEN) { const nf = h.nx > 0 ? 0 : h.nx < 0 ? 1 : h.nz > 0 ? 2 : h.nz < 0 ? 3 : (Math.abs(f[0]) > Math.abs(f[2]) ? (f[0] > 0 ? 1 : 0) : (f[2] > 0 ? 3 : 2)); bid = screenId(screenType(bid), nf); }

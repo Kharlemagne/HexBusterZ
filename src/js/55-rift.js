@@ -44,7 +44,7 @@ function enterRealm(text) {                                              // go t
   const c = WorldStore.cur; if (!c || c.ephemeral) return;
   flushSave();
   const seed = seedFromText(text), key = String(seed);
-  c.data.realms = c.data.realms || {}; if (!c.data.realms[key]) c.data.realms[key] = { coords: text, edits: [] };
+  c.data.realms = c.data.realms || {}; if (!c.data.realms[key] || c.data.realms[key].v !== 2) c.data.realms[key] = { coords: text, edits: [], v: 2 };      // v2 = the 8000-block realms: realms built under the old layout are regenerated (their builds are wiped)
   c.data.map = { seed, coords: text }; c.data.recent = [text, ...(c.data.recent || []).filter(t => t !== text)].slice(0, 8);
   OW.returnTo = null; enterHub(false, false); saveGame();
 }

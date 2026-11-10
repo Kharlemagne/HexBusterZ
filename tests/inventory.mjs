@@ -3,7 +3,7 @@ import { openGame, startPlaying, check, done } from './lib.mjs';
 console.log('inventory');
 const g = await openGame({ width: 320, height: 200 }); const { page } = g; await startPlaying(page, 1);
 const I = f => page.evaluate(f);
-check('new profiles get a starter kit in the hotbar', await I(() => __g.Inv.slots[0].n === 64 && __g.Inv.slots.filter(Boolean).length === 9));
+check('new profiles get a starter kit in the hotbar', await I(() => __g.Inv.slots[0].n === 64 && __g.Inv.slots.filter(Boolean).length === 10));
 // dig kit: break and place via the real weapon code path
 const r = await I(() => {
   const P = __g.P; P.weapon = -1; __g.switchWeapon(4); P.x = 20.5; P.z = 50.5; P.y = 9.01; P.pitch = -1.55; P.yaw = 0;
