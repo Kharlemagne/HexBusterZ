@@ -51,6 +51,8 @@ const SFX = {
   slam() { noise(.6, 1, 'lowpass', 500, 0, 60); tone(55, .5, 'sine', 1, 20); },
   dig() { noise(.07, .35, 'lowpass', 900); },
   place() { tone(160, .08, 'square', .2, 100); },
+  mineTick(k) { tone(520 + 520 * k, .035, 'square', .09, 300 + 300 * k); noise(.025, .12, 'highpass', 3000); },          // the omnitool working on a block: rises as it gets close
+  syphon(dir) { if (dir > 0) tone(300, .12, 'sawtooth', .1, 1500); else tone(1300, .1, 'sawtooth', .1, 260); noise(.05, .1, 'bandpass', 2400); },
   wave() { tone(110, .6, 'sawtooth', .4, 220); tone(165, .6, 'sawtooth', .3, 330, .1); },
   spawn() { tone(60, .3, 'sawtooth', .15, 120); },
   rank() { tone(440, .1, 'square', .2); tone(660, .12, 'square', .2, null, .08); },

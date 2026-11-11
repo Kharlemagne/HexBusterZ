@@ -18,7 +18,7 @@ function toggleOmni() {                                                         
 function recoil(z, r) { rumble(.15 + z * 2, .1 + z * 2, 60); P.kick = Math.min(.3, P.kick + z); P.kickRot += r; P.flashT = .05; }
 function cycleShape(d = 1) { P.shape = ((P.shape || 0) + d + SHAPE_NAMES.length) % SHAPE_NAMES.length; updateWname(); feed('SHAPE: ' + SHAPE_NAMES[P.shape], '#7af0ff'); SFX.place(); }
 function updateWname() { if (typeof el !== 'undefined' && el.wname) txt(el.wname, WNAMES[P.weapon] + (P.weapon === 4 ? ' · ' + SHAPE_NAMES[P.shape || 0] : '')); }
-function targetBlock() { const e = eyePos(), f = fwdV(); return raycast(e[0], e[1], e[2], f[0], f[1], f[2], 6.5); }
+function targetBlock() { const e = eyePos(), f = fwdV(); return raycast(e[0], e[1], e[2], f[0], f[1], f[2], reach()); }
 function playerOverlaps(x, y, z) {
   return x + 1 > P.x - P.hw && x < P.x + P.hw && z + 1 > P.z - P.hw && z < P.z + P.hw && y + 1 > P.y && y < P.y + P.h;
 }
@@ -61,43 +61,71 @@ function updateWeapons(dt) {
       const m = muzzle(); for (let i = 0; i < 24; i++) emit(m[0], m[1], m[2], rnd(-4, 4), rnd(-2, 4), rnd(-4, 4), .1, [.4, 1, 1], rnd(.2, .5), 2);
     }
     P.zoom = !!R;
-  } else if (w === 4) {
-    digCd -= dt; const h = targetBlock();
-    if (L && digCd <= 0 && h) {
-      const id = get(h.x, h.y, h.z);
-      if (h.y >= 1 && id !== 9 && id !== 10 && id !== 11 && setBlock(h.x, h.y, h.z, 0)) {
-        if (!Inv.creative) { const [dk, dn] = dropOf(id); spawnDrop(h.x + .5, h.y + .4, h.z + .5, dk, dn); }          // the block pops out as a little item you walk over to collect
-        for (let i = 0; i < 7; i++) emit(h.x + .5, h.y + .5, h.z + .5, rnd(-3, 3), rnd(1, 5), rnd(-3, 3), rnd(.08, .2), COL[id] || [1, 1, 1], rnd(1, 3), 0);
-        SFX.dig(); digCd = .12; P.swing = 1;
-      } else if (stProtected(h.x, h.y, h.z)) { feed('HELICARRIER HULL — INDESTRUCTIBLE', '#7af0ff'); SFX.shink && SFX.shink(); digCd = .45; }
+  } else if (w === 4) omniUpdate(dt, L, R);
+  else { Mine.p = 0; Mine.heldR = false; }
+}
+// ============================================================
+//  OMNITOOL — mining and building with Minecraft's rules.
+//  REACH 4.5 blocks (5 in creative). MINING: hold to break; every block has a hardness in seconds, the timer restarts if the crosshair moves to another
+//  block or you let go, and after a break there is a 0.25 s pause before the next block starts (no accidental tunnelling). Creative breaks at once.
+//  BUILDING: one block the instant you press; holding repeats every 0.20 s; letting go re-arms it, so fast clicking is never slowed down.
+//  There is no arm swing: the tool SYPHONS (a flat stream of pixels between the block and the arm) and clicks on every break tick and every placement.
+// ============================================================
+const REACH = 4.5, REACH_CREATIVE = 5, BREAK_COOLDOWN = .25, PLACE_REPEAT = .2;
+const HARD_DEFAULT = .6, HARD = { 20: .35, 7: .35, 16: .35, 17: .4, 5: .5, 2: .55, 1: .8, 12: .8, 6: .9, 13: .7, 8: 1.1, 18: 1.1, 21: .9, 3: 2.2, 22: 1.4, 14: .3, 15: .3 };
+(function () { const soft = { 'ABYSS SILT': .35, 'SALT CRUST': .35, 'GLOOMSTONE': .8, 'PALE STRATA': .8, 'STICKWOOD': .7, 'SPINE': .6 }; MATS.forEach((m, i) => { if (soft[m.name]) HARD[MAT0 + i] = soft[m.name]; else if (m.emissive) HARD[MAT0 + i] = .3; else if (/STEEL|METAL|PLATE|TRUSS|HULL|CHROME/.test(m.name)) HARD[MAT0 + i] = 1.1; }); for (let b = 32; b < 48; b++) if (HARD[b] === undefined) HARD[b] = .9; })();
+const hardness = id => { const h = HARD[BASE[id] || id]; return h === undefined ? HARD_DEFAULT : h; };
+const reach = () => Inv.creative || GOD.on ? REACH_CREATIVE : REACH;
+const Mine = { x: 0, y: 0, z: 0, p: 0, need: 1, on: false, cd: 0, tick: 0, heldR: false, rep: 0, msg: 0 };
+const Syph = { t: 0, dir: 1, dist: 3, col: [1, 1, 1], pulse: 0 };          // dir 1 = block -> arm (mining), -1 = arm -> block (placing); t = seconds left of a burst
+function syphon(dir, dist, col, t) { Syph.dir = dir; Syph.dist = dist; Syph.col = col || [1, 1, 1]; Syph.t = Math.max(Syph.t, t); }
+function breakBlock(h, id) {
+  if (!setBlock(h.x, h.y, h.z, 0)) return false;
+  if (!Inv.creative) { const [dk, dn] = dropOf(id); spawnDrop(h.x + .5, h.y + .4, h.z + .5, dk, dn); }          // the block pops out as a little item you walk over to collect
+  for (let i = 0; i < 7; i++) emit(h.x + .5, h.y + .5, h.z + .5, rnd(-3, 3), rnd(1, 5), rnd(-3, 3), rnd(.08, .2), COL[id] || [1, 1, 1], rnd(1, 3), 0);
+  SFX.dig(); SFX.syphon(1); recoil(.035, .04); P.flashT = 0; syphon(1, h.t, COL[id], .22); Syph.pulse = 1;
+  return true;
+}
+function omniUpdate(dt, L, R) {
+  const M = Mine; M.cd = Math.max(0, M.cd - dt); M.msg = Math.max(0, M.msg - dt); Syph.t = Math.max(0, Syph.t - dt); Syph.pulse = Math.max(0, Syph.pulse - dt * 5);
+  const h = targetBlock(); M.on = false;
+  // ---- mining
+  if (L && h) {
+    const id = get(h.x, h.y, h.z), can = h.y >= 1 && id !== 9 && id !== 10 && id !== 11 && !(useChunks && OW.gen === 3 && stProtected(h.x, h.y, h.z));
+    if (h.x !== M.x || h.y !== M.y || h.z !== M.z) { M.x = h.x; M.y = h.y; M.z = h.z; M.p = 0; M.tick = 0; }          // looked at another block: start again
+    if (!can) { M.p = 0; if (M.msg <= 0) { M.msg = .6; if (stProtected(h.x, h.y, h.z)) { feed('HELICARRIER HULL — INDESTRUCTIBLE', '#7af0ff'); SFX.shink && SFX.shink(); } else SFX.empty(); } }
+    else if (M.cd <= 0) {
+      M.need = Inv.creative || GOD.on ? 0 : hardness(id); M.p += dt; M.on = true;
+      syphon(1, h.t, COL[id], .08);
+      M.tick -= dt; if (M.tick <= 0 && M.p < M.need) { M.tick = .16; SFX.mineTick(M.need ? M.p / M.need : 1); }       // a crisp tick as it works
+      if (M.p >= M.need) { if (breakBlock(h, id)) M.cd = BREAK_COOLDOWN; M.p = 0; M.on = false; }
     }
-    const bs = Inv.slots[Inv.sel];
-    if (R && digCd <= 0 && bs && isBucket(bs.k)) {                                              // buckets work like Minecraft's: an empty one scoops a source, a full one pours one out
-      const e = eyePos(), f = fwdV(), bh = raycast(e[0], e[1], e[2], f[0], f[1], f[2], 6.5, true); digCd = .3;
-      if (bh) {
-        const bid = get(bh.x, bh.y, bh.z);
-        if (bs.k === 'bucket') { if (bid === 3600 || bid === 4) { setBlock(bh.x, bh.y, bh.z, 0); const full = bid === 4 ? 'bucket_lava' : 'bucket_water'; if (!Inv.creative) { Inv.useSel(); if (Inv.add(full, 1)) feed('INVENTORY FULL', '#ff8a3a'); } SFX.place(); P.swing = .6; } }
-        else { const px = bh.x + bh.nx, py = bh.y + bh.ny, pz = bh.z + bh.nz, tid = bs.k === 'bucket_lava' ? 4 : 3600, at = (isLiquid(bid) ? [bh.x, bh.y, bh.z] : [px, py, pz]), cur = get(at[0], at[1], at[2]);
-          if ((cur === 0 || isLiquid(cur)) && !playerOverlaps(at[0], at[1], at[2]) && setBlock(at[0], at[1], at[2], tid)) { if (!Inv.creative) { Inv.useSel(); if (Inv.add('bucket', 1)) feed('INVENTORY FULL', '#ff8a3a'); } SFX.place(); P.swing = .6; } }
-      }
-      return;
-    }
-    const ph = h || (R && GOD.on ? GOD.air() : null);                  // god mode: with nothing in reach the block goes into the air in front of you
-    if (R && digCd <= 0 && ph) {
-      const h = ph;
-      const px = h.x + h.nx, py = h.y + h.ny, pz = h.z + h.nz;
-      if (get(px, py, pz) === 0 || isLiquid(get(px, py, pz))) {
-        let bid = Inv.selBlock();
-        if (bid) { const e = eyePos(), f = fwdV(), hy = e[1] + f[1] * h.t, top = h.ny < 0 || (h.ny === 0 && hy - py >= .5);          // aim at the upper half of a wall, or under a block, and half blocks go in the top half
-          const k = KIND[bid]; if (k === K.SCREEN) { const nf = h.nx > 0 ? 0 : h.nx < 0 ? 1 : h.nz > 0 ? 2 : h.nz < 0 ? 3 : (Math.abs(f[0]) > Math.abs(f[2]) ? (f[0] > 0 ? 1 : 0) : (f[2] > 0 ? 3 : 2)); bid = screenId(screenType(bid), nf); }
-          else if (k === K.RAIL) { /* rails are placed as they are */ }
-          else if (k) bid = shapeId(BASE[bid], k === K.SLAB_B || k === K.SLAB_T ? 1 : k === K.STAIR ? 2 : k === K.VSLAB ? 3 : k === K.WALL ? 4 : k === K.PILLAR ? 5 : k === K.FENCE ? 7 : k === K.PANE ? 8 : 6, f, { top });       // an older slab / stairs item keeps its shape
-          else bid = shapeId(bid, P.shape || 0, f, { top }); }
-        if (!bid) { if (digCd <= 0) { feed('NO BLOCK SELECTED — OPEN INVENTORY (I)', '#ff8a3a'); SFX.empty(); digCd = .5; } }
-        else if (!playerOverlaps(px, py, pz) && setBlock(px, py, pz, bid)) { Inv.useSel(); SFX.place(); digCd = .15; P.swing = .6; }
-      }
-    }
+  } else { M.p = 0; M.tick = 0; }                                             // let go (or nothing in reach): progress is lost
+  // ---- placing / buckets: once on the press, then every 0.2 s while held
+  let fire = false;
+  if (R) { if (!M.heldR) { fire = true; M.rep = PLACE_REPEAT; } else { M.rep -= dt; if (M.rep <= 0) { fire = true; M.rep += PLACE_REPEAT; } } }
+  M.heldR = !!R; if (!fire) return;
+  const bs = Inv.slots[Inv.sel];
+  if (bs && isBucket(bs.k)) {                                               // buckets work like Minecraft's: an empty one scoops a source, a full one pours one out
+    const e = eyePos(), f = fwdV(), bh = raycast(e[0], e[1], e[2], f[0], f[1], f[2], reach(), true); if (!bh) return;
+    const bid = get(bh.x, bh.y, bh.z);
+    if (bs.k === 'bucket') { if (bid === 3600 || bid === 4) { setBlock(bh.x, bh.y, bh.z, 0); const full = bid === 4 ? 'bucket_lava' : 'bucket_water'; if (!Inv.creative) { Inv.useSel(); if (Inv.add(full, 1)) feed('INVENTORY FULL', '#ff8a3a'); } SFX.place(); SFX.syphon(1); syphon(1, bh.t, bid === 4 ? [1, .5, .1] : [.25, .3, .45], .25); } }
+    else { const px = bh.x + bh.nx, py = bh.y + bh.ny, pz = bh.z + bh.nz, tid = bs.k === 'bucket_lava' ? 4 : 3600, at = (isLiquid(bid) ? [bh.x, bh.y, bh.z] : [px, py, pz]), cur = get(at[0], at[1], at[2]);
+      if ((cur === 0 || isLiquid(cur)) && !playerOverlaps(at[0], at[1], at[2]) && setBlock(at[0], at[1], at[2], tid)) { if (!Inv.creative) { Inv.useSel(); if (Inv.add('bucket', 1)) feed('INVENTORY FULL', '#ff8a3a'); } SFX.place(); SFX.syphon(-1); syphon(-1, bh.t, tid === 4 ? [1, .5, .1] : [.25, .3, .45], .25); } }
+    return;
   }
+  const ph = h || (GOD.on ? GOD.air() : null); if (!ph) return;                // god mode: with nothing in reach the block goes into the air in front of you
+  const px = ph.x + ph.nx, py = ph.y + ph.ny, pz = ph.z + ph.nz, cur = get(px, py, pz);            // always the hit block + the face normal the ray came in through
+  if (cur !== 0 && !isLiquid(cur)) return;                                    // liquids are replaceable: the block goes straight into them
+  let bid = Inv.selBlock();
+  if (bid) { const e = eyePos(), f = fwdV(), hy = e[1] + f[1] * ph.t, top = ph.ny < 0 || (ph.ny === 0 && hy - py >= .5);          // aim at the upper half of a wall, or under a block, and half blocks go in the top half
+    const k = KIND[bid]; if (k === K.SCREEN) { const nf = ph.nx > 0 ? 0 : ph.nx < 0 ? 1 : ph.nz > 0 ? 2 : ph.nz < 0 ? 3 : (Math.abs(f[0]) > Math.abs(f[2]) ? (f[0] > 0 ? 1 : 0) : (f[2] > 0 ? 3 : 2)); bid = screenId(screenType(bid), nf); }
+    else if (k === K.RAIL) { /* rails are placed as they are */ }
+    else if (k) bid = shapeId(BASE[bid], k === K.SLAB_B || k === K.SLAB_T ? 1 : k === K.STAIR ? 2 : k === K.VSLAB ? 3 : k === K.WALL ? 4 : k === K.PILLAR ? 5 : k === K.FENCE ? 7 : k === K.PANE ? 8 : 6, f, { top });       // an older slab / stairs item keeps its shape
+    else bid = shapeId(bid, P.shape || 0, f, { top }); }
+  if (!bid) { if (M.msg <= 0) { M.msg = .6; feed('NO BLOCK SELECTED — OPEN INVENTORY (I)', '#ff8a3a'); SFX.empty(); } return; }
+  if (playerOverlaps(px, py, pz)) return;                                     // never wall yourself in
+  if (setBlock(px, py, pz, bid)) { Inv.useSel(); SFX.place(); SFX.syphon(-1); recoil(.02, .025); P.flashT = 0; syphon(-1, ph.t === undefined ? 3 : ph.t, COL[bid] || COL[BASE[bid]], .2); }
 }
 function updateBombs(dt) {
   for (let i = bombs.length - 1; i >= 0; i--) {

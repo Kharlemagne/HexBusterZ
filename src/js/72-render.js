@@ -4,6 +4,30 @@ function resize() {
   canvas.width = Math.max(2, Math.floor((innerWidth || 640) * r)); canvas.height = Math.max(2, Math.floor((innerHeight || 360) * r)); if (gl) gl.viewport(0, 0, canvas.width, canvas.height);
 }
 addEventListener('resize', resize);
+// CRACKS: jagged dark lines that spread from the middle of every visible face of the block being mined, further the closer it is to breaking
+const CRACK = (() => {
+  const out = [], rs = (() => { let q = 9173; return () => (q = (q * 16807) % 2147483647) / 2147483647; })(), arms = [];
+  for (let b = 0; b < 7; b++) { const a = b / 7 * TAU + rs() * .5; arms.push({ x: 8, y: 8, dx: Math.cos(a), dy: Math.sin(a), hz: rs() < .5 }); }
+  for (let st = 0; st < 7; st++) for (const A of arms) {
+    const len = 1 + Math.floor(rs() * 3), hz = A.hz; A.hz = !A.hz;
+    const sg = hz ? (A.dx >= 0 ? 1 : -1) : (A.dy >= 0 ? 1 : -1), x0 = A.x, y0 = A.y; if (hz) A.x += sg * len; else A.y += sg * len;
+    if (A.x < 0 || A.x > 15 || A.y < 0 || A.y > 15) { A.x = clamp(A.x, 0, 15); A.y = clamp(A.y, 0, 15); }
+    const u0 = Math.min(x0, A.x), v0 = Math.min(y0, A.y), w = Math.abs(A.x - x0) + 1, h = Math.abs(A.y - y0) + 1;
+    out.push([(u0 + w / 2) / 16 - .5, (v0 + h / 2) / 16 - .5, w / 16, h / 16]);
+  }
+  return out;
+})();
+function pushCracks(x, y, z, k) {
+  const id = get(x, y, z), bc = COL[id] || COL[BASE[id]] || [.5, .5, .5], D = bc[0] * .3 + bc[1] * .59 + bc[2] * .11 < .3 ? .85 : .02;                      // pale cracks on dark blocks, black on everything else
+  const n = Math.min(CRACK.length, Math.ceil(k * CRACK.length)), cx = x + .5, cy = y + .5, cz = z + .5, e = .008, o = .506;
+  for (const [nx, ny, nz] of [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]]) {
+    if ((camX - cx) * nx + (camY - cy) * ny + (camZ - cz) * nz < .5) continue;                     // only the faces you can see
+    for (let i = 0; i < n; i++) { const c = CRACK[i];
+      if (nx) pushBox(cx + nx * o, cy + c[1], cz + c[0], e, c[3], c[2], D, D, D, null, false);
+      else if (ny) pushBox(cx + c[0], cy + ny * o, cz + c[1], c[2], e, c[3], D, D, D, null, false);
+      else pushBox(cx + c[0], cy + c[1], cz + nz * o, c[2], c[3], e, D, D, D, null, false); }
+  }
+}
 function pushOutline(x, y, z, c, t) {
   c = c || [1, 1, .85]; t = t || .035;
   for (let a = 0; a < 2; a++) for (let b = 0; b < 2; b++) {
@@ -50,7 +74,7 @@ function renderFrame(dt) {
   drawHaz(T);
   drawLockOn(); drawSlashes(); drawLatchFx();
   drawEnemies(); drawRemotePlayers(T, dt); drawDrops(); drawParticles(); drawEProjs(); drawBeams(state === 'play' ? dt : 0); drawBombs();
-  if (state === 'play' && P.weapon === 4) { const h = targetBlock(); if (h) pushOutline(h.x, h.y, h.z);
+  if (state === 'play' && P.weapon === 4) { const h = targetBlock(); if (h) { pushOutline(h.x, h.y, h.z, null, .022); if (Mine.on && Mine.need > 0 && h.x === Mine.x && h.y === Mine.y && h.z === Mine.z) pushCracks(h.x, h.y, h.z, clamp(Mine.p / Mine.need, 0, 1)); }
     if (GOD.on) { const g = h ? { x: h.x + h.nx, y: h.y + h.ny, z: h.z + h.nz } : GOD.air(); if (g && get(g.x, g.y, g.z) === 0) pushOutline(g.x, g.y, g.z, [1, .25, .85], .05); } }     // god mode: a pink cage where the next block will land
   flushDyn();
   if (OW.gen === 3 && mode === 'hub') { drawVatGlass(T); drawStationGlass(T); drawHangarHolo(T); drawCoreGlass(T); drawRiftTear(T); }

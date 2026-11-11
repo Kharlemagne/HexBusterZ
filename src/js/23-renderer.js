@@ -107,7 +107,7 @@ void main(){
   float rga=1.0;
   if(ti>9999.5){vec4 rf=riftfx(vuv,vc.r,vc.g,tm);col=rf.rgb;rga=rf.a;}else if(ti>599.5)col=holo(ti,vuv,tm);else if(ti>199.5)col=scr(ti,vuv,tm);
   if((ti>7.5&&ti<9.5)||(ti>45.5&&ti<61.5)){float sd=step(0.5,mod(ti,2.0));col=lava(mix(vec3(vwp.x+vwp.z,0.0,vwp.y*1.3+tm*0.8),vwp,sd),tm,vd);}
-  if(ti>62.5&&ti<64.5){float sd=step(0.5,mod(ti,2.0));col=bwater(mix(vec3(vwp.x+vwp.z,0.0,vwp.y*1.3+tm*0.8),vwp,sd),tm,vd);}
+  if(ti>61.5&&ti<63.5){float sd=step(0.5,mod(ti,2.0));col=bwater(mix(vec3(vwp.x+vwp.z,0.0,vwp.y*1.3+tm*0.8),vwp,sd),tm,vd);}
   float lamp=0.62*(1.0-smoothstep(1.5,22.0,vd));
   col*=mix(max(amb,lamp),1.0,em);
   col=mix(col,vec3(dot(col,vec3(0.299,0.587,0.114))),gry);

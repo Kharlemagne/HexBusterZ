@@ -6,7 +6,8 @@
 
 const ICON_CACHE = new Map(), ICON_N = 64;
 const iconPx = () => { if (!ATLAS_PX && ATLAS_CV) ATLAS_PX = ATLAS_CV.getContext('2d').getImageData(0, 0, 256, 256).data; return ATLAS_PX; };
-function iconCanvas() { const c = document.createElement('canvas'); c.width = c.height = ICON_N; return c; }
+let ICON_LAST = null; const ICON_SRC = new Map(), ICON_RUNS = new Map();
+function iconCanvas() { const c = document.createElement('canvas'); c.width = c.height = ICON_N; ICON_LAST = c; return c; }
 function cubeIcon(id) {
   const px = iconPx(); if (!px) return null;
   const base = BASE[id] || id, col = COL[id] || COL[base] || [.55, .55, .55], emit = EMIT.has(id) || EMIT.has(base);
@@ -43,10 +44,21 @@ function bucketIcon(k) {
   x.beginPath(); x.arc(32, 18, 16, Math.PI, 0); x.stroke(); return c.toDataURL();
 }
 function itemIcon(k) {
-  let u = ICON_CACHE.get(k); if (u) return u;
+  let u = ICON_CACHE.get(k); if (u) return u; ICON_LAST = null;
   try { u = k === 'shard' ? shardIcon() : isBucket(k) ? bucketIcon(k) : typeof k === 'number' ? cubeIcon(k) : null; } catch (e) { u = null; }
   if (!u) { const c = iconCanvas(), x = c.getContext('2d'); x.fillStyle = itemColor(k); x.fillRect(10, 10, 44, 44); u = c.toDataURL(); if (k !== 'shard' && !(typeof k === 'number' && !ATLAS_CV)) { } }
-  if (typeof k !== 'number' || ATLAS_CV) ICON_CACHE.set(k, u);        // before the atlas exists a block only gets a stand-in, which must not be cached
+  if (typeof k !== 'number' || ATLAS_CV) { ICON_CACHE.set(k, u); if (ICON_LAST) ICON_SRC.set(k, ICON_LAST); }        // before the atlas exists a block only gets a stand-in, which must not be cached
   return u;
 }
 const iconTag = k => '<u class="ico" style="background-image:url(' + itemIcon(k) + ')"></u>';
+
+// the same picture as 16x16 pixel art, as horizontal runs [x, y (0 = top), length, r, g, b]: the hologram on the arm draws it as flat light, and a dropped flat item
+// (shard, bucket) is these pixels pushed out into a slab 1/16 of a block thick. Nothing is modelled by hand.
+function itemRuns(k) {
+  let R = ICON_RUNS.get(k); if (R) return R;
+  itemIcon(k); const src = ICON_SRC.get(k); if (!src) return [];
+  const d = src.getContext('2d').getImageData(0, 0, ICON_N, ICON_N).data, px = [], q = v => Math.round(v / 36) * 36;
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) { let r = 0, g = 0, b = 0, n = 0; for (let j = 0; j < 4; j++) for (let i = 0; i < 4; i++) { const o = ((y * 4 + j) * ICON_N + x * 4 + i) * 4; if (d[o + 3] > 127) { r += d[o]; g += d[o + 1]; b += d[o + 2]; n++; } } px.push(n >= 8 ? [q(r / n), q(g / n), q(b / n)] : null); }
+  R = []; for (let y = 0; y < 16; y++) { let x = 0; while (x < 16) { const p = px[y * 16 + x]; if (!p) { x++; continue; } let e = x + 1; while (e < 16) { const t = px[y * 16 + e]; if (!t || t[0] !== p[0] || t[1] !== p[1] || t[2] !== p[2]) break; e++; } R.push([x, y, e - x, p[0] / 255, p[1] / 255, p[2] / 255]); x = e; } }
+  if (typeof k !== 'number' || ATLAS_CV) ICON_RUNS.set(k, R); return R;
+}

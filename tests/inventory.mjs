@@ -8,7 +8,7 @@ check('new profiles get a starter kit in the hotbar', await I(() => __g.Inv.slot
 const r = await I(() => {
   const P = __g.P; P.weapon = -1; __g.switchWeapon(4); P.x = 20.5; P.z = 50.5; P.y = 9.01; P.pitch = -1.55; P.yaw = 0;
   const y = __g.topY(20, 50); const id = __g.get(20, y, 50), before = __g.Inv.count(id);
-  __g.mouse.l = true; for (let i = 0; i < 12; i++) __g.update(1 / 60); __g.mouse.l = false;
+  __g.mouse.l = true; for (let i = 0; i < 160 && __g.get(20, y, 50) !== 0; i++) __g.update(1 / 60); __g.mouse.l = false;      // hold until it breaks (blocks have a hardness now)
   const dropped = __g.drops.length;                                                    // the block pops out as a drop first...
   for (let i = 0; i < 120; i++) __g.update(1 / 60);                                      // ...and is collected when you are next to it
   const dug = __g.get(20, y, 50) === 0, after = __g.Inv.count(id);
@@ -22,7 +22,7 @@ check('breaking a block leaves a drop that you then pick up', r.dug && r.dropped
 check('placing a block uses one up', r.placed && r.used === 1, JSON.stringify(r));
 const dr = await I(() => { const P = __g.P, I = __g.Inv; I.load(); P.x = 25.5; P.z = 50.5; P.y = 9.01; __g.drops.length = 0;
   __g.spawnDrop(30.5, 9.5, 50.5, 2, 3, 0, 0, 0); const c0 = I.count(2); for (let i = 0; i < 30; i++) __g.update(1 / 60); const far = I.count(2) === c0 && __g.drops.length === 1;   // 5 blocks away: not picked up
-  P.x = 28.5; for (let i = 0; i < 90; i++) __g.update(1 / 60); const near = I.count(2) === c0 + 3 && __g.drops.length === 0;                                                       // walk closer: magnet pulls it in
+  P.x = 29.6; for (let i = 0; i < 90; i++) __g.update(1 / 60); const near = I.count(2) === c0 + 3 && __g.drops.length === 0;                                                       // within about a block: it flies in
   __g.spawnDrop(28.5, 9.5, 50.5, 2, 1, 0, 0, 0); __g.spawnDrop(28.8, 9.5, 50.5, 2, 1, 0, 0, 0); const merged = __g.drops.length === 1 && __g.drops[0].n === 2; __g.drops.length = 0;
   I.creative = true; P.weapon = -1; __g.switchWeapon(4); P.pitch = -1.5; const y = __g.topY(28, 50); __g.mouse.l = true; for (let i = 0; i < 12; i++) __g.update(1 / 60); __g.mouse.l = false; const none = __g.drops.length === 0; I.creative = false;
   return { far, near, merged, none }; });

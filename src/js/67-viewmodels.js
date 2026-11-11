@@ -59,7 +59,6 @@ function drawCannonArm() {
   const bob = Math.sin(P.bobT + 1.2) * .012 * k, bobX = Math.cos(P.bobT * .5 + 1) * .01 * k, tt = performance.now() / 1000;
   let ox = -.34 - bobX - P.swayX * .6, oy = -.175 + bob - P.kick * .1 + Math.sin(tt * 1.3) * .004, oz = -.6 + P.kick * .5, rx = .09 + P.kickRot * .4;
   if (P.sliding) { oy -= .06; ox += .03; } if (P.dashT > 0) oz += .04; if (P.slamming) oy -= .1;
-  if (w === 4) { rx -= P.swing * 1.0; oz -= P.swing * .1; }
   const tr = Math.min(1, MP.t / .5), pulse = MP.t < .5 ? Math.sin(tr * Math.PI) : 0;               // transformation: the arm pulls back, tips up and twists while the parts re-arrange
   oz += .08 * pulse; oy += .02 * pulse; rx += .22 * pulse; const twist = Math.sin(tr * TAU) * .2 * (1 - tr);
   const G = GP.v, B = GP_BASE; ox += B.x + G.x; oy += B.y + G.y; oz += B.z + G.z; rx += B.pitch + G.pitch;                  // B = the pose Karl tuned by hand; G = live offsets from GUN ARM POSITION mode (zero = shipped)
@@ -109,6 +108,45 @@ function drawModeHolo(info) {
   if (rdy > .01) pushBox(cx - bw / 2 + bw * rdy / 2, cy - .026 * hs, cz, bw * rdy, .003 * hs, .002, a[0], a[1], a[2], null, false, 0, TILE.GLOW);
   if (w === 4) holoText(SHAPE_NAMES[P.shape || 0], cx, cy - .036 * hs, cz, px * .6, dim);
 }
+// ---- the HELD ITEM hologram (omnitool): the selected item is not put in a hand. A small projector half way up the forearm throws a fan of light,
+//      and the item's flat picture floats in it with its name and count. Drawn additively, so it is see-through.
+const ITEM_HOLO_AT = [.16, .1, .2];                                         // the projector, in arm space: [x, y (up), z (toward the shoulder; the muzzle is at -.5)]
+function itemHoloGeo(info) {
+  const { W, tt } = info, E = W(ITEM_HOLO_AT[0] - .16, ITEM_HOLO_AT[1], ITEM_HOLO_AT[2]), px = .0036, w = 16 * px;
+  return { E, px, w, cx: E[0] + .012, cy: E[1] + .1 + Math.sin(tt * 1.7) * .004, cz: E[2], tt };
+}
+function drawItemHoloSolid(info) {                                          // the picture itself: thin rows with gaps between them, so you see through it but can still tell what it is
+  if (P.weapon !== 4) return; const s = Inv.slots[Inv.sel]; if (!s) return;
+  const { px, cx, cy, cz, tt } = itemHoloGeo(info), fl = .9 + Math.sin(tt * 19) * .06;
+  for (const r of itemRuns(s.k)) pushBox(cx + (r[0] + r[2] / 2 - 8) * px, cy + (8 - r[1] - .5) * px, cz, r[2] * px, px * .58, .0005, (r[3] * .8 + .05) * fl, (r[4] * .8 + .14) * fl, (r[5] * .8 + .18) * fl, null, false, 0, TILE.GLOW);
+}
+function drawItemHolo(info) {
+  if (P.weapon !== 4) return; const s = Inv.slots[Inv.sel]; if (!s) return;
+  const { E, px, w, cx, cy, cz, tt } = itemHoloGeo(info), fl = .8 + Math.sin(tt * 19) * .05 + (Math.random() < .03 ? -.35 : 0), HC = [.35, .9, 1];
+  pushBox(E[0], E[1], E[2], .022, .006, .022, HC[0], HC[1], HC[2], null, false, 0, TILE.GLOW);                                   // the projector lens
+  const y1 = cy - w * .62;
+  for (let i = 0; i < 7; i++) { const k = (i + .5) / 7, y = lerp(E[1] + .004, y1, k), ww = lerp(.012, w * 1.1, k), a = .16 * (1 - k * .5) * fl * (.8 + .2 * Math.sin(tt * 9 - i * 1.3));      // the fan of light from the arm
+    pushBox(lerp(E[0], cx, k), y, cz, ww, (y1 - E[1]) / 7, .001, HC[0] * a, HC[1] * a, HC[2] * a, null, false, 0, TILE.GLOW); }
+  pushBox(cx, cy, cz + .001, w * 1.2, w * 1.2, .001, HC[0] * .05, HC[1] * .06, HC[2] * .07, null, false, 0, TILE.GLOW);            // faint glass
+  const sl = cy + w * .6 - ((tt * .09) % 1) * w * 1.2; pushBox(cx, sl, cz, w * 1.2, px * .5, .001, HC[0] * .3 * fl, HC[1] * .3 * fl, HC[2] * .3 * fl, null, false, 0, TILE.GLOW);      // a scan line drifting down
+  const e = .0011, hw = w * .6; for (const sx of [-1, 1]) for (const sy of [-1, 1]) { pushBox(cx + sx * (hw - .006), cy + sy * hw, cz, .012, e, e, HC[0] * fl, HC[1] * fl, HC[2] * fl, null, false, 0, TILE.GLOW); pushBox(cx + sx * hw, cy + sy * (hw - .006), cz, e, .012, e, HC[0] * fl, HC[1] * fl, HC[2] * fl, null, false, 0, TILE.GLOW); }      // corner brackets
+  const nm = itemName(s.k).toUpperCase().slice(0, 18), npx = Math.min(.0016, w * 1.7 / (nm.length * 6)), dim = [HC[0] * .9 * fl, HC[1] * .9 * fl, HC[2] * .9 * fl];
+  holoText(nm, cx, cy + hw + .011, cz, npx, dim);
+  if (!Inv.creative) holoText('X' + s.n, cx + hw - .012, cy - hw + .008, cz, .0013, [fl, fl, fl * .9]);
+}
+// ---- the SYPHON: a flat stream of square pixels between the block in the crosshair and the mouth of the arm (toward the arm when mining, away when placing)
+function drawSyphon(info) {
+  if (P.weapon !== 4 || Syph.t <= 0) return;
+  const { tt } = info, A = [0, 0, -Math.min(9.5, Math.max(.8, Syph.dist + .3))], B = vmMuzzle, c = Syph.col, al = Math.min(1, Syph.t / .07), N = 16;
+  for (let i = 0; i < N; i++) {
+    let u = (i / N + tt * 2.6) % 1; if (Syph.dir < 0) u = 1 - u;                                           // u = 0 at the block, 1 at the arm
+    const ang = i * 2.4 + tt * 7 * Syph.dir, rad = (1 - u) * (1 - u) * .34 + .004, sz = lerp(.11, .009, Math.sqrt(u)), b = (.55 + .45 * ((i * 7) % 3) / 2) * al;
+    pushBox(lerp(A[0], B[0], u) + Math.cos(ang) * rad, lerp(A[1], B[1], u) + Math.sin(ang) * rad, lerp(A[2], B[2], u), sz, sz, .001, (c[0] * .6 + .25) * b, (c[1] * .6 + .32) * b, (c[2] * .6 + .4) * b, null, false, 0, TILE.GLOW);
+  }
+  const k = Mine.on && Mine.need > 0 ? clamp(Mine.p / Mine.need, 0, 1) : Syph.pulse, r = lerp(.62, .2, k), e = .012, g = .5 * al;         // a square of light closing on the block
+  for (const q of [-1, 1]) { pushBox(A[0], A[1] + q * r, A[2], r * 2, e, .001, .4 * g, .9 * g, g, null, false, 0, TILE.GLOW); pushBox(A[0] + q * r, A[1], A[2], e, r * 2, .001, .4 * g, .9 * g, g, null, false, 0, TILE.GLOW); }
+  pushBox(B[0], B[1], B[2], .05, .05, .001, .4 * al, .9 * al, al, null, false, 0, TILE.GLOW);
+}
 function drawViewmodel() {
   const info = drawCannonArm();
   if (P.flashT > 0 && P.weapon !== 4) {
@@ -117,6 +155,7 @@ function drawViewmodel() {
     pushBox(vmMuzzle[0], vmMuzzle[1], vmMuzzle[2], s * .5, s * .5, s * 2.2, 1, 1, .9, null, false, 0);
   }
   if (P.weapon === 0 && P.charge > 0) { const s = .03 + P.charge * .08; pushBox(vmMuzzle[0], vmMuzzle[1] + .1, vmMuzzle[2] + .1, s, s, s, 1, .5 + P.charge * .5, .1, null, false, 0); }
+  drawItemHoloSolid(info);
   flushDyn();
-  drawModeHolo(info); flushDynAdd(.9);
+  drawModeHolo(info); drawItemHolo(info); drawSyphon(info); flushDynAdd(.9);
 }
