@@ -31,15 +31,16 @@ function renderFrame(dt) {
   P.btFade = lerp(P.btFade, P.bt > 0 ? 1 : 0, Math.min(1, 5 * dt)); P.fovPunch = Math.max(0, P.fovPunch - dt * 1.6);
   let sk = null; if (useChunks) { sk = DayNight.state(P.x, P.z); if (OW.gen === 5) sk = abyssSky(sk); fogCur = sk.fog; }
   gl.uniform1f(loc.gry, OW.gen === 5 && useChunks ? 1 : 0);
+  { const cn = OW.gen === 5 && useChunks && state !== 'menu'; gl.uniform1f(loc.coneOn, cn ? 1 : 0); if (cn) { gl.uniform4f(loc.cone, P.x, P.z, Math.sin(P.yaw), Math.cos(P.yaw)); gl.uniform4fv(loc.rv, Abyss.coneStep(dt)); } }          // the Abyss draws like a cone: nothing straight behind you
   { const k = P.btFade, fb = useChunks ? fogCur : FOG, fc = [lerp(fb[0], .03, k), lerp(fb[1], .12, k), lerp(fb[2], .34, k)]; gl.clearColor(fc[0], fc[1], fc[2], 1); gl.uniform3fv(loc.fogc, fc); }
   gl.viewport(0, 0, canvas.width, canvas.height);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   gl.uniform1f(loc.amb, sk ? sk.amb : 1); gl.uniform1f(loc.tm, T);
   const inBoss = mode === 'dungeon' && Run.cur && Run.cur.type === 'boss';
-  if (inBoss) { gl.uniform2f(loc.fogr, 45, 170); cullR = 135; } else if (mode === 'dungeon') { gl.uniform2f(loc.fogr, 14, 70); cullR = 78; } else { const rd = OW.LOAD * 16 - 2; gl.uniform2f(loc.fogr, rd * .5, rd); cullR = rd + 22; }
+  if (inBoss) { gl.uniform2f(loc.fogr, 45, 170); cullR = 135; } else if (mode === 'dungeon') { gl.uniform2f(loc.fogr, 14, 70); cullR = 78; } else { const rd = OW.LOAD * 16 - 2, ef = EdgeFall.on ? EdgeFall.t * 40 : 0; gl.uniform2f(loc.fogr, rd * .5 + ef * .5, rd + ef); cullR = rd + 22; }
   camX = ex; camY = ey; camZ = ez; camFX = f[0]; camFZ = f[2];
   const fovy = Math.min(2.0, 2 * Math.atan(Math.tan(P.fov / 2) / asp));
-  const vp = mul4(perspective(fovy, asp, .05, 300), lookView(ex, ey, ez, f[0], f[1], f[2], roll));
+  const vp = mul4(perspective(fovy, asp, .05, EdgeFall.on ? 1500 : 300), lookView(ex, ey, ez, f[0], f[1], f[2], roll));
   gl.uniformMatrix4fv(loc.vp, false, vp); gl.uniform3f(loc.cam, ex, ey, ez);
   drawWorld();
   if (sk) drawSkyDome(f, roll, fovy, asp, sk);                                       // after the terrain, only where nothing was drawn: the (expensive) sky shader skips every covered pixel
@@ -55,7 +56,7 @@ function renderFrame(dt) {
   if (OW.gen === 3 && mode === 'hub') { drawVatGlass(T); drawStationGlass(T); drawHangarHolo(T); drawCoreGlass(T); drawRiftTear(T); }
   if ((OW.gen === 4 || OW.gen === 5) && mode === 'hub') drawRealmTears(T);
   if (state === 'play' || state === 'paused') {
-    gl.clear(gl.DEPTH_BUFFER_BIT); gl.uniform1f(loc.amb, 1); gl.uniform1f(loc.gry, 0);                    // the arm keeps its colour in the Abyss
+    gl.clear(gl.DEPTH_BUFFER_BIT); gl.uniform1f(loc.amb, 1); gl.uniform1f(loc.gry, 0); gl.uniform1f(loc.coneOn, 0);                    // the arm keeps its colour in the Abyss
     gl.uniformMatrix4fv(loc.vp, false, perspective(1.05, asp, .01, 10)); gl.uniform3f(loc.cam, 0, 0, 0);
     drawViewmodel();
   }

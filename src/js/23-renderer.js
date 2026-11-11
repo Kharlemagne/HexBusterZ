@@ -11,7 +11,7 @@ precision highp float;
 #else
 precision mediump float;
 #endif
-varying vec4 vc;varying float vd;varying vec2 vuv;varying float vt;varying vec3 vwp;uniform sampler2D tex;uniform sampler2D avg;uniform vec3 fogc;uniform vec2 fogr;uniform float ga;uniform float gry;uniform float amb;uniform float tm;
+varying vec4 vc;varying float vd;varying vec2 vuv;varying float vt;varying vec3 vwp;uniform sampler2D tex;uniform sampler2D avg;uniform vec3 fogc;uniform vec2 fogr;uniform float ga;uniform float gry;uniform vec4 cone;uniform float coneOn;uniform vec4 rv[8];uniform float amb;uniform float tm;
 float lh(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 float lv(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(lh(i),lh(i+vec2(1.0,0.0)),f.x),mix(lh(i+vec2(0.0,1.0)),lh(i+vec2(1.0,1.0)),f.x),f.y);}
 // flowing lava in WORLD space, so neighbouring lava blocks form one continuous river: warped noise drifts, a dark crust floats on glowing orange, bright cracks open and close
@@ -94,6 +94,10 @@ vec3 bwater(vec3 w,float t,float dist){                                         
   return mix(c,vec3(0.02,0.026,0.045),smoothstep(55.0,115.0,dist));
 }
 void main(){
+  if(coneOn>0.5){vec2 cr=vwp.xz-cone.xy;float cl=length(cr);if(cl>4.0){                  // THE ABYSS draws like a cone: 32 compass sectors each have a 'revealed' radius. Behind you (5-7 o'clock) it is 4 blocks; turn towards a sector and the world re-forms outward from 4 blocks
+    float sc=floor(mod(atan(cr.y,cr.x)/6.2831853+1.0,1.0)*32.0),lim=100000.0;
+    for(int i=0;i<8;i++){vec4 v=rv[i];float b=float(i)*4.0;if(sc>=b&&sc<b+4.0){float k=sc-b;lim=k<0.5?v.x:k<1.5?v.y:k<2.5?v.z:v.w;}}
+    if(cl>lim)discard;}}
   float em=step(vt,-0.5);float ti=floor(abs(vt)+0.5)-1.0;
   vec2 tc=vec2(mod(ti,16.0),floor(ti/16.0));vec2 f=fract(vuv);
   vec3 tx=texture2D(tex,(tc*16.0+0.5+f*15.0)/256.0).rgb;
@@ -118,7 +122,7 @@ precision highp float;
 precision mediump float;
 #endif
 varying vec2 ndc;uniform vec3 fwd,rgt,upv,zen,hor,gnd;uniform vec3 sunC[2];uniform vec3 moonC[4];uniform vec2 tanf;uniform float stars,sunA,tm;
-uniform float sunV[2];uniform float moonV[4];uniform float dieA[6];uniform vec4 gt;uniform float gk,fx,bk;uniform vec2 bgSpd;uniform vec3 bA[4];uniform vec3 bB[4];uniform vec2 bP[4];
+uniform float vor;uniform float sunV[2];uniform float moonV[4];uniform float dieA[6];uniform vec4 gt;uniform float gk,fx,bk;uniform vec2 bgSpd;uniform vec3 bA[4];uniform vec3 bB[4];uniform vec2 bP[4];
 float h3(vec3 p){return fract(sin(dot(p,vec3(12.9898,78.233,37.719)))*43758.5453);}
 float h2(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 float opn(float t,float per,float off){float ph=fract((t+off)/per);float b=smoothstep(0.93,0.955,ph)*(1.0-smoothstep(0.965,0.99,ph));return 1.0-b*0.96;}
@@ -272,10 +276,10 @@ void main(){
   col=mix(col,gnd,smoothstep(0.0,-0.08,h));
   float az=atan(d.x,d.z);
   if(fx>0.5){                                                  // the floating-island sky: abyss below, islands and tentacles on the haze
-    vec2 q=d.xz/(abs(d.y)+0.14);float rq=length(q),aq=atan(q.y,q.x);float sp=sin(aq*3.0+log(rq+0.12)*5.0-tm*0.3)*0.5+0.5;
+    vec2 q=d.xz/(abs(d.y)+0.14);q*=mix(1.0,0.12,vor);float rq=length(q),aq=atan(q.y,q.x);float sp=sin(aq*3.0+log(rq+0.12)*5.0-tm*0.3)*0.5+0.5;
     vec3 ab=vec3(0.012,0.0,0.03)+vec3(0.2,0.03,0.18)*pow(sp,3.0)*exp(-rq*0.22)+vec3(0.5,0.08,0.02)*pow(sp,6.0)*exp(-rq*0.8)*0.35;
     vec2 fq=fract(q*5.0)-0.5;float hq=h2(floor(q*5.0));ab+=vec3(1.0,0.15,0.35)*step(0.975,hq)*smoothstep(0.1,0.0,length(fq))*(0.5+0.5*sin(tm*1.6+hq*90.0))*0.7;
-    col=mix(col,ab,smoothstep(-0.03,-0.3,h)*0.96);
+    ab*=1.0+vor*1.8;col=mix(col,ab,smoothstep(-0.03,mix(-0.3,-0.06,vor),h)*0.96);
     vec3 hz=hor*0.55+vec3(0.05,0.0,0.08);if(h<0.31&&h>-0.34){isl(az,h,2.0,hz,col);isl(az,h,1.0,hz,col);isl(az,h,0.0,hz,col);}if(h<0.4&&h>-0.03)tent((az/6.2832+0.5)*11.0,0.0,h,hz,0.0,0.0,col);
     col+=hz*0.5*exp(-max(h,0.0)*16.0)*smoothstep(-0.1,0.0,h)*0.55;
   }
@@ -307,7 +311,7 @@ function initGL() {
   loc.p = 0; loc.c = 1; loc.uv = 2; loc.t = 3;
   loc.vp = gl.getUniformLocation(prog, 'vp'); loc.cam = gl.getUniformLocation(prog, 'cam');
   loc.fogc = gl.getUniformLocation(prog, 'fogc'); loc.fogr = gl.getUniformLocation(prog, 'fogr'); loc.amb = gl.getUniformLocation(prog, 'amb'); loc.ga = gl.getUniformLocation(prog, 'ga'); loc.tm = gl.getUniformLocation(prog, 'tm');
-  loc.gry = gl.getUniformLocation(prog, 'gry');
+  loc.gry = gl.getUniformLocation(prog, 'gry'); loc.cone = gl.getUniformLocation(prog, 'cone'); loc.coneOn = gl.getUniformLocation(prog, 'coneOn'); loc.rv = gl.getUniformLocation(prog, 'rv');
   gl.uniform1i(gl.getUniformLocation(prog, 'tex'), 0); gl.uniform1i(gl.getUniformLocation(prog, 'avg'), 1); gl.uniform1f(loc.amb, 1); gl.uniform1f(loc.ga, 1);
   for (const k of [loc.p, loc.c, loc.uv, loc.t]) gl.enableVertexAttribArray(k);
   { const A = makeAtlas(); ATLAS_CV = A.canvas; texAtlas = gl.createTexture(); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, texAtlas);

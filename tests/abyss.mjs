@@ -5,13 +5,9 @@ const g = await openGame({ width: 480, height: 270 }); const { page } = g; await
 const Y = (f, a) => page.evaluate(f, a);
 await Y(() => { __g.enterRealm('4821 -77'); });
 const hubEdits0 = await Y(() => __g.WorldStore.cur.data.edits.length);
-// walk to the edge of the world (the lip is the last 8 blocks)
-await Y(() => { const P = __g.P; P.x = 3985.5; P.z = 4.5; P.y = 140; __g.OW.update([{ x: P.x, z: P.z }], 20000); __g.OW.pump(20000); P.vx = P.vy = P.vz = 0; for (let i = 0; i < 20; i++) __g.update(1 / 60); });
-const e0 = await Y(() => ({ gen: __g.OW.gen, ab: __g.Abyss.on, x: __g.P.x }));
-check('still in the realm just inside the lip', e0.gen === 4 && !e0.ab, JSON.stringify(e0));
-await Y(() => { const P = __g.P; P.x = 3993.5; P.y = 140; for (let i = 0; i < 3; i++) __g.update(1 / 60); });
+await Y(() => { __g.enterAbyss(); });
 const e1 = await Y(() => ({ gen: __g.OW.gen, ab: __g.Abyss.on, ph: __g.Abyss.phase, y: __g.P.y, H: __g.getH() }));
-check('going over the edge drops you into the Abyss, high above it, in the fall phase', e1.gen === 5 && e1.ab && e1.ph === 'fall' && e1.y > 300 && e1.H === 384, JSON.stringify(e1));
+check('the Abyss starts high above the ground, in the fall phase', e1.gen === 5 && e1.ab && e1.ph === 'fall' && e1.y > 300 && e1.H === 384, JSON.stringify(e1));
 // the fall is long and slow, then you land
 const f = await Y(() => { let minVy = 0, n = 0; while (__g.Abyss.phase === 'fall' && n < 6000) { __g.update(1 / 60); minVy = Math.min(minVy, __g.P.vy); n++; } return { minVy, secs: n / 60, ph: __g.Abyss.phase, y: __g.P.y }; });
 check('you fall for a long time (20+ seconds) at a capped speed, then land', f.secs > 20 && f.minVy >= -10.5 && f.ph === 'walk', JSON.stringify(f));

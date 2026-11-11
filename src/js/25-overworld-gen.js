@@ -103,7 +103,7 @@ function stDistrict(x, z) {
 function realmCoords() { const o = Net.hubOverride; if (o) return o.coords || ''; const m = WorldStore.cur && WorldStore.cur.data.map; return m ? m.coords : ''; }
 function biomeAt(x, z, y) {
   if (OW.gen === 4) { const I = realmColumn(x, z, OWG.S), c = realmCoords(); return I.name + (c ? ' · RIFT ' + c.toUpperCase().slice(0, 18) : ''); }
-  if (OW.gen === 5) return 'THE ABYSS';
+  if (OW.gen === 5) return abyssBiomeName(x, z);
   if (OW.gen === 3 && y !== undefined && y < RC.fy + RC.h + 3 && y > RC.fy - 3 && onStation(x, z) && x > RC.x0 - 2 && x < RC.x1 + 2 && z > RC.z0 - 2 && z < RC.z1 + 2) return 'THE HELICARRIER · REACTOR CORE';
   if (OW.gen === 3) return onStation(x, z) && (y === undefined || y > 44) ? 'THE HELICARRIER · ' + stDistrict(x, z) : 'DEEP SPACE';
   if (OW.gen === 2) { if (onCarrier(x, z) && (y === undefined || y > carrierBottom(x, z) - 6)) return 'THE HELICARRIER'; const I = islandRaw(x, z); return I.solid ? BIOME_NAMES[I.bi] : 'THE ABYSS'; }

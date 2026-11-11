@@ -20,7 +20,7 @@ const DayNight = {
   t: .5, phase: 'day', idle: 90, ev: null, len: (DATA.tuning.dayLengthSeconds || 600),
   sunP: [], moonP: [], sv: [1, 1], mv: [0, 0, 0, 0], die: [0, 0, 0, 0, 0, 0], gate: [0, 0, 0, 0], gk: 0, bk: 0, beams: [],
   tick(dt) {
-    if (OW.gen === 3) return;                                                  // the station hurtles through deep space: no suns, no moons, no night and day
+    if (OW.gen === 3 || OW.gen === 5) return;                                  // the station hurtles through deep space: no suns, no moons, no night and day
     if (this.ev) { const was = this.ev.age; this.ev.age += dt; this.cues(was, this.ev.age); if (this.ev.age >= EV_T) this.finish(); }
     else { this.idle -= dt; if (this.idle <= 0 && Net.role !== 'client') this.start(); }
     this.pose();
@@ -94,7 +94,7 @@ function drawSkyDome(f, roll, fovy, asp, sk) {
   let sx = -f[2], sz = f[0]; const sl = Math.hypot(sx, sz) || 1; sx /= sl; sz /= sl; let sy = 0;
   let ux = sy * f[2] - sz * f[1], uy = sz * f[0] - sx * f[2], uz = sx * f[1] - sy * f[0];
   if (roll) { const c = Math.cos(roll), s = Math.sin(roll); const nsx = sx * c + ux * s, nsy = sy * c + uy * s, nsz = sz * c + uz * s; ux = -sx * s + ux * c; uy = -sy * s + uy * c; uz = -sz * s + uz * c; sx = nsx; sy = nsy; sz = nsz; }
-  if (!skyLoc) { skyLoc = {}; for (const n of ['fwd', 'rgt', 'upv', 'zen', 'hor', 'gnd', 'sunC', 'moonC', 'tanf', 'stars', 'sunA', 'tm', 'sunV', 'moonV', 'dieA', 'gt', 'gk', 'fx', 'bk', 'bA', 'bB', 'bP', 'bgSpd']) skyLoc[n] = gl.getUniformLocation(skyProg, n); }
+  if (!skyLoc) { skyLoc = {}; for (const n of ['fwd', 'rgt', 'upv', 'zen', 'hor', 'gnd', 'sunC', 'moonC', 'tanf', 'stars', 'sunA', 'tm', 'sunV', 'moonV', 'dieA', 'gt', 'gk', 'fx', 'bk', 'bA', 'bB', 'bP', 'bgSpd', 'vor']) skyLoc[n] = gl.getUniformLocation(skyProg, n); }
   gl.useProgram(skyProg); gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(false);
   for (const k of [1, 2, 3]) gl.disableVertexAttribArray(k);
   gl.bindBuffer(gl.ARRAY_BUFFER, skyBuf); gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
@@ -102,7 +102,7 @@ function drawSkyDome(f, roll, fovy, asp, sk) {
   gl.uniform3fv(L.fwd, f); gl.uniform3f(L.rgt, sx, sy, sz); gl.uniform3f(L.upv, ux, uy, uz);
   gl.uniform3fv(L.zen, sk.zen); gl.uniform3fv(L.hor, sk.hor); gl.uniform3fv(L.gnd, sk.fog); gl.uniform3fv(L.sunC, sk.sunC); gl.uniform3fv(L.moonC, sk.moonC);
   gl.uniform2f(L.tanf, th * asp, th); gl.uniform1f(L.stars, sk.stars); gl.uniform1f(L.sunA, sk.sunA); gl.uniform1f(L.tm, T);
-  gl.uniform1fv(L.sunV, sk.sunV); gl.uniform1fv(L.moonV, sk.moonV); gl.uniform1fv(L.dieA, sk.die); gl.uniform4fv(L.gt, sk.gate); gl.uniform1f(L.gk, sk.gk); gl.uniform1f(L.fx, OW.gen === 3 ? 2 : OW.gen === 5 ? 0 : OW.gen >= 2 ? 1 : 0); gl.uniform1f(L.bk, sk.bk);
+  gl.uniform1fv(L.sunV, sk.sunV); gl.uniform1fv(L.moonV, sk.moonV); gl.uniform1fv(L.dieA, sk.die); gl.uniform4fv(L.gt, sk.gate); gl.uniform1f(L.gk, sk.gk); gl.uniform1f(L.fx, OW.gen === 3 ? 2 : OW.gen === 5 ? 0 : OW.gen >= 2 ? 1 : 0); gl.uniform1f(L.bk, sk.bk); gl.uniform1f(L.vor, EdgeFall.on ? EdgeFall.vor : 0);
   gl.uniform2f(L.bgSpd, SKY_STAR_SPEED, SKY_TENT_SPEED); gl.uniform3fv(L.bA, sk.bA); gl.uniform3fv(L.bB, sk.bB); gl.uniform2fv(L.bP, sk.bP);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
   gl.useProgram(prog); gl.depthFunc(gl.LESS); gl.enable(gl.DEPTH_TEST); gl.depthMask(true);

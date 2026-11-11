@@ -8,7 +8,8 @@ let ATLAS_CV = null, ATLAS_PX = null;                           // the painted t
 const TILE = { WHITE: 0, GRAIN: 64, PLATE: 65, FLESHY: 66, BONEY: 67, GLOW: 68, CLOTH: 69 };
 // ids 0..31 use tiles 0..63; the city blocks (32..47, and every slab made from them) use tiles 128..159
 const PAINT3_KEYS = ['perf', 'corr', 'diam', 'vent', 'rack', 'greeble', 'slate', 'marble', 'tile', 'crate', 'truss', 'lab', 'screen', 'vat', 'wire', 'ledface', 'cskeys', 'csslate', 'csbody'];
-const MAT_TILES = MATS.map((m, i) => m.paint ? 160 + 2 * PAINT3_KEYS.indexOf(m.paint) : null);       // new materials either reuse an existing material's pattern (and just differ in colour) or have their own tile pair from 160
+const PAINT4_KEYS = ['silt', 'gloom', 'strata', 'stick', 'salt', 'spine'];       // THE ABYSS blocks: tiles 72..83 (tiles 200+ belong to the monitor screens)
+const MAT_TILES = MATS.map((m, i) => m.paint ? (PAINT4_KEYS.includes(m.paint) ? 72 + 2 * PAINT4_KEYS.indexOf(m.paint) : 160 + 2 * PAINT3_KEYS.indexOf(m.paint)) : null);       // new materials either reuse an existing material's pattern (and just differ in colour) or have their own tile pair from 160
 const blockTile = (id, top) => { const b = BASE[id] || id; if (b >= MAT0) { const t = MAT_TILES[b - MAT0]; if (t !== null) return t + (top ? 1 : 0); return blockTile(MATS[b - MAT0].tile, top); } return b < 32 ? b * 2 + (top ? 1 : 0) : 128 + (((b - 32) & 15) * 2) + (top ? 1 : 0); };
 function tn(x, y, s) { let h = (Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263) ^ Math.imul(s | 0, 1274126177)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
 // every painter returns a multiplier (number = grey, array = [r,g,b]) for pixel (x,y) of a 16x16 tile
@@ -81,6 +82,14 @@ const PAINT3 = {                                                                
   vat: (x, y, t, n) => { const bub = n > .93 ? 1.3 : 1; return (.85 + .3 * Math.sin(y * .6 + x * .25)) * bub + (n - .5) * .06; },
   marble: (x, y, t, n, s) => { const v = Math.abs(Math.sin(x * .45 + Math.sin(y * .3) * 2.4 + tn(0, 0, s) * 7)); return v < .1 ? .62 : 1.0 + (n - .5) * .08; }
 };
+const PAINT4 = {
+  silt: (x, y, t, n, s) => .97 + (n - .5) * .2 + (((x + y * 2) % 9) === 0 ? -.1 : 0) + (tn(x >> 2, y >> 1, s) - .5) * .1,                                  // THE ABYSS: soft speckled dust
+  gloom: (x, y, t, n, s) => { const v = Math.abs(tn(x >> 1, y >> 1, s) - tn((x + 1) >> 1, (y + 2) >> 1, s)); return v < .07 ? 1.9 : .82 + (n - .5) * .3; },             // dark rock with pale hairline cracks
+  strata: (x, y, t, n, s) => (t ? .96 + (n - .5) * .16 : .7 + tn(0, y >> 1, s + 3) * .55 + (n - .5) * .1),
+  stick: (x, y, t, n, s) => (t ? (Math.max(Math.abs(x - 7.5), Math.abs(y - 7.5)) % 3 < 1 ? 1.3 : .8) + (n - .5) * .1 : (x % 4 === 0 ? 1.55 : .85 + (tn(x, y >> 3, s) - .5) * .3) + (n - .5) * .08),     // black stick wood: pale grain lines
+  salt: (x, y, t, n, s) => { const c = ((x + tn(0, y >> 2, s) * 5) | 0) % 6 === 0 || ((y + tn(x >> 2, 0, s) * 5) | 0) % 6 === 0; return c ? .68 : 1.02 + (n - .5) * .1; },
+  spine: (x, y, t, n) => (t ? .95 + (n - .5) * .1 : (y % 4 < 1 ? .6 : 1.05) + (x === 0 || x === 15 ? -.12 : 0) + (n - .5) * .08)
+};
 const ENT_PAINT = {
   [TILE.GRAIN]: (x, y, t, n) => .92 + (n - .5) * .2,
   [TILE.PLATE]: (x, y, t, n) => (x === 0 || y === 0 ? .72 : (x === 2 || x === 13) && (y === 2 || y === 13) ? 1.3 : .98 + (tn(0, y, 5) - .5) * .1 + (n - .5) * .05),
@@ -97,6 +106,7 @@ function makeAtlas() {
     for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
       let m = .625;                                                   // neutral
       if (ti >= 64 && ENT_PAINT[ti]) m = ENT_PAINT[ti](x, y, 0, tn(x, y, ti));
+      else if (ti >= 72 && ti < 84) m = PAINT4[PAINT4_KEYS[(ti - 72) >> 1]](x, y, top, tn(x, y, ti), ti);
       else if (ti >= 128 && ti < 160) m = PAINT2[(ti - 128) >> 1](x, y, top, tn(x, y, ti), ti);
       else if (ti >= 160 && ti < 224 && PAINT3[PAINT3_KEYS[(ti - 160) >> 1]]) m = PAINT3[PAINT3_KEYS[(ti - 160) >> 1]](x, y, top, tn(x, y, ti), ti);
       else if (ti > 0 && ti < 64 && PAINT[id]) m = PAINT[id](x, y, top, tn(x, y, id * 7 + top), id * 31 + top);
