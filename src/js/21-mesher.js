@@ -73,6 +73,11 @@ const SHADE = [[.74, .74], [.46, 1], [.86, .86]];
 const AOV = [.42, .64, .84, 1];
 const meshes = new Map(), dirty = new Set();             // chunk key -> { buf, count }
 let gl, prog, loc = {};
+const MHIDE = { on: false, x: 0, y: 0, z: 0 };                             // the block being mined is left out of the chunk mesh: it is drawn separately, shrinking
+function mineHide(x, y, z) {
+  const on = x !== null; if (on === MHIDE.on && (!on || (x === MHIDE.x && y === MHIDE.y && z === MHIDE.z))) return;
+  if (MHIDE.on) markDirty(MHIDE.x, MHIDE.z); MHIDE.on = on; if (on) { MHIDE.x = x; MHIDE.y = y; MHIDE.z = z; markDirty(x, z); }
+}
 function buildChunk(cx, cz) {
   const key = ckey(cx, cz), ch = useChunks ? OW.chunks.get(key) : null; if (useChunks && !ch) return;
   const out = []; const x0 = cx * CS, z0 = cz * CS, yMax = ch ? Math.min(H, ch.top + 2) : H;
@@ -82,13 +87,14 @@ function buildChunk(cx, cz) {
   for (let y = 0; y < yMax; y++) for (let z = z0; z < z0 + CS; z++) for (let x = x0; x < x0 + CS; x++) {
     const li = ch ? ((x & 15) | ((z & 15) << 4) | (y << 8)) : 0;
     const id = ch ? ch.b[li] : world[idx(x, y, z)]; if (!id) continue;
+    if (MHIDE.on && x === MHIDE.x && y === MHIDE.y && z === MHIDE.z) continue;
     const lav = isLiquid(id), sk = slabKind(id), scr = KIND[id] === K.SCREEN;
     if (sk === 3) { meshPartial(out, id, x, y, z); continue; }
     const b = COL[id] || (COL[id] = [.6, .6, .6]), em = EMIT.has(id), bl = ch ? (ch.blood ? ch.blood[li] : 0) : blood[idx(x, y, z)];
     const vr = .86 + hash(x * 7 + y * 13, z * 5 + y * 3) * .28;
     for (let d = 0; d < 3; d++) for (let s = -1; s <= 1; s += 2) {
       n[0] = n[1] = n[2] = 0; n[d] = s;
-      const nb = get(x + n[0], y + n[1], z + n[2]), nk = slabKind(nb);
+      const nb = MHIDE.on && x + n[0] === MHIDE.x && y + n[1] === MHIDE.y && z + n[2] === MHIDE.z ? 0 : get(x + n[0], y + n[1], z + n[2]), nk = slabKind(nb);
       if (lav) { if (nb !== 0 && !nk && !(d === 1 && s > 0 && !isLiquid(nb))) continue; }        // lava hides against solids and lava (corners are shared, so no cracks) but its lowered top shows under a ceiling; next to a half block it stays visible
       else if (nb !== 0 && !isLiquid(nb) && !(d === 1 && sk && (s > 0 ? sk === 1 : sk === 2))) {   // (the flat face in the middle of a half block is never hidden by the next block)
         if (!nk) continue;                                                                      // a full block next to us covers this face completely

@@ -62,7 +62,7 @@ function updateWeapons(dt) {
     }
     P.zoom = !!R;
   } else if (w === 4) omniUpdate(dt, L, R);
-  else { Mine.p = 0; Mine.heldR = false; }
+  else { Mine.p = 0; Mine.on = false; Mine.heldR = false; mineHide(null); }
 }
 // ============================================================
 //  OMNITOOL — mining and building with Minecraft's rules.
@@ -81,26 +81,27 @@ const Syph = { t: 0, dir: 1, dist: 3, col: [1, 1, 1], pulse: 0 };          // di
 function syphon(dir, dist, col, t) { Syph.dir = dir; Syph.dist = dist; Syph.col = col || [1, 1, 1]; Syph.t = Math.max(Syph.t, t); }
 function breakBlock(h, id) {
   if (!setBlock(h.x, h.y, h.z, 0)) return false;
-  if (!Inv.creative) { const [dk, dn] = dropOf(id); spawnDrop(h.x + .5, h.y + .4, h.z + .5, dk, dn); }          // the block pops out as a little item you walk over to collect
-  for (let i = 0; i < 7; i++) emit(h.x + .5, h.y + .5, h.z + .5, rnd(-3, 3), rnd(1, 5), rnd(-3, 3), rnd(.08, .2), COL[id] || [1, 1, 1], rnd(1, 3), 0);
+  if (!Inv.creative) { const [dk, dn] = dropOf(id); spawnDrop(h.x + .5, h.y + .3, h.z + .5, dk, dn, 0, 0, 0); }          // the shrunken block IS the drop now: it appears exactly where the block finished shrinking
+  for (let i = 0; i < 3; i++) emit(h.x + .5, h.y + .5, h.z + .5, rnd(-3, 3), rnd(1, 5), rnd(-3, 3), rnd(.08, .2), COL[id] || [1, 1, 1], rnd(1, 3), 0);
   SFX.dig(); SFX.syphon(1); recoil(.035, .04); P.flashT = 0; syphon(1, h.t, COL[id], .22); Syph.pulse = 1;
   return true;
 }
 function omniUpdate(dt, L, R) {
   const M = Mine; M.cd = Math.max(0, M.cd - dt); M.msg = Math.max(0, M.msg - dt); Syph.t = Math.max(0, Syph.t - dt); Syph.pulse = Math.max(0, Syph.pulse - dt * 5);
-  const h = targetBlock(); M.on = false;
+  const h = targetBlock(); M.on = false; M.id = 0;
   // ---- mining
   if (L && h) {
     const id = get(h.x, h.y, h.z), can = h.y >= 1 && id !== 9 && id !== 10 && id !== 11 && !(useChunks && OW.gen === 3 && stProtected(h.x, h.y, h.z));
     if (h.x !== M.x || h.y !== M.y || h.z !== M.z) { M.x = h.x; M.y = h.y; M.z = h.z; M.p = 0; M.tick = 0; }          // looked at another block: start again
     if (!can) { M.p = 0; if (M.msg <= 0) { M.msg = .6; if (stProtected(h.x, h.y, h.z)) { feed('HELICARRIER HULL — INDESTRUCTIBLE', '#7af0ff'); SFX.shink && SFX.shink(); } else SFX.empty(); } }
     else if (M.cd <= 0) {
-      M.need = Inv.creative || GOD.on ? 0 : hardness(id); M.p += dt; M.on = true;
+      M.need = Inv.creative || GOD.on ? 0 : hardness(id); M.p += dt; M.on = true; M.id = id;
       syphon(1, h.t, COL[id], .08);
       M.tick -= dt; if (M.tick <= 0 && M.p < M.need) { M.tick = .16; SFX.mineTick(M.need ? M.p / M.need : 1); }       // a crisp tick as it works
       if (M.p >= M.need) { if (breakBlock(h, id)) M.cd = BREAK_COOLDOWN; M.p = 0; M.on = false; }
     }
   } else { M.p = 0; M.tick = 0; }                                             // let go (or nothing in reach): progress is lost
+  if (M.on && M.need > 0 && M.p > .03) mineHide(M.x, M.y, M.z); else mineHide(null);          // while it is being mined the block leaves the terrain mesh and is drawn shrinking
   // ---- placing / buckets: once on the press, then every 0.2 s while held
   let fire = false;
   if (R) { if (!M.heldR) { fire = true; M.rep = PLACE_REPEAT; } else { M.rep -= dt; if (M.rep <= 0) { fire = true; M.rep += PLACE_REPEAT; } } }

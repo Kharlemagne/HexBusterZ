@@ -17,6 +17,11 @@ const CRACK = (() => {
   }
   return out;
 })();
+// the block being mined shrinks from full size down to the size of a dropped item (1/4), turning a little faster as it goes; when it gets there it is the drop
+function pushShrink(x, y, z, id, k) {
+  const c = COL[id] || COL[BASE[id]] || [.6, .6, .6], em = EMIT.has(id) || EMIT.has(BASE[id]), e = k * k * (3 - 2 * k), s = lerp(.985, DROP_S, e), R = rotY(e * e * 1.6);
+  pushBox(x + .5, y + lerp(.5, .5, e), z + .5, s, s, s, c[0], c[1], c[2], R, em ? false : undefined, undefined, blockTile(id, false));
+}
 function pushCracks(x, y, z, k) {
   const id = get(x, y, z), bc = COL[id] || COL[BASE[id]] || [.5, .5, .5], D = bc[0] * .3 + bc[1] * .59 + bc[2] * .11 < .3 ? .85 : .02;                      // pale cracks on dark blocks, black on everything else
   const n = Math.min(CRACK.length, Math.ceil(k * CRACK.length)), cx = x + .5, cy = y + .5, cz = z + .5, e = .008, o = .506;
@@ -74,7 +79,7 @@ function renderFrame(dt) {
   drawHaz(T);
   drawLockOn(); drawSlashes(); drawLatchFx();
   drawEnemies(); drawRemotePlayers(T, dt); drawDrops(); drawParticles(); drawEProjs(); drawBeams(state === 'play' ? dt : 0); drawBombs();
-  if (state === 'play' && P.weapon === 4) { const h = targetBlock(); if (h) { pushOutline(h.x, h.y, h.z, null, .022); if (Mine.on && Mine.need > 0 && h.x === Mine.x && h.y === Mine.y && h.z === Mine.z) pushCracks(h.x, h.y, h.z, clamp(Mine.p / Mine.need, 0, 1)); }
+  if (state === 'play' && P.weapon === 4) { const h = targetBlock(); if (h) { pushOutline(h.x, h.y, h.z, null, .022); if (Mine.on && Mine.need > 0 && MHIDE.on && h.x === Mine.x && h.y === Mine.y && h.z === Mine.z) pushShrink(h.x, h.y, h.z, Mine.id, clamp(Mine.p / Mine.need, 0, 1)); }
     if (GOD.on) { const g = h ? { x: h.x + h.nx, y: h.y + h.ny, z: h.z + h.nz } : GOD.air(); if (g && get(g.x, g.y, g.z) === 0) pushOutline(g.x, g.y, g.z, [1, .25, .85], .05); } }     // god mode: a pink cage where the next block will land
   flushDyn();
   if (OW.gen === 3 && mode === 'hub') { drawVatGlass(T); drawStationGlass(T); drawHangarHolo(T); drawCoreGlass(T); drawRiftTear(T); }

@@ -35,7 +35,7 @@ const GP = {
   tick() {
     if (!this.on) return; const now = performance.now(), dt = Math.min(.1, (now - this.last) / 1000); this.last = now;
     const k = c => keys[c] ? 1 : 0, fine = keys.ShiftLeft || keys.ShiftRight ? .2 : 1, v = this.v, m = dt * fine;
-    if (this.target === 'holo') { const o = this.h, a = o.x + '|' + o.y + '|' + o.z + '|' + o.scale; o.x += (k('KeyD') - k('KeyA')) * .25 * m; o.y += (k('KeyR') - k('KeyF')) * .25 * m; o.z += (k('KeyS') - k('KeyW')) * .25 * m; o.scale = clamp(o.scale + (k('BracketRight') - k('BracketLeft')) * .5 * m, .3, 3); if (a !== o.x + '|' + o.y + '|' + o.z + '|' + o.scale) this.text(); return; }
+    if (this.target === 'holo') { const o = this.h, a = o.x + '|' + o.y + '|' + o.z + '|' + o.scale; o.x += (k('KeyD') - k('KeyA')) * .25 * m; o.y += (k('KeyR') - k('KeyF')) * .25 * m; o.z += (k('KeyS') - k('KeyW')) * .25 * m; o.scale = clamp(o.scale + (k('BracketRight') - k('BracketLeft')) * .5 * m, .1, 3); if (a !== o.x + '|' + o.y + '|' + o.z + '|' + o.scale) this.text(); return; }
     v.x += (k('KeyD') - k('KeyA')) * .25 * m; v.y += (k('KeyR') - k('KeyF')) * .25 * m; v.z += (k('KeyS') - k('KeyW')) * .25 * m;
     v.yaw += (k('KeyQ') - k('KeyE')) * .8 * m; v.pitch += (k('KeyT') - k('KeyG')) * .8 * m; v.roll += (k('KeyZ') - k('KeyX')) * .8 * m;
     v.scale = clamp(v.scale + (k('BracketRight') - k('BracketLeft')) * .5 * m, .2, 3);

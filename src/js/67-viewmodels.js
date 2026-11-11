@@ -93,14 +93,28 @@ function holoText(text, cx, cy, z, px, c) {
     }
   }
 }
+// both holograms hang in the air: they follow the arm lazily (a low-pass filter) so walking, recoil and the mode change do not make them bounce
+const HOLO_BASE = { x: -.034, y: -.014, z: .246, scale: .3, depth: -.143 };              // where Karl put the mode display with MODE DISPLAY POSITION (baked in; the tool's offsets go on top)
+const HSM = { m: null, i: null, t: 0 };
+function holoSmooth(key, tgt, tt) {
+  const c = HSM[key], dt = clamp(tt - (HSM['t' + key] || tt), 0, .1); HSM['t' + key] = tt;
+  if (!c || Math.hypot(tgt[0] - c[0], tgt[1] - c[1], tgt[2] - c[2]) > .25) return HSM[key] = tgt.slice(0, 3);
+  const k = 1 - Math.exp(-dt * 3); for (let j = 0; j < 3; j++) c[j] += (tgt[j] - c[j]) * k; return c;
+}
+function holoFan(E, bx, by, bz, bw, col, fl, tt) {                          // a projector lens on the arm and the fan of light that carries the picture
+  pushBox(E[0], E[1], E[2], .022, .006, .022, col[0], col[1], col[2], null, false, 0, TILE.GLOW);
+  for (let i = 0; i < 7; i++) { const k = (i + .5) / 7, a = .16 * (1 - k * .5) * fl * (.8 + .2 * Math.sin(tt * 9 - i * 1.3));
+    pushBox(lerp(E[0], bx, k), lerp(E[1] + .004, by, k), lerp(E[2], bz, k), lerp(.012, bw, k), Math.abs(by - E[1]) / 7 + .0005, .0006, col[0] * a, col[1] * a, col[2] * a, null, false, 0, TILE.GLOW); }
+}
 function drawModeHolo(info) {
   const { W, acc, tt } = info, w = P.weapon, f = .85 + Math.sin(tt * 23) * .05 + (Math.random() < .03 ? -.4 : 0);
-  const ho = GP.h, hs = ho.scale, hb = W(0, 0, HOLO_AT[0]), cx = hb[0] + HOLO_AT[1] + ho.x, cy = hb[1] + HOLO_AT[2] + ho.y, cz = Math.min(-.3, hb[2] + HOLO_AT[3]) + ho.z, px = .0026 * hs;
+  const ho = GP.h, hs = ho.scale * HOLO_BASE.scale, hb = holoSmooth('m', W(0, 0, HOLO_AT[0]), tt), cx = hb[0] + HOLO_AT[1] + ho.x + HOLO_BASE.x, cy = hb[1] + HOLO_AT[2] + ho.y + HOLO_BASE.y, cz = HOLO_BASE.depth + ho.z, px = .0026 * hs;      // a fixed distance from the eye: this close to the camera, following the arm's depth would make it swell and shrink
   const a = [acc[0] * f, acc[1] * f, acc[2] * f], dim = [acc[0] * .35 * f, acc[1] * .35 * f, acc[2] * .35 * f];
   const name = WNAMES[w], pw = (name.length * 6 + 4) * px, ph = (P.weapon === 4 ? .092 : .07) * hs, pyo = (P.weapon === 4 ? -.011 : 0) * hs;
   pushBox(cx, cy - .004 * hs + pyo, cz + .002, pw + .02 * hs, ph, .002, acc[0] * .05, acc[1] * .06, acc[2] * .06, null, false, 0, TILE.GLOW);                 // faint glass
   const e = .0014 * hs; for (const sy of [-1, 1]) pushBox(cx, cy - .004 * hs + pyo + sy * ph / 2, cz, pw + .02 * hs, e, e, a[0], a[1], a[2], null, false, 0, TILE.GLOW);
   for (const sx of [-1, 1]) pushBox(cx + sx * (pw + .02 * hs) / 2, cy - .004 * hs + pyo, cz, e, ph, e, a[0], a[1], a[2], null, false, 0, TILE.GLOW);
+  { const pb = cy - .004 * hs + pyo - ph / 2, L = W(0, .1, .46); holoFan(L, cx, pb, cz, (pw + .02 * hs) * .96, acc, f, tt); }                 // the same projector light as the held-item display, from a lens by the shoulder
   holoText('MODE ' + (w + 1), cx, cy + .024 * hs, cz, px * .6, dim);
   holoText(name, cx, cy + .002 * hs, cz, px, a);
   const rdy = w === 4 ? 1 : 1 - clamp((cds[w] || 0) / MODE_MAXCD[w], 0, 1), bw = pw - .01 * hs;                                                      // ready bar
@@ -112,27 +126,24 @@ function drawModeHolo(info) {
 //      and the item's flat picture floats in it with its name and count. Drawn additively, so it is see-through.
 const ITEM_HOLO_AT = [.16, .1, .2];                                         // the projector, in arm space: [x, y (up), z (toward the shoulder; the muzzle is at -.5)]
 function itemHoloGeo(info) {
-  const { W, tt } = info, E = W(ITEM_HOLO_AT[0] - .16, ITEM_HOLO_AT[1], ITEM_HOLO_AT[2]), px = .0036, w = 16 * px;
-  return { E, px, w, cx: E[0] + .012, cy: E[1] + .1 + Math.sin(tt * 1.7) * .004, cz: E[2], tt };
+  const { W, tt } = info, E = W(ITEM_HOLO_AT[0] - .16, ITEM_HOLO_AT[1], ITEM_HOLO_AT[2]), A = holoSmooth('i', E, tt), px = .0046, w = 16 * px;
+  return { E, px, w, cx: A[0] + .012, cy: A[1] + .112, cz: A[2], tt };
 }
-function drawItemHoloSolid(info) {                                          // the picture itself: thin rows with gaps between them, so you see through it but can still tell what it is
+function drawItemHoloSolid(info) {                                          // the picture itself: solid, full colour, every pixel
   if (P.weapon !== 4) return; const s = Inv.slots[Inv.sel]; if (!s) return;
-  const { px, cx, cy, cz, tt } = itemHoloGeo(info), fl = .9 + Math.sin(tt * 19) * .06;
-  for (const r of itemRuns(s.k)) pushBox(cx + (r[0] + r[2] / 2 - 8) * px, cy + (8 - r[1] - .5) * px, cz, r[2] * px, px * .58, .0005, (r[3] * .8 + .05) * fl, (r[4] * .8 + .14) * fl, (r[5] * .8 + .18) * fl, null, false, 0, TILE.GLOW);
+  const { px, cx, cy, cz } = itemHoloGeo(info);
+  for (const r of itemRuns(s.k)) pushBox(cx + (r[0] + r[2] / 2 - 8) * px, cy + (8 - r[1] - .5) * px, cz, r[2] * px + .0002, px + .0002, .0005, Math.min(1, r[3] * 1.05), Math.min(1, r[4] * 1.05), Math.min(1, r[5] * 1.05), null, false, 0);
 }
 function drawItemHolo(info) {
   if (P.weapon !== 4) return; const s = Inv.slots[Inv.sel]; if (!s) return;
-  const { E, px, w, cx, cy, cz, tt } = itemHoloGeo(info), fl = .8 + Math.sin(tt * 19) * .05 + (Math.random() < .03 ? -.35 : 0), HC = [.35, .9, 1];
-  pushBox(E[0], E[1], E[2], .022, .006, .022, HC[0], HC[1], HC[2], null, false, 0, TILE.GLOW);                                   // the projector lens
-  const y1 = cy - w * .62;
-  for (let i = 0; i < 7; i++) { const k = (i + .5) / 7, y = lerp(E[1] + .004, y1, k), ww = lerp(.012, w * 1.1, k), a = .16 * (1 - k * .5) * fl * (.8 + .2 * Math.sin(tt * 9 - i * 1.3));      // the fan of light from the arm
-    pushBox(lerp(E[0], cx, k), y, cz, ww, (y1 - E[1]) / 7, .001, HC[0] * a, HC[1] * a, HC[2] * a, null, false, 0, TILE.GLOW); }
-  pushBox(cx, cy, cz + .001, w * 1.2, w * 1.2, .001, HC[0] * .05, HC[1] * .06, HC[2] * .07, null, false, 0, TILE.GLOW);            // faint glass
-  const sl = cy + w * .6 - ((tt * .09) % 1) * w * 1.2; pushBox(cx, sl, cz, w * 1.2, px * .5, .001, HC[0] * .3 * fl, HC[1] * .3 * fl, HC[2] * .3 * fl, null, false, 0, TILE.GLOW);      // a scan line drifting down
-  const e = .0011, hw = w * .6; for (const sx of [-1, 1]) for (const sy of [-1, 1]) { pushBox(cx + sx * (hw - .006), cy + sy * hw, cz, .012, e, e, HC[0] * fl, HC[1] * fl, HC[2] * fl, null, false, 0, TILE.GLOW); pushBox(cx + sx * hw, cy + sy * (hw - .006), cz, e, .012, e, HC[0] * fl, HC[1] * fl, HC[2] * fl, null, false, 0, TILE.GLOW); }      // corner brackets
-  const nm = itemName(s.k).toUpperCase().slice(0, 18), npx = Math.min(.0016, w * 1.7 / (nm.length * 6)), dim = [HC[0] * .9 * fl, HC[1] * .9 * fl, HC[2] * .9 * fl];
+  const { E, px, w, cx, cy, cz, tt } = itemHoloGeo(info), fl = .85 + Math.sin(tt * 19) * .04, HC = [.35, .9, 1], hw = w * .6;
+  holoFan(E, cx, cy - hw, cz, w * 1.1, HC, fl, tt);
+  const sl = cy + Math.sin(tt * 1.5) * w * .5; pushBox(cx, sl, cz - .0004, w * 1.08, px * .45, .0004, HC[0] * .55, HC[1] * .55, HC[2] * .55, null, false, 0, TILE.GLOW);      // the scan line riding up and down the picture
+  pushBox(cx, sl, cz - .0004, w * 1.08, px * 2.2, .0004, HC[0] * .1, HC[1] * .1, HC[2] * .1, null, false, 0, TILE.GLOW);
+  const e = .0011; for (const sx of [-1, 1]) for (const sy of [-1, 1]) { pushBox(cx + sx * (hw - .006), cy + sy * hw, cz, .012, e, e, HC[0] * fl, HC[1] * fl, HC[2] * fl, null, false, 0, TILE.GLOW); pushBox(cx + sx * hw, cy + sy * (hw - .006), cz, e, .012, e, HC[0] * fl, HC[1] * fl, HC[2] * fl, null, false, 0, TILE.GLOW); }      // corner brackets
+  const nm = itemName(s.k).toUpperCase().slice(0, 18), npx = Math.min(.0017, w * 1.7 / (nm.length * 6)), dim = [HC[0] * .9 * fl, HC[1] * .9 * fl, HC[2] * .9 * fl];
   holoText(nm, cx, cy + hw + .011, cz, npx, dim);
-  if (!Inv.creative) holoText('X' + s.n, cx + hw - .012, cy - hw + .008, cz, .0013, [fl, fl, fl * .9]);
+  if (!Inv.creative) holoText('X' + s.n, cx + hw - .012, cy - hw - .009, cz, .0014, [fl, fl, fl * .9]);
 }
 // ---- the SYPHON: a flat stream of square pixels between the block in the crosshair and the mouth of the arm (toward the arm when mining, away when placing)
 function drawSyphon(info) {
